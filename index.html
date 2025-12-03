@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d1117">
+  <title>SKEDULER LIVE</title>
+  <style>
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+    }
+    
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #7d8590;
+    }
+    
+    .status .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3fb950;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .refresh-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      cursor: pointer;
+    }
+    
+    .refresh-btn:active {
+      background: #30363d;
+    }
+    
+    .content {
+      padding: 16px;
+      overflow-x: auto;
+    }
+    
+    .loading, .error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      text-align: center;
+      padding: 24px;
+    }
+    
+    .loading h2, .error h2 {
+      font-size: 18px;
+      margin: 0 0 8px;
+    }
+    
+    .loading p, .error p {
+      color: #7d8590;
+      margin: 0;
+    }
+    
+    .error h2 { color: #f85149; }
+    
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid #30363d;
+      border-top-color: #58a6ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    #schedule-container {
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    #schedule-container table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .updated-at {
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+      color: #7d8590;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="header">
+    <h1 id="title">SKEDULER LIVE</h1>
+    <div class="status">
+      <span class="dot"></span>
+      <span id="statusText">Live</span>
+    </div>
+    <button class="refresh-btn" onclick="loadBroadcast()">Refresh</button>
+  </div>
+  
+  <div class="content">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <h2>Loading Schedule...</h2>
+      <p>Please wait</p>
+    </div>
+    
+    <div id="error" class="error" style="display:none;">
+      <h2>Schedule Not Found</h2>
+      <p>This broadcast link may have expired or been removed.</p>
+    </div>
+    
+    <div id="schedule-container" style="display:none;"></div>
+    <div id="updated-at" class="updated-at"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let broadcastCode = null;
+    let broadcastData = null;
+    let refreshInterval = null;
+    
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+      
+      if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '') {
+        showError('No broadcast code provided');
+        return;
+      }
+      
+      await loadBroadcast();
+      
+      // Auto-refresh every 30 seconds
+      refreshInterval = setInterval(loadBroadcast, 30000);
+    }
+    
+    async function loadBroadcast() {
+      try {
+        // Look up broadcast by code
+        const { data: broadcast, error: lookupError } = await supabase
+          .from('broadcasts')
+          .select('*')
+          .eq('code', broadcastCode.toUpperCase())
+          .single();
+        
+        if (lookupError || !broadcast) {
+          showError('Broadcast not found');
+          return;
+        }
+        
+        broadcastData = broadcast;
+        
+        // Update title
+        document.getElementById('title').textContent = broadcast.title || 'SKEDULER LIVE';
+        document.title = (broadcast.title || 'Schedule') + ' - SKEDULER LIVE';
+        
+        // Fetch HTML from storage
+        const htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+        const { data: htmlBlob, error: fetchError } = await supabase.storage
+          .from('schedule-files')
+          .download(htmlPath);
+        
+        if (fetchError || !htmlBlob) {
+          showError('Could not load schedule');
+          return;
+        }
+        
+        const html = await htmlBlob.text();
+        
+        // Display
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('schedule-container').style.display = 'block';
+        document.getElementById('schedule-container').innerHTML = html;
+        
+        // Show last updated
+        const updated = new Date(broadcast.updated_at);
+        document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
+        document.getElementById('statusText').textContent = 'Live';
+        document.querySelector('.dot').style.background = '#3fb950';
+        
+      } catch (err) {
+        console.error('Load error:', err);
+        showError('Failed to load broadcast');
+      }
+    }
+    
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('schedule-container').style.display = 'none';
+      document.getElementById('error').style.display = 'flex';
+      document.getElementById('error').querySelector('p').textContent = msg;
+      document.getElementById('statusText').textContent = 'Offline';
+      document.querySelector('.dot').style.background = '#f85149';
+    }
+    
+    init();
+  </script>
+</body>
+</html>
