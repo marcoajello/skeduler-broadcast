@@ -205,8 +205,14 @@
         document.getElementById('title').textContent = broadcast.title || 'SKEDULER LIVE';
         document.title = (broadcast.title || 'Schedule') + ' - SKEDULER LIVE';
         
-        // Fetch HTML from storage
-        const htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+        // Fetch HTML from storage - use channel path if channel_number exists
+        let htmlPath;
+        if (broadcast.channel_number) {
+          htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+        } else {
+          // Fallback for old broadcasts without channel number
+          htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+        }
         const { data: htmlBlob, error: fetchError } = await supabase.storage
           .from('schedule-files')
           .download(htmlPath);
