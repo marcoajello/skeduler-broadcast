@@ -121,19 +121,11 @@
       border-radius: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Don't override table's inline styles */
+    #schedule-container .schedule-wrapper {
       display: inline-block;
-      min-width: 100%;
-    }
-    
-    /* Don't override table's inline width - let it scroll horizontally */
-    #schedule-container table {
-      border-collapse: collapse;
-    }
-    
-    /* Ensure schedule-scroll wrapper doesn't constrain */
-    #schedule-container .schedule-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
     }
     
     .updated-at {
