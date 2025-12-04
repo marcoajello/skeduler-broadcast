@@ -239,11 +239,32 @@
         
         const html = await response.text();
         
+        // Parse the HTML to extract style and body content
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Extract and inject the style
+        const styleElement = doc.querySelector('style');
+        if (styleElement) {
+          // Remove any existing broadcast style
+          const existingStyle = document.getElementById('broadcast-style');
+          if (existingStyle) existingStyle.remove();
+          
+          // Add new style with ID so we can replace it on refresh
+          const newStyle = document.createElement('style');
+          newStyle.id = 'broadcast-style';
+          newStyle.textContent = styleElement.textContent;
+          document.head.appendChild(newStyle);
+        }
+        
+        // Extract body content (the schedule wrapper and any buttons)
+        const bodyContent = doc.body.innerHTML;
+        
         // Display
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'none';
         document.getElementById('schedule-container').style.display = 'block';
-        document.getElementById('schedule-container').innerHTML = html;
+        document.getElementById('schedule-container').innerHTML = bodyContent;
         
         // Show last updated
         const updated = new Date(broadcast.updated_at);
