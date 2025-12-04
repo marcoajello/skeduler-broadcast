@@ -34,8 +34,21 @@
       margin: 0;
       font-size: 14px;
       font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      min-width: 60px;
+    }
+    
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #e6edf3;
+    }
+    
+    .header-logo svg {
+      display: block;
     }
     
     .status {
@@ -44,6 +57,8 @@
       gap: 8px;
       font-size: 12px;
       color: #7d8590;
+      min-width: 60px;
+      justify-content: flex-end;
     }
     
     .status .dot {
@@ -132,7 +147,11 @@
 </head>
 <body>
   <div class="header">
-    <h1 id="title">SKEDULER LIVE</h1>
+    <h1 id="title">Channel:</h1>
+    <div class="header-logo">
+      <span>SKEDULER</span>
+      <svg width="16" height="16" viewBox="195 40 100 130"><defs><linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
+    </div>
     <div class="status">
       <span class="dot"></span>
       <span id="statusText">Live</span>
@@ -197,8 +216,9 @@
         broadcastData = broadcast;
         
         // Update title
-        document.getElementById('title').textContent = broadcast.title || 'SKEDULER LIVE';
-        document.title = (broadcast.title || 'Schedule') + ' - SKEDULER LIVE';
+        const channelName = broadcast.title || '';
+        document.getElementById('title').textContent = channelName ? `Channel: ${channelName}` : 'Channel:';
+        document.title = (channelName || 'Schedule') + ' - SKEDULER LIVE';
         
         // Fetch HTML from storage - use channel path if channel_number exists
         let htmlPath;
