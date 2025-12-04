@@ -76,6 +76,7 @@
     .content {
       padding: 16px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     
     .loading, .error {
@@ -118,11 +119,20 @@
       background: #fff;
       border-radius: 8px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      display: inline-block;
+      min-width: 100%;
     }
     
     /* Don't override table's inline width - let it scroll horizontally */
     #schedule-container table {
       border-collapse: collapse;
+    }
+    
+    /* Ensure schedule-scroll wrapper doesn't constrain */
+    #schedule-container .schedule-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     
     .updated-at {
@@ -213,16 +223,24 @@
           // Fallback for old broadcasts without channel number
           htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
         }
-        const { data: htmlBlob, error: fetchError } = await supabase.storage
-          .from('schedule-files')
-          .download(htmlPath);
         
-        if (fetchError || !htmlBlob) {
+        // Use public URL with cache-busting timestamp
+        const { data: urlData } = supabase.storage
+          .from('schedule-files')
+          .getPublicUrl(htmlPath);
+        
+        const cacheBuster = Date.now();
+        const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
+        
+        console.log('[Broadcast] Fetching:', publicUrl);
+        
+        const response = await fetch(publicUrl);
+        if (!response.ok) {
           showError('Could not load schedule');
           return;
         }
         
-        const html = await htmlBlob.text();
+        const html = await response.text();
         
         // Display
         document.getElementById('loading').style.display = 'none';
