@@ -212,18 +212,20 @@
       -webkit-overflow-scrolling: touch;
     }
     
-    /* Hide action column buttons from loaded schedule */
+    /* Hide drag and action columns from loaded schedule */
     #schedule-container th[data-key="actions"],
-    #schedule-container td[data-key="actions"] {
-      display: none;
-    }
-    
-    /* Hide drag column */
+    #schedule-container td[data-key="actions"],
     #schedule-container th[data-key="drag"],
     #schedule-container td[data-key="drag"] {
       display: none;
     }
     
+    /* Hide progress-toggle from loaded schedule - viewer has its own */
+    #schedule-container .progress-toggle,
+    .content .progress-toggle {
+      display: none;
+    }
+
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
       position: absolute;
