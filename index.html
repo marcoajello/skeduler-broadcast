@@ -401,13 +401,6 @@
       document.getElementById('schedule-container').style.display = 'block';
       document.getElementById('schedule-container').innerHTML = html;
       
-      // Move progress-toggle button from schedule into header
-      const progressBtn = document.querySelector('#schedule-container .progress-toggle');
-      if (progressBtn) {
-        const headerRight = document.querySelector('.header-right');
-        headerRight.appendChild(progressBtn);
-      }
-      
       // Show last updated
       const updated = new Date(broadcast.updated_at);
       document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
