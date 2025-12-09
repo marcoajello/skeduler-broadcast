@@ -339,38 +339,6 @@
       border-color: #d32f2f;
     }
     
-    /* Master sharpie in header */
-    button.master-sharpie-toggle {
-      margin: 0;
-      padding: 0;
-      width: 22px;
-      height: 22px;
-      min-width: 22px;
-      min-height: 22px;
-      max-width: 22px;
-      max-height: 22px;
-      box-sizing: border-box;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: #f44336;
-      color: white;
-      border: 1px solid #d32f2f;
-      border-radius: 4px;
-      cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    button.master-sharpie-toggle svg {
-      width: 14px;
-      height: 14px;
-    }
-    
-    button.master-sharpie-toggle.lines-hidden {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    
     /* ===== DRAGGING STATES - EXACT DOM ===== */
     tr.dragging {
       opacity: 0.6;
@@ -656,6 +624,9 @@
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
     
+    // NUCLEAR: Remove any buttons from loaded HTML
+    container.querySelectorAll('button').forEach(btn => btn.remove());
+    
     // Add drag and action columns
     setupColumns();
     
@@ -676,14 +647,15 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
+      th.style.background = '#222a35';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
     
-    // Add action column header with master sharpie
+    // Add action column header (empty - header has progress button)
     if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'actions');
-      th.innerHTML = `<div><button class="master-sharpie-toggle" id="masterSharpie" title="Toggle all sharpie lines">${getSharpieIconSVG()}</button></div>`;
+      th.style.background = '#222a35';
       headerRow.appendChild(th);
     }
     
@@ -711,6 +683,7 @@
       if (!row.querySelector('td[data-key="drag"]')) {
         const td = document.createElement('td');
         td.setAttribute('data-key', 'drag');
+        td.style.background = '#222a35';
         td.innerHTML = '<span class="drag-dots"></span>';
         row.insertBefore(td, row.firstChild);
       }
@@ -719,6 +692,7 @@
       if (!row.querySelector('td[data-key="actions"]')) {
         const td = document.createElement('td');
         td.setAttribute('data-key', 'actions');
+        td.style.background = '#222a35';
         td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
         row.appendChild(td);
       }
