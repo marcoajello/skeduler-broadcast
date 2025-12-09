@@ -98,63 +98,40 @@
       justify-self: end;
     }
     
-    /* ===== LIVE/SYNC INDICATOR ===== */
-    .sync-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    
-    .sync-badge.connected {
-      background: rgba(163, 113, 247, 0.15);
-      color: var(--ad-purple);
-      border: 1px solid rgba(163, 113, 247, 0.3);
-    }
-    
-    .sync-badge.connected .sync-dot {
-      width: 8px;
-      height: 8px;
+    /* ===== STATUS DOT ===== */
+    .status-dot {
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    
+    .status-dot.connected {
       background: var(--ad-purple);
+      box-shadow: 0 0 8px var(--ad-purple);
       animation: pulse 1.5s ease-in-out infinite;
     }
     
-    .sync-badge.disconnected {
-      background: rgba(125, 133, 144, 0.15);
-      color: var(--muted);
-      border: 1px solid rgba(125, 133, 144, 0.3);
-    }
-    
-    .sync-badge.disconnected .sync-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
+    .status-dot.disconnected {
+      background: var(--live-red);
+      box-shadow: 0 0 6px var(--live-red);
     }
     
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.9); }
+      50% { opacity: 0.7; transform: scale(0.85); }
     }
     
     /* ===== SHARPIE TOGGLE ===== */
     .sharpie-toggle {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 10px;
+      justify-content: center;
+      padding: 6px;
       background: transparent;
       border: 1px solid var(--border);
       border-radius: 4px;
       color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -165,14 +142,13 @@
     }
     
     .sharpie-toggle.active {
-      background: rgba(244, 67, 54, 0.1);
+      background: rgba(244, 67, 54, 0.15);
       border-color: #f44336;
-      color: #f44336;
     }
     
     .sharpie-toggle .sharpie-icon {
-      width: 14px;
-      height: 14px;
+      width: 20px;
+      height: 20px;
     }
     
     /* ===== SIDEBAR TOGGLE ===== */
@@ -288,6 +264,30 @@
     
     #schedule-container tr[data-id].drag-over {
       border-top: 3px solid var(--ad-purple);
+    }
+    
+    /* ===== DRAG HANDLES ===== */
+    .ad-drag-handle {
+      width: 30px;
+      text-align: center;
+      cursor: grab;
+      color: var(--muted);
+      user-select: none;
+      vertical-align: middle;
+    }
+    
+    .ad-drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    .drag-dots {
+      font-size: 12px;
+      letter-spacing: -2px;
+      opacity: 0.6;
+    }
+    
+    #schedule-container tr[data-id]:hover .drag-dots {
+      opacity: 1;
     }
     
     /* ===== SHARPIE LINES ===== */
@@ -541,24 +541,12 @@
     
     <div class="header-right">
       <button class="sharpie-toggle active" id="sharpieToggle" title="Toggle completion lines">
-        <svg class="sharpie-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
-          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
-          <path d="M2 2l7.586 7.586"/>
-        </svg>
-        <span>SHARPIE</span>
+        <svg class="sharpie-icon" width="20" height="20" viewBox="195 40 100 130"><defs><linearGradient id="adCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="adTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="adBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="adClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#adCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#adClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#adBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#adTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
       </button>
       
       <button class="sidebar-toggle" id="sidebarToggle" title="Toggle AD controls">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12h18M3 6h18M3 18h18"/>
-        </svg>
+        <span class="status-dot disconnected" id="statusDot"></span>
       </button>
-      
-      <div class="sync-badge disconnected" id="syncBadge">
-        <span class="sync-dot"></span>
-        <span id="syncText">CONNECTING</span>
-      </div>
     </div>
   </div>
   
@@ -782,21 +770,38 @@
     
     function setConnected(connected) {
       isConnected = connected;
-      const badge = document.getElementById('syncBadge');
-      const text = document.getElementById('syncText');
+      const dot = document.getElementById('statusDot');
       const btn = document.getElementById('broadcastBtn');
       
-      badge.classList.toggle('connected', connected);
-      badge.classList.toggle('disconnected', !connected);
-      text.textContent = connected ? 'SYNCED' : 'OFFLINE';
+      dot.classList.toggle('connected', connected);
+      dot.classList.toggle('disconnected', !connected);
       btn.disabled = !connected;
     }
     
     function setupRowInteractions() {
       const container = document.getElementById('schedule-container');
+      
+      // Add header cell for drag handle column
+      const headerRow = container.querySelector('thead tr');
+      if (headerRow && !headerRow.querySelector('.ad-drag-header')) {
+        const th = document.createElement('th');
+        th.className = 'ad-drag-header';
+        th.style.cssText = 'width:30px;';
+        headerRow.insertBefore(th, headerRow.firstChild);
+      }
+      
       const rows = container.querySelectorAll('tr[data-id]');
       
       rows.forEach(row => {
+        // Add drag handle as first cell if not already present
+        if (!row.querySelector('.ad-drag-handle')) {
+          const handle = document.createElement('td');
+          handle.className = 'ad-drag-handle';
+          handle.innerHTML = '<span class="drag-dots">⋮⋮</span>';
+          handle.style.cssText = 'width:30px;text-align:center;cursor:grab;color:var(--muted);font-size:14px;user-select:none;';
+          row.insertBefore(handle, row.firstChild);
+        }
+        
         // Drag and drop for reordering
         row.draggable = true;
         row.addEventListener('dragstart', handleDragStart);
