@@ -185,9 +185,11 @@
       width: 100%;
       height: 100%;
       overflow: auto;
+      padding: 16px;
     }
     
     /* ===== TABLE STYLING - EXACT DOM CLONE ===== */
+    #scheduleScroll table,
     table.schedule {
       border-collapse: collapse;
       width: 100%;
@@ -197,6 +199,8 @@
       border-radius: 8px;
     }
     
+    #scheduleScroll table th,
+    #scheduleScroll table td,
     table.schedule th,
     table.schedule td {
       border: 1px solid var(--border);
@@ -209,6 +213,7 @@
       white-space: nowrap;
     }
     
+    #scheduleScroll table thead th,
     table.schedule thead th {
       position: sticky;
       top: 0;
@@ -218,25 +223,27 @@
       color: var(--text);
     }
     
+    #scheduleScroll table tbody tr,
     table.schedule tbody tr {
       background: var(--row);
     }
     
+    #scheduleScroll table tbody tr:nth-child(even),
     table.schedule tbody tr:nth-child(even) {
       background: var(--rowAlt);
     }
     
     /* ===== DRAG & ACTION COLUMNS - EXACT DOM COLORS ===== */
-    table.schedule thead th[data-key="drag"],
-    table.schedule thead th[data-key="actions"],
-    table.schedule tbody td[data-key="drag"],
-    table.schedule tbody td[data-key="actions"] {
-      background: #222a35;
+    #scheduleScroll table thead th[data-key="drag"],
+    #scheduleScroll table thead th[data-key="actions"],
+    #scheduleScroll table tbody td[data-key="drag"],
+    #scheduleScroll table tbody td[data-key="actions"] {
+      background: #222a35 !important;
     }
     
     /* Drag column */
-    table.schedule thead th[data-key="drag"],
-    table.schedule tbody td[data-key="drag"] {
+    #scheduleScroll table thead th[data-key="drag"],
+    #scheduleScroll table tbody td[data-key="drag"] {
       width: 36px;
       min-width: 36px;
       max-width: 36px;
@@ -248,7 +255,7 @@
       color: #666;
     }
     
-    table.schedule tbody td[data-key="drag"]:active {
+    #scheduleScroll table tbody td[data-key="drag"]:active {
       cursor: grabbing;
     }
     
@@ -277,8 +284,8 @@
     }
     
     /* Action column */
-    table.schedule thead th[data-key="actions"],
-    table.schedule tbody td[data-key="actions"] {
+    #scheduleScroll table thead th[data-key="actions"],
+    #scheduleScroll table tbody td[data-key="actions"] {
       width: 36px;
       min-width: 36px;
       max-width: 36px;
