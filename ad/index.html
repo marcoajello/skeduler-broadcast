@@ -16,9 +16,8 @@
       --text: #e6edf3;
       --muted: #7d8590;
       --accent: #58a6ff;
-      --live-red: #f85149;
-      --live-green: #3fb950;
       --ad-purple: #a371f7;
+      --live-red: #f85149;
     }
     
     body {
@@ -98,7 +97,52 @@
       justify-self: end;
     }
     
+    /* ===== SHARPIE TOGGLE ===== */
+    .sharpie-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .sharpie-toggle:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--muted);
+    }
+    
+    .sharpie-toggle.active {
+      background: rgba(244, 67, 54, 0.15);
+      border-color: #f44336;
+    }
+    
+    .sharpie-toggle .sharpie-icon {
+      width: 20px;
+      height: 20px;
+    }
+    
     /* ===== STATUS DOT ===== */
+    .status-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .status-btn:hover {
+      background: rgba(255,255,255,0.05);
+    }
+    
     .status-dot {
       width: 12px;
       height: 12px;
@@ -122,70 +166,8 @@
       50% { opacity: 0.7; transform: scale(0.85); }
     }
     
-    /* ===== SHARPIE TOGGLE ===== */
-    .sharpie-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    
-    .sharpie-toggle:hover {
-      background: rgba(255,255,255,0.05);
-      border-color: var(--muted);
-    }
-    
-    .sharpie-toggle.active {
-      background: rgba(244, 67, 54, 0.15);
-      border-color: #f44336;
-    }
-    
-    .sharpie-toggle .sharpie-icon {
-      width: 20px;
-      height: 20px;
-    }
-    
-    /* ===== SIDEBAR TOGGLE ===== */
-    .sidebar-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    
-    .sidebar-toggle:hover {
-      background: rgba(255,255,255,0.05);
-      border-color: var(--muted);
-    }
-    
-    .sidebar-toggle.active {
-      background: rgba(163, 113, 247, 0.1);
-      border-color: var(--ad-purple);
-      color: var(--ad-purple);
-    }
-    
-    /* ===== MAIN LAYOUT ===== */
-    .main-layout {
-      display: flex;
-      min-height: calc(100vh - 48px);
-    }
-    
     /* ===== CONTENT ===== */
     .content {
-      flex: 1;
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -217,7 +199,7 @@
       width: 32px;
       height: 32px;
       border: 3px solid var(--border);
-      border-top-color: var(--accent);
+      border-top-color: var(--ad-purple);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 16px;
@@ -244,181 +226,88 @@
     #schedule-container .schedule-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      position: relative;
-    }
-    
-    /* ===== INTERACTIVE ROW STYLES ===== */
-    #schedule-container tr[data-id] {
-      cursor: pointer;
-      transition: background 0.15s ease;
-    }
-    
-    #schedule-container tr[data-id]:hover {
-      background: rgba(163, 113, 247, 0.08);
-    }
-    
-    #schedule-container tr[data-id].dragging {
-      opacity: 0.5;
-      background: rgba(163, 113, 247, 0.2);
-    }
-    
-    #schedule-container tr[data-id].drag-over {
-      border-top: 3px solid var(--ad-purple);
     }
     
     /* ===== DRAG HANDLES ===== */
     .ad-drag-handle {
-      width: 30px;
+      width: 24px;
+      min-width: 24px;
+      max-width: 24px;
       text-align: center;
       cursor: grab;
-      color: var(--muted);
       user-select: none;
       vertical-align: middle;
+      color: #999;
+      font-size: 11px;
+      letter-spacing: -2px;
+      padding: 0 2px;
     }
     
     .ad-drag-handle:active {
       cursor: grabbing;
     }
     
-    .drag-dots {
-      font-size: 12px;
-      letter-spacing: -2px;
-      opacity: 0.6;
+    #schedule-container tr[data-id]:hover .ad-drag-handle {
+      color: #666;
     }
     
-    #schedule-container tr[data-id]:hover .drag-dots {
-      opacity: 1;
+    #schedule-container tr[data-id].dragging {
+      opacity: 0.5;
+      background: rgba(163, 113, 247, 0.2) !important;
+    }
+    
+    #schedule-container tr[data-id].drag-over {
+      border-top: 3px solid var(--ad-purple);
+    }
+    
+    /* ===== DURATION EDITING ===== */
+    #schedule-container td[data-col="duration"] {
+      cursor: pointer;
+      position: relative;
+    }
+    
+    #schedule-container td[data-col="duration"]:hover {
+      background: rgba(163, 113, 247, 0.1);
+    }
+    
+    .duration-editor {
+      position: fixed;
+      background: var(--panel);
+      border: 1px solid var(--ad-purple);
+      border-radius: 6px;
+      padding: 8px;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .duration-editor input {
+      width: 60px;
+      padding: 6px 8px;
+      font-size: 14px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    
+    .duration-editor input:focus {
+      outline: none;
+      border-color: var(--ad-purple);
     }
     
     /* ===== SHARPIE LINES ===== */
-    .sharpie-line {
+    .sharpie-line-element {
       position: absolute;
       height: 4px;
       background: #f44336;
       pointer-events: none;
       z-index: 500;
-      left: 6px;
-      right: 6px;
     }
     
-    body.sharpie-hidden .sharpie-line {
+    body.sharpie-hidden .sharpie-line-element,
+    body.sharpie-hidden .row-complete::after {
       display: none;
-    }
-    
-    /* ===== AD SIDEBAR ===== */
-    .ad-sidebar {
-      width: 280px;
-      background: var(--panel);
-      border-left: 1px solid var(--border);
-      padding: 16px;
-      display: none;
-      flex-direction: column;
-      gap: 16px;
-      overflow-y: auto;
-    }
-    
-    .ad-sidebar.open {
-      display: flex;
-    }
-    
-    .sidebar-section {
-      background: rgba(0,0,0,0.2);
-      border-radius: 8px;
-      padding: 12px;
-    }
-    
-    .sidebar-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 12px;
-    }
-    
-    /* ===== BROADCAST CONTROLS ===== */
-    .broadcast-btn {
-      width: 100%;
-      padding: 12px 16px;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    
-    .broadcast-btn.primary {
-      background: var(--ad-purple);
-      color: #fff;
-    }
-    
-    .broadcast-btn.primary:hover {
-      background: #8b5cf6;
-    }
-    
-    .broadcast-btn.primary:disabled {
-      background: var(--border);
-      color: var(--muted);
-      cursor: not-allowed;
-    }
-    
-    .broadcast-btn.secondary {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    
-    .broadcast-btn.secondary:hover {
-      background: rgba(255,255,255,0.05);
-    }
-    
-    /* ===== CONNECTED USERS ===== */
-    .connected-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .connected-user {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: var(--text);
-    }
-    
-    .connected-user .user-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--live-green);
-    }
-    
-    /* ===== ACTIVITY LOG ===== */
-    .activity-log {
-      max-height: 200px;
-      overflow-y: auto;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    
-    .activity-item {
-      padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
-    
-    .activity-item:last-child {
-      border-bottom: none;
-    }
-    
-    .activity-time {
-      color: var(--ad-purple);
-      margin-right: 6px;
     }
     
     /* ===== FOOTER ===== */
@@ -427,67 +316,6 @@
       padding: 12px;
       font-size: 11px;
       color: var(--muted);
-    }
-    
-    /* ===== DURATION EDITOR ===== */
-    .duration-editor {
-      position: fixed;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      z-index: 1000;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      display: none;
-    }
-    
-    .duration-editor.visible {
-      display: block;
-    }
-    
-    .duration-editor input {
-      width: 80px;
-      padding: 8px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--text);
-      font-size: 14px;
-      text-align: center;
-    }
-    
-    .duration-editor-label {
-      font-size: 10px;
-      color: var(--muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-    
-    .duration-editor-btns {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    
-    .duration-editor-btns button {
-      flex: 1;
-      padding: 6px;
-      border: none;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    
-    .duration-editor-btns .save-btn {
-      background: var(--ad-purple);
-      color: #fff;
-    }
-    
-    .duration-editor-btns .cancel-btn {
-      background: var(--border);
-      color: var(--text);
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -540,75 +368,63 @@
     </div>
     
     <div class="header-right">
-      <button class="sharpie-toggle active" id="sharpieToggle" title="Toggle completion lines">
-        <svg class="sharpie-icon" width="20" height="20" viewBox="195 40 100 130"><defs><linearGradient id="adCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="adTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="adBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="adClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#adCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#adClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#adBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#adTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
-      </button>
-      
-      <button class="sidebar-toggle" id="sidebarToggle" title="Toggle AD controls">
+      <button class="status-btn" id="statusBtn" title="Connection status">
         <span class="status-dot disconnected" id="statusDot"></span>
       </button>
+      
+      <button class="sharpie-toggle active" id="sharpieToggle" title="Toggle completion lines">
+        <svg class="sharpie-icon" viewBox="195 40 100 130">
+          <defs>
+            <linearGradient id="sCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#cc2222"/>
+              <stop offset="40%" stop-color="#ee3333"/>
+              <stop offset="100%" stop-color="#aa1111"/>
+            </linearGradient>
+            <linearGradient id="sTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#dd2222"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+            <linearGradient id="sBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d0d0d0"/>
+              <stop offset="30%" stop-color="#eeeeee"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#c8c8c8"/>
+            </linearGradient>
+            <linearGradient id="sClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#aa1111"/>
+              <stop offset="50%" stop-color="#dd3333"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+          </defs>
+          <g transform="rotate(45 245 96)">
+            <path fill="url(#sCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+            <path fill="url(#sClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+            <path fill="url(#sBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+            <path fill="url(#sTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+          </g>
+        </svg>
+      </button>
     </div>
   </div>
   
-  <div class="main-layout">
-    <div class="content">
-      <div id="loading" class="loading">
-        <div class="spinner"></div>
-        <h2>Loading AD Channel...</h2>
-        <p>Please wait</p>
-      </div>
-      
-      <div id="error" class="error" style="display:none;">
-        <h2>Channel Not Found</h2>
-        <p>This AD channel link may have expired or been removed.</p>
-      </div>
-      
-      <div id="schedule-container" style="display:none;"></div>
-      <div id="updated-at" class="updated-at"></div>
+  <div class="content">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <h2>Loading AD Channel...</h2>
+      <p>Please wait</p>
     </div>
     
-    <div class="ad-sidebar" id="adSidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Broadcast</div>
-        <button class="broadcast-btn primary" id="broadcastBtn" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="2"/>
-            <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
-          </svg>
-          <span>PUSH CHANGES</span>
-        </button>
-      </div>
-      
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Connected</div>
-        <div class="connected-list" id="connectedList">
-          <div class="connected-user">
-            <span class="user-dot"></span>
-            <span>You (AD)</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Activity</div>
-        <div class="activity-log" id="activityLog">
-          <div class="activity-item">
-            <span class="activity-time">--:--</span>
-            <span>Waiting for connection...</span>
-          </div>
-        </div>
-      </div>
+    <div id="error" class="error" style="display:none;">
+      <h2>Channel Not Found</h2>
+      <p>This AD channel link may have expired or been removed.</p>
     </div>
-  </div>
-  
-  <!-- Duration Editor Popup -->
-  <div class="duration-editor" id="durationEditor">
-    <div class="duration-editor-label">Duration (min)</div>
-    <input type="number" id="durationInput" min="1" max="999" value="30">
-    <div class="duration-editor-btns">
-      <button class="cancel-btn" id="durationCancel">Cancel</button>
-      <button class="save-btn" id="durationSave">Save</button>
-    </div>
+    
+    <div id="schedule-container" style="display:none;"></div>
+    <div id="updated-at" class="updated-at"></div>
   </div>
 
   <script>
@@ -617,43 +433,29 @@
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    // State
     let channelCode = null;
     let broadcastData = null;
     let realtimeChannel = null;
     let sharpieVisible = true;
-    let sidebarOpen = false;
     let isConnected = false;
-    let pendingChanges = [];
-    let markedRows = new Set();
-    
-    // Drag state
     let draggedRow = null;
     let dragOverRow = null;
     
-    // Duration editor state
-    let editingRowId = null;
-    
     async function init() {
       const params = new URLSearchParams(window.location.search);
-      channelCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+      channelCode = params.get('c') || params.get('code');
       
-      if (!channelCode || channelCode === 'ad-viewer-index.html' || channelCode === '') {
+      if (!channelCode) {
         showError('No channel code provided');
         return;
       }
       
-      // Setup UI handlers
+      channelCode = channelCode.toUpperCase();
+      
+      // Setup sharpie toggle
       document.getElementById('sharpieToggle').addEventListener('click', toggleSharpie);
-      document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
-      document.getElementById('broadcastBtn').addEventListener('click', broadcastChanges);
-      document.getElementById('durationCancel').addEventListener('click', closeDurationEditor);
-      document.getElementById('durationSave').addEventListener('click', saveDuration);
       
-      // Load initial data
       await loadChannel();
-      
-      // Setup realtime
       setupRealtime();
     }
     
@@ -670,21 +472,12 @@
       }
     }
     
-    function toggleSidebar() {
-      sidebarOpen = !sidebarOpen;
-      const sidebar = document.getElementById('adSidebar');
-      const btn = document.getElementById('sidebarToggle');
-      
-      sidebar.classList.toggle('open', sidebarOpen);
-      btn.classList.toggle('active', sidebarOpen);
-    }
-    
     async function loadChannel() {
       try {
         const { data: broadcast, error } = await supabase
           .from('broadcasts')
           .select('*')
-          .eq('code', channelCode.toUpperCase())
+          .eq('code', channelCode)
           .single();
         
         if (error || !broadcast) {
@@ -723,6 +516,7 @@
         document.getElementById('schedule-container').innerHTML = html;
         
         // Setup interactivity
+        setupDragHandles();
         setupRowInteractions();
         
         // Update timestamp
@@ -735,74 +529,36 @@
       }
     }
     
-    function setupRealtime() {
-      const roomName = 'ad-channel-' + channelCode.toUpperCase();
-      
-      realtimeChannel = supabase.channel(roomName, {
-        config: {
-          broadcast: { self: false }
-        }
-      });
-      
-      realtimeChannel
-        .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
-        .on('broadcast', { event: 'duration-change' }, handleDurationChange)
-        .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
-        .on('broadcast', { event: 'full-sync' }, handleFullSync)
-        .on('presence', { event: 'sync' }, handlePresenceSync)
-        .subscribe((status) => {
-          console.log('[AD] Realtime status:', status);
-          if (status === 'SUBSCRIBED') {
-            setConnected(true);
-            logActivity('Connected to channel');
-            
-            // Track presence
-            realtimeChannel.track({ 
-              user: 'AD-' + Math.random().toString(36).substr(2, 4),
-              role: 'ad'
-            });
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            setConnected(false);
-            logActivity('Disconnected from channel');
-          }
-        });
-    }
-    
-    function setConnected(connected) {
-      isConnected = connected;
-      const dot = document.getElementById('statusDot');
-      const btn = document.getElementById('broadcastBtn');
-      
-      dot.classList.toggle('connected', connected);
-      dot.classList.toggle('disconnected', !connected);
-      btn.disabled = !connected;
-    }
-    
-    function setupRowInteractions() {
+    function setupDragHandles() {
       const container = document.getElementById('schedule-container');
       
-      // Add header cell for drag handle column
+      // Add header cell for drag column
       const headerRow = container.querySelector('thead tr');
       if (headerRow && !headerRow.querySelector('.ad-drag-header')) {
         const th = document.createElement('th');
         th.className = 'ad-drag-header';
-        th.style.cssText = 'width:30px;';
+        th.style.cssText = 'width:24px;min-width:24px;padding:0;';
         headerRow.insertBefore(th, headerRow.firstChild);
       }
       
+      // Add drag handle to each row
+      const rows = container.querySelectorAll('tr[data-id]');
+      rows.forEach(row => {
+        if (!row.querySelector('.ad-drag-handle')) {
+          const td = document.createElement('td');
+          td.className = 'ad-drag-handle';
+          td.textContent = '⋮⋮';
+          row.insertBefore(td, row.firstChild);
+        }
+      });
+    }
+    
+    function setupRowInteractions() {
+      const container = document.getElementById('schedule-container');
       const rows = container.querySelectorAll('tr[data-id]');
       
       rows.forEach(row => {
-        // Add drag handle as first cell if not already present
-        if (!row.querySelector('.ad-drag-handle')) {
-          const handle = document.createElement('td');
-          handle.className = 'ad-drag-handle';
-          handle.innerHTML = '<span class="drag-dots">⋮⋮</span>';
-          handle.style.cssText = 'width:30px;text-align:center;cursor:grab;color:var(--muted);font-size:14px;user-select:none;';
-          row.insertBefore(handle, row.firstChild);
-        }
-        
-        // Drag and drop for reordering
+        // Drag and drop
         row.draggable = true;
         row.addEventListener('dragstart', handleDragStart);
         row.addEventListener('dragend', handleDragEnd);
@@ -810,18 +566,18 @@
         row.addEventListener('dragleave', handleDragLeave);
         row.addEventListener('drop', handleDrop);
         
-        // Click on duration cell to edit
-        const durationCell = row.querySelector('td[data-col="duration"]');
-        if (durationCell) {
-          durationCell.style.cursor = 'pointer';
-          durationCell.addEventListener('click', (e) => {
+        // Duration editing
+        const durCell = row.querySelector('td[data-col="duration"]');
+        if (durCell) {
+          durCell.addEventListener('click', (e) => {
             e.stopPropagation();
-            openDurationEditor(row, durationCell);
+            openDurationEditor(row, durCell);
           });
         }
         
-        // Double-click to toggle sharpie
-        row.addEventListener('dblclick', (e) => {
+        // Single click to toggle sharpie (except on drag handle or duration)
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.ad-drag-handle')) return;
           if (e.target.closest('td[data-col="duration"]')) return;
           toggleRowSharpie(row);
         });
@@ -836,10 +592,8 @@
       e.dataTransfer.setData('text/plain', draggedRow.dataset.id);
     }
     
-    function handleDragEnd(e) {
-      if (draggedRow) {
-        draggedRow.classList.remove('dragging');
-      }
+    function handleDragEnd() {
+      if (draggedRow) draggedRow.classList.remove('dragging');
       document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
       draggedRow = null;
       dragOverRow = null;
@@ -848,7 +602,6 @@
     function handleDragOver(e) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      
       const row = e.target.closest('tr[data-id]');
       if (row && row !== draggedRow) {
         document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
@@ -859,14 +612,11 @@
     
     function handleDragLeave(e) {
       const row = e.target.closest('tr[data-id]');
-      if (row) {
-        row.classList.remove('drag-over');
-      }
+      if (row) row.classList.remove('drag-over');
     }
     
     function handleDrop(e) {
       e.preventDefault();
-      
       if (!draggedRow || !dragOverRow || draggedRow === dragOverRow) return;
       
       const tbody = draggedRow.parentNode;
@@ -874,265 +624,174 @@
       const draggedIdx = allRows.indexOf(draggedRow);
       const targetIdx = allRows.indexOf(dragOverRow);
       
-      // Move in DOM
-      if (draggedIdx < targetIdx) {
-        dragOverRow.after(draggedRow);
+      if (targetIdx > draggedIdx) {
+        tbody.insertBefore(draggedRow, dragOverRow.nextSibling);
       } else {
-        dragOverRow.before(draggedRow);
+        tbody.insertBefore(draggedRow, dragOverRow);
       }
       
-      dragOverRow.classList.remove('drag-over');
-      
-      // Broadcast change
+      // Broadcast to producer
       const newOrder = Array.from(tbody.querySelectorAll('tr[data-id]')).map(r => r.dataset.id);
-      broadcastRowReorder(newOrder);
-      logActivity('Reordered row');
+      broadcastEvent('row-reorder', { order: newOrder });
     }
     
     // === DURATION EDITING ===
     function openDurationEditor(row, cell) {
-      const editor = document.getElementById('durationEditor');
-      const input = document.getElementById('durationInput');
+      // Remove any existing editor
+      document.querySelectorAll('.duration-editor').forEach(e => e.remove());
       
-      editingRowId = row.dataset.id;
-      
-      // Extract current duration from cell text
-      const text = cell.textContent.trim();
-      const match = text.match(/(\d+)/);
-      const currentDuration = match ? parseInt(match[1]) : 30;
-      
-      input.value = currentDuration;
-      
-      // Position editor near cell
+      const currentValue = parseInt(cell.textContent) || 30;
       const rect = cell.getBoundingClientRect();
-      editor.style.top = (rect.bottom + 8) + 'px';
-      editor.style.left = rect.left + 'px';
-      editor.classList.add('visible');
       
+      const editor = document.createElement('div');
+      editor.className = 'duration-editor';
+      editor.style.top = rect.bottom + 4 + 'px';
+      editor.style.left = rect.left + 'px';
+      editor.innerHTML = `<input type="number" value="${currentValue}" min="1" max="999">`;
+      
+      document.body.appendChild(editor);
+      
+      const input = editor.querySelector('input');
       input.focus();
       input.select();
-    }
-    
-    function closeDurationEditor() {
-      const editor = document.getElementById('durationEditor');
-      editor.classList.remove('visible');
-      editingRowId = null;
-    }
-    
-    function saveDuration() {
-      const input = document.getElementById('durationInput');
-      const newDuration = parseInt(input.value) || 30;
       
-      if (editingRowId) {
-        broadcastDurationChange(editingRowId, newDuration);
-        
-        // Update local display
-        const row = document.querySelector(`tr[data-id="${editingRowId}"]`);
-        if (row) {
-          const durationCell = row.querySelector('td[data-col="duration"]');
-          if (durationCell) {
-            durationCell.textContent = newDuration + ' min';
-          }
-        }
-        
-        logActivity('Changed duration to ' + newDuration + ' min');
+      function save() {
+        const newValue = parseInt(input.value) || currentValue;
+        cell.textContent = newValue;
+        editor.remove();
+        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue });
       }
       
-      closeDurationEditor();
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') save();
+        if (e.key === 'Escape') editor.remove();
+      });
+      
+      input.addEventListener('blur', save);
     }
     
-    // === SHARPIE ===
+    // === SHARPIE TOGGLE ===
     function toggleRowSharpie(row) {
       const rowId = row.dataset.id;
-      const wasMarked = markedRows.has(rowId);
+      const container = document.getElementById('schedule-container');
+      const scrollContainer = container.querySelector('.schedule-scroll');
+      if (!scrollContainer) return;
       
-      if (wasMarked) {
-        markedRows.delete(rowId);
-        row.classList.remove('row-complete');
-        removeSharpieElement(row);
+      // Check if already has sharpie line
+      const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
+      
+      if (existing) {
+        existing.remove();
+        broadcastEvent('sharpie-toggle', { rowId, marked: false });
       } else {
-        markedRows.add(rowId);
-        row.classList.add('row-complete');
-        addSharpieElement(row);
-      }
-      
-      broadcastSharpieToggle(rowId, !wasMarked);
-      logActivity(wasMarked ? 'Unmarked row' : 'Marked row complete');
-    }
-    
-    function addSharpieElement(row) {
-      if (row.querySelector('.sharpie-line')) return;
-      
-      const line = document.createElement('div');
-      line.className = 'sharpie-line';
-      line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-      
-      const scrollContainer = row.closest('.schedule-scroll');
-      if (scrollContainer) {
+        // Create sharpie line
+        const line = document.createElement('div');
+        line.className = 'sharpie-line-element';
+        line.dataset.rowId = rowId;
+        
+        // Position it on the row
+        const rowRect = row.getBoundingClientRect();
+        const scrollRect = scrollContainer.getBoundingClientRect();
+        line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+        line.style.left = '6px';
+        line.style.right = '6px';
+        
         scrollContainer.appendChild(line);
+        broadcastEvent('sharpie-toggle', { rowId, marked: true });
       }
     }
     
-    function removeSharpieElement(row) {
-      const rowId = row.dataset.id;
-      const scrollContainer = row.closest('.schedule-scroll');
-      if (scrollContainer) {
-        const line = scrollContainer.querySelector(`.sharpie-line[data-row="${rowId}"]`);
-        if (line) line.remove();
-      }
+    // === REALTIME SYNC ===
+    function setupRealtime() {
+      const roomName = 'ad-channel-' + channelCode;
+      
+      realtimeChannel = supabase.channel(roomName, {
+        config: { broadcast: { self: false } }
+      });
+      
+      realtimeChannel
+        .on('broadcast', { event: 'row-reorder' }, handleIncomingReorder)
+        .on('broadcast', { event: 'duration-change' }, handleIncomingDuration)
+        .on('broadcast', { event: 'sharpie-toggle' }, handleIncomingSharpie)
+        .on('broadcast', { event: 'full-sync' }, handleFullSync)
+        .subscribe((status) => {
+          console.log('[AD] Realtime status:', status);
+          if (status === 'SUBSCRIBED') {
+            setConnected(true);
+          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+            setConnected(false);
+          }
+        });
     }
     
-    // === BROADCAST FUNCTIONS ===
-    function broadcastRowReorder(newOrder) {
+    function broadcastEvent(event, payload) {
       if (!realtimeChannel || !isConnected) return;
-      
       realtimeChannel.send({
         type: 'broadcast',
-        event: 'row-reorder',
-        payload: { order: newOrder, source: 'ad' }
+        event: event,
+        payload: payload
       });
     }
     
-    function broadcastDurationChange(rowId, duration) {
-      if (!realtimeChannel || !isConnected) return;
-      
-      realtimeChannel.send({
-        type: 'broadcast',
-        event: 'duration-change',
-        payload: { rowId, duration, source: 'ad' }
-      });
-    }
-    
-    function broadcastSharpieToggle(rowId, marked) {
-      if (!realtimeChannel || !isConnected) return;
-      
-      realtimeChannel.send({
-        type: 'broadcast',
-        event: 'sharpie-toggle',
-        payload: { rowId, marked, source: 'ad' }
-      });
-    }
-    
-    function broadcastChanges() {
-      // This could be used to push all pending changes at once
-      // For now, changes are sent immediately
-      logActivity('Changes synced');
-    }
-    
-    // === RECEIVE HANDLERS ===
-    function handleRowReorder(payload) {
-      const { order, source } = payload.payload;
-      if (source === 'ad') return; // Ignore our own broadcasts
-      
+    function handleIncomingReorder({ payload }) {
+      if (!payload?.order) return;
       const container = document.getElementById('schedule-container');
       const tbody = container.querySelector('tbody');
       if (!tbody) return;
       
-      order.forEach(rowId => {
+      payload.order.forEach(rowId => {
         const row = tbody.querySelector(`tr[data-id="${rowId}"]`);
         if (row) tbody.appendChild(row);
       });
-      
-      logActivity('Rows reordered (from producer)');
     }
     
-    function handleDurationChange(payload) {
-      const { rowId, duration, source } = payload.payload;
-      if (source === 'ad') return;
+    function handleIncomingDuration({ payload }) {
+      if (!payload?.rowId) return;
+      const container = document.getElementById('schedule-container');
+      const row = container.querySelector(`tr[data-id="${payload.rowId}"]`);
+      if (!row) return;
       
-      const row = document.querySelector(`tr[data-id="${rowId}"]`);
-      if (row) {
-        const durationCell = row.querySelector('td[data-col="duration"]');
-        if (durationCell) {
-          durationCell.textContent = duration + ' min';
-        }
-      }
-      
-      logActivity('Duration changed (from producer)');
+      const cell = row.querySelector('td[data-col="duration"]');
+      if (cell) cell.textContent = payload.duration;
     }
     
-    function handleSharpieToggle(payload) {
-      const { rowId, marked, source } = payload.payload;
-      if (source === 'ad') return;
+    function handleIncomingSharpie({ payload }) {
+      if (!payload?.rowId) return;
+      const container = document.getElementById('schedule-container');
+      const scrollContainer = container.querySelector('.schedule-scroll');
+      const row = container.querySelector(`tr[data-id="${payload.rowId}"]`);
+      if (!scrollContainer || !row) return;
       
-      const row = document.querySelector(`tr[data-id="${rowId}"]`);
-      if (row) {
-        if (marked) {
-          markedRows.add(rowId);
-          row.classList.add('row-complete');
-          addSharpieElement(row);
-        } else {
-          markedRows.delete(rowId);
-          row.classList.remove('row-complete');
-          removeSharpieElement(row);
-        }
+      const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+      
+      if (payload.marked && !existing) {
+        const line = document.createElement('div');
+        line.className = 'sharpie-line-element';
+        line.dataset.rowId = payload.rowId;
+        line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+        line.style.left = '6px';
+        line.style.right = '6px';
+        scrollContainer.appendChild(line);
+      } else if (!payload.marked && existing) {
+        existing.remove();
       }
-      
-      logActivity(marked ? 'Row marked (from producer)' : 'Row unmarked (from producer)');
     }
     
-    function handleFullSync(payload) {
-      // Handle full state sync from producer
-      const { rows, markedRowIds } = payload.payload;
-      
-      // Reorder rows
-      if (rows) {
-        const container = document.getElementById('schedule-container');
-        const tbody = container.querySelector('tbody');
-        if (tbody) {
-          rows.forEach(rowId => {
-            const row = tbody.querySelector(`tr[data-id="${rowId}"]`);
-            if (row) tbody.appendChild(row);
-          });
-        }
-      }
-      
-      // Sync sharpie state
-      if (markedRowIds) {
-        markedRows = new Set(markedRowIds);
-        document.querySelectorAll('tr[data-id]').forEach(row => {
-          const rowId = row.dataset.id;
-          if (markedRows.has(rowId)) {
-            row.classList.add('row-complete');
-            addSharpieElement(row);
-          } else {
-            row.classList.remove('row-complete');
-            removeSharpieElement(row);
-          }
+    function handleFullSync({ payload }) {
+      // Handle full schedule sync from producer
+      if (payload?.order) handleIncomingReorder({ payload });
+      if (payload?.sharpieRows) {
+        payload.sharpieRows.forEach(rowId => {
+          handleIncomingSharpie({ payload: { rowId, marked: true } });
         });
       }
-      
-      logActivity('Full sync received');
     }
     
-    function handlePresenceSync() {
-      const state = realtimeChannel.presenceState();
-      const users = Object.values(state).flat();
-      
-      const list = document.getElementById('connectedList');
-      list.innerHTML = users.map(u => `
-        <div class="connected-user">
-          <span class="user-dot"></span>
-          <span>${u.role === 'ad' ? 'AD' : 'Producer'} (${u.user})</span>
-        </div>
-      `).join('');
-    }
-    
-    // === UTILITIES ===
-    function logActivity(message) {
-      const log = document.getElementById('activityLog');
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      const item = document.createElement('div');
-      item.className = 'activity-item';
-      item.innerHTML = `<span class="activity-time">${time}</span><span>${message}</span>`;
-      
-      log.insertBefore(item, log.firstChild);
-      
-      // Keep only last 20 entries
-      while (log.children.length > 20) {
-        log.removeChild(log.lastChild);
-      }
+    function setConnected(connected) {
+      isConnected = connected;
+      const dot = document.getElementById('statusDot');
+      dot.classList.toggle('connected', connected);
+      dot.classList.toggle('disconnected', !connected);
     }
     
     function showError(msg) {
@@ -1140,22 +799,7 @@
       document.getElementById('schedule-container').style.display = 'none';
       document.getElementById('error').style.display = 'flex';
       document.getElementById('error').querySelector('p').textContent = msg;
-      
-      setConnected(false);
     }
-    
-    // Close duration editor on escape or click outside
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeDurationEditor();
-      if (e.key === 'Enter' && editingRowId) saveDuration();
-    });
-    
-    document.addEventListener('click', (e) => {
-      const editor = document.getElementById('durationEditor');
-      if (editor.classList.contains('visible') && !editor.contains(e.target)) {
-        closeDurationEditor();
-      }
-    });
     
     init();
   </script>
