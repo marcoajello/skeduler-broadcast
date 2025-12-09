@@ -99,18 +99,19 @@
     }
     
     .live-dot {
-      width: 8px;
-      height: 8px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
+      background: var(--muted);
     }
     
     .live-badge.live .live-dot {
-      background: var(--live-green);
+      background: var(--live-red);
       animation: pulse 1.5s ease-in-out infinite;
     }
     
     .live-badge.live .live-text {
-      color: var(--live-green);
+      color: var(--live-red);
     }
     
     .live-badge.manual .live-dot {
@@ -119,14 +120,6 @@
     
     .live-badge.manual .live-text {
       color: var(--muted);
-    }
-    
-    .live-badge.offline .live-dot {
-      background: var(--live-red);
-    }
-    
-    .live-badge.offline .live-text {
-      color: var(--live-red);
     }
     
     @keyframes pulse {
@@ -476,16 +469,16 @@
   
   function updateLiveStatus() {
     const badge = document.getElementById('liveBadge');
-    const text = document.getElementById('liveText');
+    const sharpieToggle = document.getElementById('sharpieToggle');
     
-    badge.classList.remove('live', 'manual', 'offline');
+    badge.classList.remove('live', 'manual');
     
     if (isLiveMode) {
       badge.classList.add('live');
-      text.textContent = 'Live';
+      sharpieToggle.classList.add('visible');
     } else {
       badge.classList.add('manual');
-      text.textContent = 'Live';
+      sharpieToggle.classList.remove('visible');
     }
   }
   
