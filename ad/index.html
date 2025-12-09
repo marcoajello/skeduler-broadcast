@@ -115,6 +115,7 @@
       font-weight: 700;
       letter-spacing: 2px;
       color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
     }
     
     .ad-badge {
@@ -180,7 +181,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: #141920;
+      background: #222a35;
       font-weight: 600;
       color: var(--text);
     }
@@ -193,14 +194,12 @@
       background: var(--rowAlt);
     }
     
-    /* ===== DRAG & ACTION COLUMNS - EXACT DOM STYLING ===== */
+    /* ===== DRAG & ACTION COLUMNS - EXACT DOM COLORS ===== */
     table.schedule thead th[data-key="drag"],
     table.schedule thead th[data-key="actions"],
     table.schedule tbody td[data-key="drag"],
     table.schedule tbody td[data-key="actions"] {
-      background: #141920;
-      border: 1px solid #ffffff;
-      overflow: hidden;
+      background: #222a35;
     }
     
     /* Drag column */
@@ -214,28 +213,29 @@
       cursor: grab;
       user-select: none;
       padding: 0;
+      color: #666;
     }
     
     table.schedule tbody td[data-key="drag"]:active {
       cursor: grabbing;
     }
     
-    /* 3x3 drag handle dots - GRAY like DOM */
+    /* 3x3 drag handle dots - exact DOM colors */
     .drag-dots {
       display: inline-block;
       width: 12px;
       height: 12px;
       vertical-align: middle;
       background-image: 
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px);
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px);
       background-size: 2px 2px;
       background-position: 
         0 0, 5px 0, 10px 0,
