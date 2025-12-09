@@ -2,38 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0d1117">
-  <title>SKEDULER LIVE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SKEDULER AD</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; }
-    
+    /* ===== EXACT DOM VARIABLES ===== */
     :root {
-      --bg: #0d1117;
-      --panel: #161b22;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #7d8590;
-      --accent: #58a6ff;
-      --live-red: #f85149;
-      --live-green: #3fb950;
+      --bg: #0a0e13;
+      --panel: #222a35;
+      --muted: #9ca3af;
+      --text: #f9fafb;
+      --accent: #3b82f6;
+      --row: #222a35;
+      --rowAlt: #1a2129;
+      --border: #374151;
+      --ad-purple: #a371f7;
     }
     
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     /* ===== HEADER ===== */
     .header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
       display: grid;
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
@@ -41,6 +39,7 @@
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       min-height: 48px;
+      flex-shrink: 0;
     }
     
     .header-left {
@@ -66,22 +65,6 @@
       gap: 6px;
     }
     
-    .header-logo {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: var(--text);
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    }
-    
-    .header-logo svg {
-      width: 20px;
-      height: 20px;
-    }
-    
     .header-right {
       display: flex;
       align-items: center;
@@ -98,7 +81,6 @@
       font-weight: 600;
       letter-spacing: 0.5px;
       height: 28px;
-      text-transform: uppercase;
     }
     
     .live-dot {
@@ -109,12 +91,12 @@
     }
     
     .live-badge.live .live-dot {
-      background: var(--live-red);
+      background: var(--ad-purple);
       animation: pulse 1.5s ease-in-out infinite;
     }
     
     .live-badge.live .live-text {
-      color: var(--live-red);
+      color: var(--ad-purple);
       text-transform: uppercase;
     }
     
@@ -126,71 +108,6 @@
       display: none;
     }
     
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(0.9); }
-    }
-    
-    /* ===== CONTENT ===== */
-    .content {
-      padding: 16px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    .loading, .error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 50vh;
-      text-align: center;
-      color: var(--muted);
-    }
-    
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    /* ===== SCHEDULE CONTAINER ===== */
-    #schedule-container {
-      position: relative;
-      background: #fff;
-      border-radius: 8px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      display: inline-block;
-      min-width: 100%;
-    }
-    
-    #schedule-container table {
-      border-collapse: collapse;
-    }
-    
-    #schedule-container .schedule-scroll {
-      position: relative;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Hide drag and action columns from loaded schedule */
-    #schedule-container th[data-key="actions"],
-    #schedule-container td[data-key="actions"],
-    #schedule-container th[data-key="drag"],
-    #schedule-container td[data-key="drag"] {
-      display: none;
-    }
-    
     /* Header progress button */
     .header-progress-btn {
       width: 28px;
@@ -198,7 +115,7 @@
       padding: 4px;
       border-radius: 4px;
       border: none;
-      background: #2563eb;
+      background: var(--ad-purple);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -210,13 +127,253 @@
     }
     
     .header-progress-btn.lines-hidden {
-      background: #2563eb;
+      background: var(--ad-purple);
     }
     
     .header-progress-btn:not(.lines-hidden) {
       background: #f44336;
     }
-
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.9); }
+    }
+    
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
+    }
+    
+    .ad-badge {
+      background: var(--ad-purple);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+    }
+    
+    /* Sharpie icon in header */
+    .header-logo svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    /* ===== MAIN CONTENT ===== */
+    .main-content {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    #schedule-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .schedule-scroll {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    
+    /* ===== TABLE STYLING - EXACT DOM CLONE ===== */
+    table.schedule {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+      background: var(--row);
+      box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
+      border-radius: 8px;
+    }
+    
+    table.schedule th,
+    table.schedule td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    table.schedule thead th {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #222a35;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    table.schedule tbody tr {
+      background: var(--row);
+    }
+    
+    table.schedule tbody tr:nth-child(even) {
+      background: var(--rowAlt);
+    }
+    
+    /* ===== DRAG & ACTION COLUMNS - EXACT DOM COLORS ===== */
+    table.schedule thead th[data-key="drag"],
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="drag"],
+    table.schedule tbody td[data-key="actions"] {
+      background: #222a35;
+    }
+    
+    /* Drag column */
+    table.schedule thead th[data-key="drag"],
+    table.schedule tbody td[data-key="drag"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      text-align: center;
+      vertical-align: middle;
+      cursor: grab;
+      user-select: none;
+      padding: 0;
+      color: #666;
+    }
+    
+    table.schedule tbody td[data-key="drag"]:active {
+      cursor: grabbing;
+    }
+    
+    /* 3x3 drag handle dots - exact DOM colors */
+    .drag-dots {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      vertical-align: middle;
+      background-image: 
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px);
+      background-size: 2px 2px;
+      background-position: 
+        0 0, 5px 0, 10px 0,
+        0 5px, 5px 5px, 10px 5px,
+        0 10px, 5px 10px, 10px 10px;
+      background-repeat: no-repeat;
+    }
+    
+    /* Action column */
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="actions"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 0;
+    }
+    
+    /* Action buttons container */
+    td[data-key="actions"] > div,
+    th[data-key="actions"] > div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+    
+    /* Sharpie button - exact DOM styling */
+    button.sharpie {
+      margin: 0;
+      padding: 0;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      box-sizing: border-box;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      color: var(--accent);
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    button.sharpie svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    button.sharpie.active {
+      background: #f44336;
+      color: white;
+      border-color: #d32f2f;
+    }
+    
+    /* Master sharpie in header */
+    button.master-sharpie-toggle {
+      margin: 0;
+      padding: 0;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f44336;
+      color: white;
+      border: 1px solid #d32f2f;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    button.master-sharpie-toggle svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    button.master-sharpie-toggle.lines-hidden {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    
+    /* ===== DRAGGING STATES - EXACT DOM ===== */
+    tr.dragging {
+      opacity: 0.6;
+      outline: 2px dashed var(--accent);
+    }
+    
+    tr.subchild.attached {
+      outline: 2px solid #3a7bffcc;
+    }
+    
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
       position: absolute;
@@ -224,23 +381,93 @@
       background: #f44336;
       pointer-events: none;
       z-index: 500;
-      left: 0;
-      right: 0;
     }
     
-    body.sharpie-hidden .sharpie-line-element {
+    body.sharpie-lines-hidden .sharpie-line-element {
       display: none;
     }
     
-    /* ===== FOOTER ===== */
-    .updated-at {
-      text-align: center;
+    /* ===== COMPLETED/PROGRESS LINES ===== */
+    .completed-line {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 5000px;
+      height: 4px;
+      background: #ef4444;
+      pointer-events: none;
+      transform: translateY(-50%);
+      z-index: 100;
+      display: none;
+    }
+    
+    body.show-progress .completed-line {
+      display: block;
+    }
+    
+    /* ===== DURATION EDITOR POPUP ===== */
+    .duration-popup {
+      position: fixed;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
       padding: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      display: none;
+    }
+    
+    .duration-popup.show {
+      display: block;
+    }
+    
+    .duration-popup input {
+      width: 80px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
+    }
+    
+    .duration-popup input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    /* ===== RESIZE HANDLES ===== */
+    .col-resize-grip {
+      position: absolute;
+      right: -4px;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 101;
+    }
+    
+    .row-resize-grip {
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 100%;
+      height: 8px;
+      cursor: row-resize;
+      z-index: 101;
+    }
+    
+    /* ===== FOOTER ===== */
+    .footer {
+      text-align: center;
+      padding: 8px;
       font-size: 11px;
       color: var(--muted);
+      background: var(--panel);
+      border-top: 1px solid var(--border);
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="header">
@@ -253,6 +480,7 @@
     <div class="header-center">
       <div class="header-logo">
         <span>SKEDULER</span>
+        <span class="ad-badge">AD</span>
         <svg viewBox="195 40 100 130">
           <defs>
             <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -295,96 +523,93 @@
         <span class="live-text" id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
-      <button class="header-progress-btn lines-hidden" title="Toggle Progress" onclick="document.body.classList.toggle('show-progress');this.classList.toggle('lines-hidden');">
+      <button class="header-progress-btn lines-hidden" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('show-progress');this.classList.toggle('lines-hidden');">
         <svg width="18" height="18" viewBox="195 40 100 130"><defs><linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
       </button>
     </div>
   </div>
   
-  <div class="content">
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <h2>Loading Schedule...</h2>
-      <p>Please wait</p>
+  <div class="main-content">
+    <div id="schedule-container">
+      <div class="schedule-scroll" id="scheduleScroll">
+        <!-- Schedule table injected here -->
+      </div>
     </div>
-    
-    <div id="error" class="error" style="display:none;">
-      <h2>Schedule Not Found</h2>
-      <p>This broadcast link may have expired or been removed.</p>
-    </div>
-    
-    <div id="schedule-container" style="display:none;"></div>
-    <div id="updated-at" class="updated-at"></div>
+  </div>
+  
+  <div class="footer" id="footer">
+    Waiting for connection...
+  </div>
+  
+  <!-- Duration Editor Popup -->
+  <div class="duration-popup" id="durationPopup">
+    <input type="text" id="durationInput" placeholder="0:30">
   </div>
 
 <script>
 (function() {
   'use strict';
   
+  // === CONFIG ===
   const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
   
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  
-  let broadcastCode = null;
-  let broadcastData = null;
-  let refreshInterval = null;
-  let sharpieVisible = true;
-  let isLiveMode = false;
-  let realtimeChannel = null;
+  // === STATE ===
+  let supabase = null;
+  let channel = null;
+  let channelCode = null;
+  let draggingRow = null;
   let markedRows = new Set();
-  let hasLoadedOnce = false;
+  let linesHidden = false;
+  let isLiveMode = false;
   
+  // === INIT ===
   async function init() {
+    // Get channel code from URL
     const params = new URLSearchParams(window.location.search);
-    broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+    channelCode = params.get('c');
     
-    if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '') {
-      showError('No broadcast code provided');
+    if (!channelCode) {
+      document.getElementById('channelName').textContent = 'No channel code';
+      document.getElementById('footer').textContent = 'Add ?c=CODE to URL';
       return;
     }
     
-    await loadBroadcast();
+    document.getElementById('channelName').textContent = 'Loading...';
     
-    // Subscribe to realtime for AD sync
-    subscribeToRealtime();
+    // Init Supabase
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Load initial schedule from bucket
+    await loadScheduleFromBucket();
+    
+    // Subscribe to realtime
+    subscribeToChannel();
   }
   
-  function showError(message) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').style.display = 'flex';
-    document.getElementById('error').querySelector('p').textContent = message;
-  }
-  
-  async function loadBroadcast() {
+  // === LOAD SCHEDULE ===
+  async function loadScheduleFromBucket() {
     try {
-      // Look up broadcast by code
+      // Look up broadcast by code (same as CHANNELS viewer)
       const { data: broadcast, error: lookupError } = await supabase
         .from('broadcasts')
         .select('*')
-        .eq('code', broadcastCode.toUpperCase())
+        .eq('code', channelCode.toUpperCase())
         .single();
       
       if (lookupError || !broadcast) {
-        // Only show error on initial load, not refreshes
-        if (!hasLoadedOnce) {
-          showError('Broadcast not found');
-        }
-        return;
+        throw new Error('Broadcast not found');
       }
       
-      broadcastData = broadcast;
+      // Set live mode and update badge
       isLiveMode = broadcast.auto_update === true;
-      
-      // Update title
-      const channelName = broadcast.title || 'Untitled';
-      document.getElementById('channelName').textContent = channelName;
-      document.title = channelName + ' - SKEDULER LIVE';
-      
-      // Update live badge
       updateLiveStatus();
       
-      // Fetch HTML from storage
+      // Set channel name
+      const channelName = broadcast.title || `Channel ${channelCode}`;
+      document.getElementById('channelName').textContent = channelName;
+      
+      // Build the HTML path (same logic as CHANNELS viewer)
       let htmlPath;
       if (broadcast.channel_number) {
         htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
@@ -392,6 +617,7 @@
         htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
       }
       
+      // Use public URL with cache-busting (same as CHANNELS viewer)
       const { data: urlData } = supabase.storage
         .from('schedule-files')
         .getPublicUrl(htmlPath);
@@ -399,45 +625,503 @@
       const cacheBuster = Date.now();
       const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
       
+      console.log('[AD] Fetching:', publicUrl);
+      
       const response = await fetch(publicUrl);
       if (!response.ok) {
-        // Only show error on initial load
-        if (!hasLoadedOnce) {
-          showError('Could not load schedule');
-        }
-        return;
+        throw new Error('Could not load schedule');
       }
       
       const html = await response.text();
-      
-      // Display
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error').style.display = 'none';
-      document.getElementById('schedule-container').style.display = 'block';
-      document.getElementById('schedule-container').innerHTML = html;
-      
-      // Show last updated
-      const updated = new Date(broadcast.updated_at);
-      document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
-      
-      // Start auto-refresh if live (every 5 seconds) - only once
-      if (isLiveMode && !hasLoadedOnce) {
-        refreshInterval = setInterval(loadBroadcast, 5000);
-      }
-      
-      hasLoadedOnce = true;
-      
+      injectSchedule(html);
+      updateFooter('Loaded');
     } catch (err) {
       console.error('Load error:', err);
-      // Only show error on initial load
-      if (!hasLoadedOnce) {
-        showError('Failed to load broadcast');
+      document.getElementById('scheduleScroll').innerHTML = 
+        `<div style="padding:40px;text-align:center;color:var(--muted);">
+          No schedule found for channel ${channelCode}
+        </div>`;
+      updateFooter('No schedule');
+    }
+  }
+  
+  function injectSchedule(html) {
+    const container = document.getElementById('scheduleScroll');
+    container.innerHTML = html;
+    
+    // Add drag and action columns
+    setupColumns();
+    
+    // Setup interactions
+    setupRowInteractions();
+    
+    // Setup master sharpie in action header
+    setupMasterSharpie();
+  }
+  
+  // === SETUP COLUMNS ===
+  function setupColumns() {
+    const table = document.querySelector('#scheduleScroll table');
+    if (!table) return;
+    
+    // Add drag column header
+    const headerRow = table.querySelector('thead tr');
+    if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
+      const th = document.createElement('th');
+      th.setAttribute('data-key', 'drag');
+      headerRow.insertBefore(th, headerRow.firstChild);
+    }
+    
+    // Add action column header with master sharpie
+    if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
+      const th = document.createElement('th');
+      th.setAttribute('data-key', 'actions');
+      th.innerHTML = `<div><button class="master-sharpie-toggle" id="masterSharpie" title="Toggle all sharpie lines">${getSharpieIconSVG()}</button></div>`;
+      headerRow.appendChild(th);
+    }
+    
+    // Add colgroup entries
+    const colgroup = table.querySelector('colgroup');
+    if (colgroup) {
+      if (!colgroup.querySelector('col[data-key="drag"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'drag');
+        col.style.width = '36px';
+        colgroup.insertBefore(col, colgroup.firstChild);
+      }
+      if (!colgroup.querySelector('col[data-key="actions"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'actions');
+        col.style.width = '36px';
+        colgroup.appendChild(col);
       }
     }
+    
+    // Add cells to each row
+    const rows = table.querySelectorAll('tbody tr[data-id]');
+    rows.forEach(row => {
+      // Drag cell
+      if (!row.querySelector('td[data-key="drag"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'drag');
+        td.innerHTML = '<span class="drag-dots"></span>';
+        row.insertBefore(td, row.firstChild);
+      }
+      
+      // Action cell with sharpie button
+      if (!row.querySelector('td[data-key="actions"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'actions');
+        td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
+        row.appendChild(td);
+      }
+    });
+  }
+  
+  function getSharpieIconSVG() {
+    return `<svg viewBox="195 40 100 130">
+      <defs>
+        <linearGradient id="sCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#cc2222"/>
+          <stop offset="40%" stop-color="#ee3333"/>
+          <stop offset="100%" stop-color="#aa1111"/>
+        </linearGradient>
+        <linearGradient id="sTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#dd2222"/>
+          <stop offset="100%" stop-color="#991111"/>
+        </linearGradient>
+        <linearGradient id="sBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#d0d0d0"/>
+          <stop offset="30%" stop-color="#eeeeee"/>
+          <stop offset="70%" stop-color="#e0e0e0"/>
+          <stop offset="100%" stop-color="#c8c8c8"/>
+        </linearGradient>
+        <linearGradient id="sClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#aa1111"/>
+          <stop offset="50%" stop-color="#dd3333"/>
+          <stop offset="100%" stop-color="#991111"/>
+        </linearGradient>
+      </defs>
+      <g transform="rotate(45 245 96)">
+        <path fill="url(#sCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+        <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+        <path fill="url(#sClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+        <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+        <path fill="url(#sBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+        <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+        <path fill="url(#sTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+        <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+      </g>
+    </svg>`;
+  }
+  
+  // === ROW INTERACTIONS ===
+  function setupRowInteractions() {
+    const tbody = document.querySelector('#scheduleScroll tbody');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr[data-id]');
+    
+    rows.forEach(row => {
+      // Make draggable
+      row.draggable = true;
+      
+      // Drag start
+      row.addEventListener('dragstart', (e) => {
+        draggingRow = row;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', row.dataset.id);
+      });
+      
+      // Drag end
+      row.addEventListener('dragend', () => {
+        if (draggingRow) {
+          draggingRow.classList.remove('dragging');
+        }
+        draggingRow = null;
+        
+        // Broadcast new order
+        broadcastRowOrder();
+      });
+      
+      // Duration click
+      const durCell = row.querySelector('td[data-key="duration"]');
+      if (durCell) {
+        durCell.style.cursor = 'pointer';
+        durCell.addEventListener('click', () => openDurationEditor(row, durCell));
+      }
+      
+      // Sharpie button click
+      const sharpieBtn = row.querySelector('button.sharpie');
+      if (sharpieBtn) {
+        sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
+      }
+    });
+    
+    // Tbody dragover - exact DOM implementation
+    tbody.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!draggingRow) return;
+      
+      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
+      const afterEl = calcAfter(candidates, e.clientY);
+      
+      if (afterEl === null) {
+        tbody.appendChild(draggingRow);
+      } else {
+        tbody.insertBefore(draggingRow, afterEl);
+      }
+    });
+  }
+  
+  // Exact DOM calcAfter function
+  function calcAfter(list, y) {
+    const scrollContainer = document.querySelector('.schedule-scroll');
+    const zoom = scrollContainer ? parseFloat(scrollContainer.style.zoom || '1') : 1;
+    const adjustedY = y / zoom;
+    
+    let closest = { offset: -Infinity, element: null };
+    
+    list.forEach(el => {
+      const box = el.getBoundingClientRect();
+      const offset = adjustedY - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset, element: el };
+      }
+    });
+    
+    return closest.element;
+  }
+  
+  // === MASTER SHARPIE ===
+  function setupMasterSharpie() {
+    const btn = document.getElementById('masterSharpie');
+    if (!btn) return;
+    
+    btn.addEventListener('click', () => {
+      linesHidden = !linesHidden;
+      document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+      btn.classList.toggle('lines-hidden', linesHidden);
+      broadcastEvent('sharpie-visibility', { hidden: linesHidden });
+    });
+  }
+  
+  // === SHARPIE TOGGLE ===
+  function toggleRowSharpie(row) {
+    const rowId = row.dataset.id;
+    const btn = row.querySelector('button.sharpie');
+    const scrollContainer = document.getElementById('scheduleScroll');
+    
+    if (markedRows.has(rowId)) {
+      // Unmark
+      markedRows.delete(rowId);
+      btn?.classList.remove('active');
+      
+      // Remove line
+      const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
+      if (line) line.remove();
+      
+      broadcastEvent('sharpie-toggle', { rowId, marked: false });
+    } else {
+      // Mark
+      markedRows.add(rowId);
+      btn?.classList.add('active');
+      
+      // Add line
+      addSharpieLineElement(row);
+      
+      broadcastEvent('sharpie-toggle', { rowId, marked: true });
+    }
+  }
+  
+  function addSharpieLineElement(row) {
+    const scrollContainer = document.getElementById('scheduleScroll');
+    const table = scrollContainer.querySelector('table');
+    if (!scrollContainer || !table) return;
+    
+    // Remove existing
+    const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
+    if (existing) existing.remove();
+    
+    // Create line
+    const line = document.createElement('div');
+    line.className = 'sharpie-line-element';
+    line.dataset.rowId = row.dataset.id;
+    
+    // Position - constrained to table width (skip drag and action columns)
+    const tableLeft = table.offsetLeft;
+    const tableWidth = table.offsetWidth;
+    
+    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    line.style.left = (tableLeft + 36) + 'px';  // Skip drag column
+    line.style.width = (tableWidth - 72) + 'px';  // Skip both 36px columns
+    
+    scrollContainer.appendChild(line);
+  }
+  
+  function updateAllSharpieLines() {
+    const scrollContainer = document.getElementById('scheduleScroll');
+    const table = scrollContainer?.querySelector('table');
+    if (!table) return;
+    
+    const tableLeft = table.offsetLeft;
+    const tableWidth = table.offsetWidth;
+    
+    markedRows.forEach(rowId => {
+      const row = document.querySelector(`tr[data-id="${rowId}"]`);
+      if (row) {
+        const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
+        if (line) {
+          line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+          line.style.left = (tableLeft + 36) + 'px';
+          line.style.width = (tableWidth - 72) + 'px';
+        }
+      }
+    });
+  }
+  
+  // === DURATION EDITOR ===
+  function openDurationEditor(row, cell) {
+    const popup = document.getElementById('durationPopup');
+    const input = document.getElementById('durationInput');
+    
+    const rect = cell.getBoundingClientRect();
+    popup.style.left = rect.left + 'px';
+    popup.style.top = (rect.bottom + 4) + 'px';
+    popup.classList.add('show');
+    
+    input.value = cell.textContent.trim();
+    input.focus();
+    input.select();
+    
+    const close = () => {
+      popup.classList.remove('show');
+      document.removeEventListener('click', outsideClick);
+      input.removeEventListener('keydown', keyHandler);
+    };
+    
+    const save = () => {
+      const newValue = input.value.trim();
+      if (newValue !== cell.textContent.trim()) {
+        cell.textContent = newValue;
+        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue });
+      }
+      close();
+    };
+    
+    const outsideClick = (e) => {
+      if (!popup.contains(e.target) && e.target !== cell) {
+        save();
+      }
+    };
+    
+    const keyHandler = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        save();
+      } else if (e.key === 'Escape') {
+        close();
+      }
+    };
+    
+    setTimeout(() => {
+      document.addEventListener('click', outsideClick);
+      input.addEventListener('keydown', keyHandler);
+    }, 10);
+  }
+  
+  // === REALTIME SYNC ===
+  function subscribeToChannel() {
+    channel = supabase.channel(`ad-sync-${channelCode}`, {
+      config: { broadcast: { self: false } }
+    });
+    
+    channel
+      .on('broadcast', { event: 'row-reorder' }, handleIncomingReorder)
+      .on('broadcast', { event: 'duration-change' }, handleIncomingDuration)
+      .on('broadcast', { event: 'sharpie-toggle' }, handleIncomingSharpie)
+      .on('broadcast', { event: 'sharpie-visibility' }, handleIncomingVisibility)
+      .on('broadcast', { event: 'column-resize' }, handleIncomingColumnResize)
+      .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
+      .on('broadcast', { event: 'full-sync' }, handleFullSync)
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          updateFooter('Connected');
+          
+          // Request full sync from DOM
+          broadcastEvent('request-sync', {});
+        } else {
+          updateFooter('Disconnected');
+        }
+      });
+  }
+  
+  function broadcastEvent(event, payload) {
+    if (channel) {
+      channel.send({ type: 'broadcast', event, payload: { ...payload, source: 'ad' } });
+    }
+  }
+  
+  function broadcastRowOrder() {
+    const tbody = document.querySelector('#scheduleScroll tbody');
+    if (!tbody) return;
+    
+    const order = Array.from(tbody.querySelectorAll('tr[data-id]'))
+      .map(row => row.dataset.id);
+    
+    broadcastEvent('row-reorder', { order, source: 'ad' });
+  }
+  
+  // === INCOMING EVENT HANDLERS ===
+  function handleIncomingReorder({ payload }) {
+    if (!payload?.order) return;
+    
+    const tbody = document.querySelector('#scheduleScroll tbody');
+    if (!tbody) return;
+    
+    payload.order.forEach(id => {
+      const row = tbody.querySelector(`tr[data-id="${id}"]`);
+      if (row) tbody.appendChild(row);
+    });
+    
+    updateAllSharpieLines();
+  }
+  
+  function handleIncomingDuration({ payload }) {
+    if (!payload?.rowId) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    
+    const cell = row.querySelector('td[data-key="duration"]');
+    if (cell) cell.textContent = payload.duration;
+  }
+  
+  function handleIncomingSharpie({ payload }) {
+    if (!payload?.rowId) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    
+    const btn = row.querySelector('button.sharpie');
+    
+    if (payload.marked) {
+      markedRows.add(payload.rowId);
+      btn?.classList.add('active');
+      addSharpieLineElement(row);
+    } else {
+      markedRows.delete(payload.rowId);
+      btn?.classList.remove('active');
+      const line = document.getElementById('scheduleScroll')
+        .querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+      if (line) line.remove();
+    }
+  }
+  
+  function handleIncomingVisibility({ payload }) {
+    linesHidden = payload.hidden;
+    document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+    
+    const btn = document.getElementById('masterSharpie');
+    if (btn) btn.classList.toggle('lines-hidden', linesHidden);
+  }
+  
+  function handleIncomingColumnResize({ payload }) {
+    if (!payload?.key || !payload?.width) return;
+    
+    const col = document.querySelector(`col[data-key="${payload.key}"]`);
+    if (col) col.style.width = payload.width + 'px';
+    
+    const th = document.querySelector(`th[data-key="${payload.key}"]`);
+    if (th) th.style.width = payload.width + 'px';
+  }
+  
+  function handleIncomingRowResize({ payload }) {
+    if (!payload?.rowId || !payload?.height) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (row) {
+      row.style.height = payload.height + 'px';
+      updateAllSharpieLines();
+    }
+  }
+  
+  function handleFullSync({ payload }) {
+    if (!payload) return;
+    
+    // Reload schedule if provided
+    if (payload.html) {
+      injectSchedule(payload.html);
+    }
+    
+    // Apply row order
+    if (payload.order) {
+      handleIncomingReorder({ payload });
+    }
+    
+    // Apply sharpie marks
+    if (payload.sharpieRows) {
+      payload.sharpieRows.forEach(rowId => {
+        handleIncomingSharpie({ payload: { rowId, marked: true } });
+      });
+    }
+    
+    // Apply visibility
+    if (payload.linesHidden !== undefined) {
+      handleIncomingVisibility({ payload: { hidden: payload.linesHidden } });
+    }
+  }
+  
+  // === UTILITIES ===
+  function updateFooter(status) {
+    const footer = document.getElementById('footer');
+    footer.textContent = `${status} • ${new Date().toLocaleTimeString()}`;
   }
   
   function updateLiveStatus() {
     const badge = document.getElementById('liveBadge');
+    if (!badge) return;
     
     badge.classList.remove('live', 'manual');
     
@@ -450,11 +1134,13 @@
   
   // Check if LIVE status changed every 30s
   async function checkLiveStatus() {
+    if (!channelCode) return;
+    
     try {
       const { data: broadcast } = await supabase
         .from('broadcasts')
         .select('auto_update')
-        .eq('code', broadcastCode)
+        .eq('code', channelCode.toUpperCase())
         .single();
       
       if (!broadcast) return;
@@ -462,130 +1148,19 @@
       const wasLive = isLiveMode;
       isLiveMode = broadcast.auto_update === true;
       
-      // Status changed?
       if (wasLive !== isLiveMode) {
-        console.log('[Viewer] LIVE status changed:', isLiveMode);
+        console.log('[AD] LIVE status changed:', isLiveMode);
         updateLiveStatus();
-        
-        if (isLiveMode && !refreshInterval) {
-          // Switched to LIVE - start polling
-          refreshInterval = setInterval(loadBroadcast, 5000);
-          loadBroadcast(); // Immediate refresh
-        } else if (!isLiveMode && refreshInterval) {
-          // Switched to MANUAL - stop polling
-          clearInterval(refreshInterval);
-          refreshInterval = null;
-        }
       }
     } catch (e) {
-      console.error('[Viewer] Status check error:', e);
+      console.error('[AD] Status check error:', e);
     }
   }
   
   // Start status polling
   setInterval(checkLiveStatus, 30000);
 
-  // === REALTIME SYNC ===
-  function subscribeToRealtime() {
-    realtimeChannel = supabase.channel(`ad-sync-${broadcastCode}`, {
-      config: { broadcast: { self: false } }
-    });
-    
-    realtimeChannel
-      .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
-      .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
-      .on('broadcast', { event: 'sharpie-visibility' }, handleSharpieVisibility)
-      .on('broadcast', { event: 'duration-change' }, handleDurationChange)
-      .subscribe();
-  }
-  
-  function handleRowReorder({ payload }) {
-    if (!payload?.order || payload.source === 'viewer') return;
-    
-    const tbody = document.querySelector('#schedule-container tbody');
-    if (!tbody) return;
-    
-    payload.order.forEach(id => {
-      const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (row) tbody.appendChild(row);
-    });
-    
-    updateSharpieLines();
-  }
-  
-  function handleSharpieToggle({ payload }) {
-    if (!payload?.rowId) return;
-    
-    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-    if (!row) return;
-    
-    const container = document.querySelector('#schedule-container');
-    
-    if (payload.marked) {
-      markedRows.add(payload.rowId);
-      addSharpieLineElement(row, container);
-    } else {
-      markedRows.delete(payload.rowId);
-      const line = container.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
-      if (line) line.remove();
-    }
-  }
-  
-  function handleSharpieVisibility({ payload }) {
-    if (payload.hidden !== undefined) {
-      sharpieVisible = !payload.hidden;
-      document.body.classList.toggle('sharpie-hidden', payload.hidden);
-    }
-  }
-  
-  function handleDurationChange({ payload }) {
-    if (!payload?.rowId) return;
-    
-    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-    if (!row) return;
-    
-    const cell = row.querySelector('td[data-key="duration"]');
-    if (cell) cell.textContent = payload.duration;
-  }
-  
-  function addSharpieLineElement(row, container) {
-    // Remove existing
-    const existing = container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
-    if (existing) existing.remove();
-    
-    // Find scroll container
-    const scrollContainer = container.querySelector('.schedule-scroll') || container;
-    
-    // Create line
-    const line = document.createElement('div');
-    line.className = 'sharpie-line-element';
-    line.dataset.rowId = row.dataset.id;
-    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    
-    scrollContainer.appendChild(line);
-  }
-  
-  function updateSharpieLines() {
-    const container = document.querySelector('#schedule-container');
-    if (!container) return;
-    
-    markedRows.forEach(rowId => {
-      const row = document.querySelector(`tr[data-id="${rowId}"]`);
-      if (row) {
-        const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
-        if (line) {
-          line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        }
-      }
-    });
-  }
-  
-  // Cleanup
-  window.addEventListener('beforeunload', () => {
-    if (refreshInterval) clearInterval(refreshInterval);
-    if (realtimeChannel) realtimeChannel.unsubscribe();
-  });
-  
+  // === START ===
   document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
