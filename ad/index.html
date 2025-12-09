@@ -30,15 +30,15 @@
       flex-direction: column;
     }
     
-    /* ===== HEADER - AD STYLE ===== */
+    /* ===== HEADER ===== */
     .header {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
-      padding: 8px 16px;
+      padding: 12px 16px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
-      height: 48px;
+      min-height: 48px;
       flex-shrink: 0;
     }
     
@@ -46,24 +46,47 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      justify-self: start;
     }
     
-    .status-btn {
+    .channel-label {
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .channel-label span {
+      color: var(--muted);
+    }
+    
+    .header-center {
+      justify-self: center;
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
+      gap: 6px;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-self: end;
+    }
+    
+    /* ===== STATUS INDICATOR ===== */
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
     
     .status-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background: #ef4444;
+      background: var(--muted);
     }
     
     .status-dot.connected {
@@ -71,21 +94,17 @@
       animation: pulse 2s infinite;
     }
     
+    .status-text {
+      color: var(--muted);
+    }
+    
+    .status-text.connected {
+      color: var(--ad-purple);
+    }
+    
     @keyframes pulse {
-      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.7); }
-      50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(163, 113, 247, 0); }
-    }
-    
-    .channel-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-    }
-    
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.9); }
     }
     
     .header-logo {
@@ -201,22 +220,22 @@
       cursor: grabbing;
     }
     
-    /* 3x3 drag handle dots - exact DOM pattern */
+    /* 3x3 drag handle dots - GRAY like DOM */
     .drag-dots {
       display: inline-block;
       width: 12px;
       height: 12px;
       vertical-align: middle;
       background-image: 
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px),
-        radial-gradient(circle, #999 1px, transparent 1px);
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px),
+        radial-gradient(circle, #666 1px, transparent 1px);
       background-size: 2px 2px;
       background-position: 
         0 0, 5px 0, 10px 0,
@@ -403,13 +422,12 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <button class="status-btn" id="statusBtn" title="Connection status">
-        <span class="status-dot" id="statusDot"></span>
-      </button>
-      <div class="channel-name" id="channelName">Loading...</div>
+      <div class="channel-label">
+        <span>Channel:</span> <strong id="channelName">Loading...</strong>
+      </div>
     </div>
     
-    <div class="header-right">
+    <div class="header-center">
       <div class="header-logo">
         <span>SKEDULER</span>
         <span class="ad-badge">AD</span>
@@ -447,6 +465,13 @@
             <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
           </g>
         </svg>
+      </div>
+    </div>
+    
+    <div class="header-right">
+      <div class="status-badge">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Offline</span>
       </div>
     </div>
   </div>
@@ -806,23 +831,33 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
     
-    // Position (skip drag column, end before action column)
-    const padding = 42; // 36px column + 6px padding
+    // Position - constrained to table width (skip drag and action columns)
+    const tableLeft = table.offsetLeft;
+    const tableWidth = table.offsetWidth;
+    
     line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = padding + 'px';
-    line.style.right = padding + 'px';
+    line.style.left = (tableLeft + 36) + 'px';  // Skip drag column
+    line.style.width = (tableWidth - 72) + 'px';  // Skip both 36px columns
     
     scrollContainer.appendChild(line);
   }
   
   function updateAllSharpieLines() {
     const scrollContainer = document.getElementById('scheduleScroll');
+    const table = scrollContainer?.querySelector('table');
+    if (!table) return;
+    
+    const tableLeft = table.offsetLeft;
+    const tableWidth = table.offsetWidth;
+    
     markedRows.forEach(rowId => {
       const row = document.querySelector(`tr[data-id="${rowId}"]`);
       if (row) {
         const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
         if (line) {
           line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+          line.style.left = (tableLeft + 36) + 'px';
+          line.style.width = (tableWidth - 72) + 'px';
         }
       }
     });
@@ -894,14 +929,20 @@
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
       .subscribe((status) => {
         const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        
         if (status === 'SUBSCRIBED') {
           dot.classList.add('connected');
+          text.classList.add('connected');
+          text.textContent = 'Live';
           updateFooter('Connected');
           
           // Request full sync from DOM
           broadcastEvent('request-sync', {});
         } else {
           dot.classList.remove('connected');
+          text.classList.remove('connected');
+          text.textContent = 'Offline';
           updateFooter('Disconnected');
         }
       });
