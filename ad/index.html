@@ -534,14 +534,22 @@
         htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
       }
       
-      // Download from schedule-files bucket
-      const { data, error } = await supabase.storage
+      // Use public URL with cache-busting (same as CHANNELS viewer)
+      const { data: urlData } = supabase.storage
         .from('schedule-files')
-        .download(htmlPath);
+        .getPublicUrl(htmlPath);
       
-      if (error) throw error;
+      const cacheBuster = Date.now();
+      const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
       
-      const html = await data.text();
+      console.log('[AD] Fetching:', publicUrl);
+      
+      const response = await fetch(publicUrl);
+      if (!response.ok) {
+        throw new Error('Could not load schedule');
+      }
+      
+      const html = await response.text();
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
