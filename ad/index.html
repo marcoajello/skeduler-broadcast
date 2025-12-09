@@ -234,11 +234,21 @@
     }
     
     /* ===== DRAG & ACTION COLUMNS - EXACT DOM COLORS ===== */
+    /* Ultra-high specificity to beat any loaded styles */
+    html body .main-content #schedule-container #scheduleScroll table thead tr th[data-key="drag"],
+    html body .main-content #schedule-container #scheduleScroll table thead tr th[data-key="actions"],
+    html body .main-content #schedule-container #scheduleScroll table tbody tr td[data-key="drag"],
+    html body .main-content #schedule-container #scheduleScroll table tbody tr td[data-key="actions"],
     #scheduleScroll table thead th[data-key="drag"],
     #scheduleScroll table thead th[data-key="actions"],
     #scheduleScroll table tbody td[data-key="drag"],
-    #scheduleScroll table tbody td[data-key="actions"] {
+    #scheduleScroll table tbody td[data-key="actions"],
+    th[data-key="drag"],
+    th[data-key="actions"],
+    td[data-key="drag"],
+    td[data-key="actions"] {
       background: #222a35 !important;
+      background-color: #222a35 !important;
     }
     
     /* Drag column */
@@ -627,6 +637,9 @@
     // NUCLEAR: Remove any buttons from loaded HTML
     container.querySelectorAll('button').forEach(btn => btn.remove());
     
+    // Remove any embedded style tags
+    container.querySelectorAll('style').forEach(s => s.remove());
+    
     // Add drag and action columns
     setupColumns();
     
@@ -635,6 +648,19 @@
     
     // Setup master sharpie in action header
     setupMasterSharpie();
+    
+    // Force background colors AFTER render
+    requestAnimationFrame(() => {
+      document.querySelectorAll('[data-key="drag"], [data-key="actions"]').forEach(cell => {
+        cell.style.setProperty('background', '#222a35', 'important');
+      });
+      // Double-tap with setTimeout for good measure
+      setTimeout(() => {
+        document.querySelectorAll('[data-key="drag"], [data-key="actions"]').forEach(cell => {
+          cell.style.setProperty('background', '#222a35', 'important');
+        });
+      }, 100);
+    });
   }
   
   // === SETUP COLUMNS ===
@@ -647,7 +673,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
-      th.style.background = '#222a35';
+      th.style.setProperty('background', '#222a35', 'important');
       headerRow.insertBefore(th, headerRow.firstChild);
     }
     
@@ -655,7 +681,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'actions');
-      th.style.background = '#222a35';
+      th.style.setProperty('background', '#222a35', 'important');
       headerRow.appendChild(th);
     }
     
@@ -683,7 +709,7 @@
       if (!row.querySelector('td[data-key="drag"]')) {
         const td = document.createElement('td');
         td.setAttribute('data-key', 'drag');
-        td.style.background = '#222a35';
+        td.style.setProperty('background', '#222a35', 'important');
         td.innerHTML = '<span class="drag-dots"></span>';
         row.insertBefore(td, row.firstChild);
       }
@@ -692,7 +718,7 @@
       if (!row.querySelector('td[data-key="actions"]')) {
         const td = document.createElement('td');
         td.setAttribute('data-key', 'actions');
-        td.style.background = '#222a35';
+        td.style.setProperty('background', '#222a35', 'important');
         td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
         row.appendChild(td);
       }
