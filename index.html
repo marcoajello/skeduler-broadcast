@@ -128,38 +128,6 @@
       50% { opacity: 0.7; transform: scale(0.9); }
     }
     
-    /* ===== SHARPIE TOGGLE ===== */
-    .sharpie-toggle {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: var(--accent);
-      border: none;
-      border-radius: 4px;
-      color: #fff;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    
-    .sharpie-toggle.visible {
-      display: flex;
-    }
-    
-    .sharpie-toggle:hover {
-      opacity: 0.85;
-    }
-    
-    .sharpie-toggle.showing {
-      background: #f44336;
-    }
-    
-    .sharpie-toggle svg {
-      width: 16px;
-      height: 16px;
-    }
-    
     /* ===== CONTENT ===== */
     .content {
       padding: 16px;
@@ -217,12 +185,6 @@
     #schedule-container td[data-key="actions"],
     #schedule-container th[data-key="drag"],
     #schedule-container td[data-key="drag"] {
-      display: none;
-    }
-    
-    /* Hide progress-toggle from loaded schedule - viewer has its own */
-    #schedule-container .progress-toggle,
-    .content .progress-toggle {
       display: none;
     }
 
@@ -304,43 +266,6 @@
         <span class="live-dot"></span>
         <span class="live-text" id="liveText">Live</span>
       </div>
-      
-      <button class="sharpie-toggle" id="sharpieToggle" title="Toggle Progress">
-        <svg viewBox="195 40 100 130">
-          <defs>
-            <linearGradient id="sCapG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#cc2222"/>
-              <stop offset="40%" stop-color="#ee3333"/>
-              <stop offset="100%" stop-color="#aa1111"/>
-            </linearGradient>
-            <linearGradient id="sTipG" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#dd2222"/>
-              <stop offset="100%" stop-color="#991111"/>
-            </linearGradient>
-            <linearGradient id="sBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#d0d0d0"/>
-              <stop offset="30%" stop-color="#eeeeee"/>
-              <stop offset="70%" stop-color="#e0e0e0"/>
-              <stop offset="100%" stop-color="#c8c8c8"/>
-            </linearGradient>
-            <linearGradient id="sClipG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#aa1111"/>
-              <stop offset="50%" stop-color="#dd3333"/>
-              <stop offset="100%" stop-color="#991111"/>
-            </linearGradient>
-          </defs>
-          <g transform="rotate(45 245 96)">
-            <path fill="url(#sCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
-            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
-            <path fill="url(#sClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
-            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
-            <path fill="url(#sBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
-            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
-            <path fill="url(#sTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
-            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
-          </g>
-        </svg>
-      </button>
     </div>
   </div>
   
@@ -427,12 +352,6 @@
       // Update live badge
       updateLiveStatus();
       
-      // Show sharpie toggle only in LIVE mode
-      const sharpieToggle = document.getElementById('sharpieToggle');
-      if (isLiveMode) {
-        sharpieToggle.classList.add('visible');
-      }
-      
       // Fetch HTML from storage
       let htmlPath;
       if (broadcast.channel_number) {
@@ -469,9 +388,6 @@
       const updated = new Date(broadcast.updated_at);
       document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
       
-      // Setup sharpie toggle
-      setupSharpieToggle();
-      
       // Start auto-refresh if live (every 5 seconds) - only once
       if (isLiveMode && !hasLoadedOnce) {
         refreshInterval = setInterval(loadBroadcast, 5000);
@@ -490,29 +406,14 @@
   
   function updateLiveStatus() {
     const badge = document.getElementById('liveBadge');
-    const sharpieToggle = document.getElementById('sharpieToggle');
     
     badge.classList.remove('live', 'manual');
     
     if (isLiveMode) {
       badge.classList.add('live');
-      sharpieToggle.classList.add('visible');
     } else {
       badge.classList.add('manual');
-      sharpieToggle.classList.remove('visible');
     }
-  }
-  
-  function setupSharpieToggle() {
-    const toggle = document.getElementById('sharpieToggle');
-    // Start with lines visible = RED
-    toggle.classList.add('showing');
-    
-    toggle.onclick = () => {
-      sharpieVisible = !sharpieVisible;
-      document.body.classList.toggle('sharpie-hidden', !sharpieVisible);
-      toggle.classList.toggle('showing', sharpieVisible);
-    };
   }
   
   // === REALTIME SYNC ===
@@ -565,7 +466,6 @@
     if (payload.hidden !== undefined) {
       sharpieVisible = !payload.hidden;
       document.body.classList.toggle('sharpie-hidden', payload.hidden);
-      document.getElementById('sharpieToggle').classList.toggle('showing', sharpieVisible);
     }
   }
   
