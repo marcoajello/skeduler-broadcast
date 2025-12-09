@@ -135,10 +135,10 @@
       justify-content: center;
       width: 28px;
       height: 28px;
-      background: transparent;
-      border: 1px solid var(--accent);
+      background: var(--accent);
+      border: none;
       border-radius: 4px;
-      color: var(--accent);
+      color: #fff;
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -148,16 +148,11 @@
     }
     
     .sharpie-toggle:hover {
-      background: rgba(88, 166, 255, 0.1);
+      opacity: 0.85;
     }
     
     .sharpie-toggle.showing {
-      color: #f44336;
-      border-color: #f44336;
-    }
-    
-    .sharpie-toggle.showing:hover {
-      background: rgba(244, 67, 54, 0.1);
+      background: #f44336;
     }
     
     .sharpie-toggle svg {
@@ -240,6 +235,15 @@
     .content .sharpie-toggle,
     .content button[class*="sharpie"] {
       display: none;
+    }
+    
+    /* Nuclear option: hide ALL sharpie toggles except ours */
+    .sharpie-toggle:not(#sharpieToggle) {
+      display: none !important;
+    }
+    
+    button.master-sharpie-toggle {
+      display: none !important;
     }
     
     /* ===== SHARPIE LINES ===== */
