@@ -6,77 +6,173 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d1117">
   <title>SKEDULER LIVE</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Cousine:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600;700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Nunito:wght@400;500;600;700&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Tinos:ital,wght@0,400;0,700;1,400;1,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
+    
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --accent: #58a6ff;
+      --live-red: #f85149;
+      --live-green: #3fb950;
+    }
     
     body {
       margin: 0;
       padding: 0;
-      font-family: 'Arimo', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
     }
     
+    /* ===== HEADER ===== */
     .header {
       position: sticky;
       top: 0;
       z-index: 100;
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
       padding: 12px 16px;
-      background: #161b22;
-      border-bottom: 1px solid #30363d;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      min-height: 48px;
     }
     
-    .header h1 {
-      margin: 0;
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-self: start;
+    }
+    
+    .channel-label {
       font-size: 14px;
-      font-weight: 600;
-      min-width: 60px;
+      color: var(--text);
+    }
+    
+    .channel-label span {
+      color: var(--muted);
+    }
+    
+    .header-center {
+      justify-self: center;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     
     .header-logo {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: 2px;
-      color: #e6edf3;
+      color: var(--text);
     }
     
     .header-logo svg {
-      display: block;
+      width: 20px;
+      height: 20px;
     }
     
-    .status {
+    .header-right {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: #7d8590;
-      min-width: 60px;
-      justify-content: flex-end;
+      gap: 12px;
+      justify-self: end;
     }
     
-    .status .dot {
+    /* ===== LIVE INDICATOR ===== */
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    
+    .live-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #3fb950;
-      animation: pulse 2s infinite;
+    }
+    
+    .live-badge.live .live-dot {
+      background: var(--live-green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .live-badge.live .live-text {
+      color: var(--live-green);
+    }
+    
+    .live-badge.manual .live-dot {
+      background: var(--muted);
+    }
+    
+    .live-badge.manual .live-text {
+      color: var(--muted);
+    }
+    
+    .live-badge.offline .live-dot {
+      background: var(--live-red);
+    }
+    
+    .live-badge.offline .live-text {
+      color: var(--live-red);
     }
     
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(0.9); }
     }
     
+    /* ===== SHARPIE TOGGLE ===== */
+    .sharpie-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: #f44336;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .sharpie-toggle.visible {
+      display: flex;
+    }
+    
+    .sharpie-toggle:hover {
+      background: rgba(244, 67, 54, 0.1);
+      border-color: #f44336;
+    }
+    
+    .sharpie-toggle.hidden {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    
+    .sharpie-toggle.hidden:hover {
+      background: rgba(88, 166, 255, 0.1);
+    }
+    
+    .sharpie-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
+    
+    /* ===== CONTENT ===== */
     .content {
       padding: 16px;
       overflow-x: auto;
@@ -88,28 +184,16 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 60vh;
+      min-height: 50vh;
       text-align: center;
-      padding: 24px;
+      color: var(--muted);
     }
-    
-    .loading h2, .error h2 {
-      font-size: 18px;
-      margin: 0 0 8px;
-    }
-    
-    .loading p, .error p {
-      color: #7d8590;
-      margin: 0;
-    }
-    
-    .error h2 { color: #f85149; }
     
     .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid #30363d;
-      border-top-color: #58a6ff;
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 16px;
@@ -119,37 +203,142 @@
       to { transform: rotate(360deg); }
     }
     
+    /* ===== SCHEDULE CONTAINER ===== */
     #schedule-container {
+      position: relative;
       background: #fff;
       border-radius: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Don't override table's inline styles */
-    #schedule-container .schedule-wrapper {
       display: inline-block;
+      min-width: 100%;
     }
     
+    #schedule-container table {
+      border-collapse: collapse;
+    }
+    
+    #schedule-container .schedule-scroll {
+      position: relative;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* ===== SHARPIE LINES ===== */
+    .sharpie-line-element {
+      position: absolute;
+      height: 4px;
+      background: #f44336;
+      pointer-events: none;
+      z-index: 500;
+      left: 0;
+      right: 0;
+    }
+    
+    body.sharpie-hidden .sharpie-line-element {
+      display: none;
+    }
+    
+    /* ===== FOOTER ===== */
     .updated-at {
       text-align: center;
       padding: 12px;
       font-size: 11px;
-      color: #7d8590;
+      color: var(--muted);
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="header">
-    <h1 id="title">Channel:</h1>
-    <div class="header-logo">
-      <span>SKEDULER</span>
-      <svg width="16" height="16" viewBox="195 40 100 130"><defs><linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
+    <div class="header-left">
+      <div class="channel-label">
+        <span>Channel:</span> <strong id="channelName">Loading...</strong>
+      </div>
     </div>
-    <div class="status">
-      <span class="dot"></span>
-      <span id="statusText">Live</span>
+    
+    <div class="header-center">
+      <div class="header-logo">
+        <span>SKEDULER</span>
+        <svg viewBox="195 40 100 130">
+          <defs>
+            <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#cc2222"/>
+              <stop offset="40%" stop-color="#ee3333"/>
+              <stop offset="100%" stop-color="#aa1111"/>
+            </linearGradient>
+            <linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#dd2222"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+            <linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d0d0d0"/>
+              <stop offset="30%" stop-color="#eeeeee"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#c8c8c8"/>
+            </linearGradient>
+            <linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#aa1111"/>
+              <stop offset="50%" stop-color="#dd3333"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+          </defs>
+          <g transform="rotate(45 245 96)">
+            <path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+            <path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+            <path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+            <path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+    
+    <div class="header-right">
+      <button class="sharpie-toggle" id="sharpieToggle" title="Toggle sharpie lines">
+        <svg viewBox="195 40 100 130">
+          <defs>
+            <linearGradient id="sCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#cc2222"/>
+              <stop offset="40%" stop-color="#ee3333"/>
+              <stop offset="100%" stop-color="#aa1111"/>
+            </linearGradient>
+            <linearGradient id="sTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#dd2222"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+            <linearGradient id="sBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d0d0d0"/>
+              <stop offset="30%" stop-color="#eeeeee"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#c8c8c8"/>
+            </linearGradient>
+            <linearGradient id="sClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#aa1111"/>
+              <stop offset="50%" stop-color="#dd3333"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+          </defs>
+          <g transform="rotate(45 245 96)">
+            <path fill="url(#sCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+            <path fill="url(#sClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+            <path fill="url(#sBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+            <path fill="url(#sTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+          </g>
+        </svg>
+      </button>
+      
+      <div class="live-badge manual" id="liveBadge">
+        <span class="live-dot"></span>
+        <span class="live-text" id="liveText">Live</span>
+      </div>
     </div>
   </div>
   
@@ -169,128 +358,250 @@
     <div id="updated-at" class="updated-at"></div>
   </div>
 
-  <script>
-    const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+<script>
+(function() {
+  'use strict';
+  
+  const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+  
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  let broadcastCode = null;
+  let broadcastData = null;
+  let refreshInterval = null;
+  let sharpieVisible = true;
+  let isLiveMode = false;
+  let realtimeChannel = null;
+  let markedRows = new Set();
+  
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '') {
+      showError('No broadcast code provided');
+      return;
+    }
     
-    let broadcastCode = null;
-    let broadcastData = null;
-    let refreshInterval = null;
+    await loadBroadcast();
     
-    async function init() {
-      const params = new URLSearchParams(window.location.search);
-      broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+    // Subscribe to realtime for AD sync
+    subscribeToRealtime();
+  }
+  
+  function showError(message) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'flex';
+    document.getElementById('error').querySelector('p').textContent = message;
+  }
+  
+  async function loadBroadcast() {
+    try {
+      // Look up broadcast by code
+      const { data: broadcast, error: lookupError } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .eq('code', broadcastCode.toUpperCase())
+        .single();
       
-      if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '') {
-        showError('No broadcast code provided');
+      if (lookupError || !broadcast) {
+        showError('Broadcast not found');
         return;
       }
       
-      await loadBroadcast();
+      broadcastData = broadcast;
+      isLiveMode = broadcast.auto_update === true;
       
-      // Auto-refresh every 30 seconds
-      refreshInterval = setInterval(loadBroadcast, 30000);
-    }
-    
-    async function loadBroadcast() {
-      try {
-        // Look up broadcast by code
-        const { data: broadcast, error: lookupError } = await supabase
-          .from('broadcasts')
-          .select('*')
-          .eq('code', broadcastCode.toUpperCase())
-          .single();
-        
-        if (lookupError || !broadcast) {
-          showError('Broadcast not found');
-          return;
-        }
-        
-        broadcastData = broadcast;
-        
-        // Update title
-        const channelName = broadcast.title || '';
-        document.getElementById('title').textContent = channelName ? `Channel: ${channelName}` : 'Channel:';
-        document.title = (channelName || 'Schedule') + ' - SKEDULER LIVE';
-        
-        // Fetch HTML from storage - use channel path if channel_number exists
-        let htmlPath;
-        if (broadcast.channel_number) {
-          htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
-        } else {
-          // Fallback for old broadcasts without channel number
-          htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
-        }
-        
-        // Use public URL with cache-busting timestamp
-        const { data: urlData } = supabase.storage
-          .from('schedule-files')
-          .getPublicUrl(htmlPath);
-        
-        const cacheBuster = Date.now();
-        const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
-        
-        console.log('[Broadcast] Fetching:', publicUrl);
-        
-        const response = await fetch(publicUrl);
-        if (!response.ok) {
-          showError('Could not load schedule');
-          return;
-        }
-        
-        const html = await response.text();
-        
-        // Parse the HTML to extract style and body content
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        
-        // Extract and inject the style
-        const styleElement = doc.querySelector('style');
-        if (styleElement) {
-          // Remove any existing broadcast style
-          const existingStyle = document.getElementById('broadcast-style');
-          if (existingStyle) existingStyle.remove();
-          
-          // Add new style with ID so we can replace it on refresh
-          const newStyle = document.createElement('style');
-          newStyle.id = 'broadcast-style';
-          newStyle.textContent = styleElement.textContent;
-          document.head.appendChild(newStyle);
-        }
-        
-        // Extract body content (the schedule wrapper and any buttons)
-        const bodyContent = doc.body.innerHTML;
-        
-        // Display
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('schedule-container').style.display = 'block';
-        document.getElementById('schedule-container').innerHTML = bodyContent;
-        
-        // Show last updated
-        const updated = new Date(broadcast.updated_at);
-        document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
-        document.getElementById('statusText').textContent = 'Live';
-        document.querySelector('.dot').style.background = '#3fb950';
-        
-      } catch (err) {
-        console.error('Load error:', err);
-        showError('Failed to load broadcast');
+      // Update title
+      const channelName = broadcast.title || 'Untitled';
+      document.getElementById('channelName').textContent = channelName;
+      document.title = channelName + ' - SKEDULER LIVE';
+      
+      // Update live badge
+      updateLiveStatus();
+      
+      // Show sharpie toggle only in LIVE mode
+      const sharpieToggle = document.getElementById('sharpieToggle');
+      if (isLiveMode) {
+        sharpieToggle.classList.add('visible');
       }
-    }
-    
-    function showError(msg) {
+      
+      // Fetch HTML from storage
+      let htmlPath;
+      if (broadcast.channel_number) {
+        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+      } else {
+        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+      }
+      
+      const { data: urlData } = supabase.storage
+        .from('schedule-files')
+        .getPublicUrl(htmlPath);
+      
+      const cacheBuster = Date.now();
+      const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
+      
+      const response = await fetch(publicUrl);
+      if (!response.ok) {
+        showError('Could not load schedule');
+        return;
+      }
+      
+      const html = await response.text();
+      
+      // Display
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('schedule-container').style.display = 'none';
-      document.getElementById('error').style.display = 'flex';
-      document.getElementById('error').querySelector('p').textContent = msg;
-      document.getElementById('statusText').textContent = 'Offline';
-      document.querySelector('.dot').style.background = '#f85149';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('schedule-container').style.display = 'block';
+      document.getElementById('schedule-container').innerHTML = html;
+      
+      // Show last updated
+      const updated = new Date(broadcast.updated_at);
+      document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
+      
+      // Setup sharpie toggle
+      setupSharpieToggle();
+      
+      // Start auto-refresh if live
+      if (isLiveMode) {
+        refreshInterval = setInterval(loadBroadcast, 30000);
+      }
+      
+    } catch (err) {
+      console.error('Load error:', err);
+      showError('Failed to load broadcast');
     }
+  }
+  
+  function updateLiveStatus() {
+    const badge = document.getElementById('liveBadge');
+    const text = document.getElementById('liveText');
     
-    init();
-  </script>
+    badge.classList.remove('live', 'manual', 'offline');
+    
+    if (isLiveMode) {
+      badge.classList.add('live');
+      text.textContent = 'Live';
+    } else {
+      badge.classList.add('manual');
+      text.textContent = 'Live';
+    }
+  }
+  
+  function setupSharpieToggle() {
+    const toggle = document.getElementById('sharpieToggle');
+    toggle.onclick = () => {
+      sharpieVisible = !sharpieVisible;
+      document.body.classList.toggle('sharpie-hidden', !sharpieVisible);
+      toggle.classList.toggle('hidden', !sharpieVisible);
+    };
+  }
+  
+  // === REALTIME SYNC ===
+  function subscribeToRealtime() {
+    realtimeChannel = supabase.channel(`ad-sync-${broadcastCode}`, {
+      config: { broadcast: { self: false } }
+    });
+    
+    realtimeChannel
+      .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
+      .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
+      .on('broadcast', { event: 'sharpie-visibility' }, handleSharpieVisibility)
+      .on('broadcast', { event: 'duration-change' }, handleDurationChange)
+      .subscribe();
+  }
+  
+  function handleRowReorder({ payload }) {
+    if (!payload?.order || payload.source === 'viewer') return;
+    
+    const tbody = document.querySelector('#schedule-container tbody');
+    if (!tbody) return;
+    
+    payload.order.forEach(id => {
+      const row = tbody.querySelector(`tr[data-id="${id}"]`);
+      if (row) tbody.appendChild(row);
+    });
+    
+    updateSharpieLines();
+  }
+  
+  function handleSharpieToggle({ payload }) {
+    if (!payload?.rowId) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    
+    const container = document.querySelector('#schedule-container');
+    
+    if (payload.marked) {
+      markedRows.add(payload.rowId);
+      addSharpieLineElement(row, container);
+    } else {
+      markedRows.delete(payload.rowId);
+      const line = container.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+      if (line) line.remove();
+    }
+  }
+  
+  function handleSharpieVisibility({ payload }) {
+    if (payload.hidden !== undefined) {
+      sharpieVisible = !payload.hidden;
+      document.body.classList.toggle('sharpie-hidden', payload.hidden);
+      document.getElementById('sharpieToggle').classList.toggle('hidden', payload.hidden);
+    }
+  }
+  
+  function handleDurationChange({ payload }) {
+    if (!payload?.rowId) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    
+    const cell = row.querySelector('td[data-key="duration"]');
+    if (cell) cell.textContent = payload.duration;
+  }
+  
+  function addSharpieLineElement(row, container) {
+    // Remove existing
+    const existing = container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
+    if (existing) existing.remove();
+    
+    // Find scroll container
+    const scrollContainer = container.querySelector('.schedule-scroll') || container;
+    
+    // Create line
+    const line = document.createElement('div');
+    line.className = 'sharpie-line-element';
+    line.dataset.rowId = row.dataset.id;
+    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    
+    scrollContainer.appendChild(line);
+  }
+  
+  function updateSharpieLines() {
+    const container = document.querySelector('#schedule-container');
+    if (!container) return;
+    
+    markedRows.forEach(rowId => {
+      const row = document.querySelector(`tr[data-id="${rowId}"]`);
+      if (row) {
+        const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
+        if (line) {
+          line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+        }
+      }
+    });
+  }
+  
+  // Cleanup
+  window.addEventListener('beforeunload', () => {
+    if (refreshInterval) clearInterval(refreshInterval);
+    if (realtimeChannel) realtimeChannel.unsubscribe();
+  });
+  
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
 </body>
 </html>
