@@ -481,9 +481,9 @@
       // Setup sharpie toggle
       setupSharpieToggle();
       
-      // Start auto-refresh if live
+      // Start auto-refresh if live (every 5 seconds)
       if (isLiveMode) {
-        refreshInterval = setInterval(loadBroadcast, 30000);
+        refreshInterval = setInterval(loadBroadcast, 5000);
       }
       
     } catch (err) {
