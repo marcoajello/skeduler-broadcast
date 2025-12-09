@@ -135,9 +135,9 @@
       width: 28px;
       height: 28px;
       background: transparent;
-      border: 1px solid var(--border);
+      border: 1px solid var(--accent);
       border-radius: 4px;
-      color: #f44336;
+      color: var(--accent);
       cursor: pointer;
       transition: all 0.15s ease;
     }
@@ -147,17 +147,16 @@
     }
     
     .sharpie-toggle:hover {
-      background: rgba(244, 67, 54, 0.1);
+      background: rgba(88, 166, 255, 0.1);
+    }
+    
+    .sharpie-toggle.showing {
+      color: #f44336;
       border-color: #f44336;
     }
     
-    .sharpie-toggle.hidden {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-    
-    .sharpie-toggle.hidden:hover {
-      background: rgba(88, 166, 255, 0.1);
+    .sharpie-toggle.showing:hover {
+      background: rgba(244, 67, 54, 0.1);
     }
     
     .sharpie-toggle svg {
@@ -509,10 +508,13 @@
   
   function setupSharpieToggle() {
     const toggle = document.getElementById('sharpieToggle');
+    // Start with lines visible = RED
+    toggle.classList.add('showing');
+    
     toggle.onclick = () => {
       sharpieVisible = !sharpieVisible;
       document.body.classList.toggle('sharpie-hidden', !sharpieVisible);
-      toggle.classList.toggle('hidden', !sharpieVisible);
+      toggle.classList.toggle('showing', sharpieVisible);
     };
   }
   
@@ -566,7 +568,7 @@
     if (payload.hidden !== undefined) {
       sharpieVisible = !payload.hidden;
       document.body.classList.toggle('sharpie-hidden', payload.hidden);
-      document.getElementById('sharpieToggle').classList.toggle('hidden', payload.hidden);
+      document.getElementById('sharpieToggle').classList.toggle('showing', sharpieVisible);
     }
   }
   
