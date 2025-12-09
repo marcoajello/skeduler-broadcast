@@ -246,6 +246,11 @@
       display: none !important;
     }
     
+    /* Kill by title - the loaded schedule button */
+    button[title="Toggle Progress"] {
+      display: none !important;
+    }
+    
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
       position: absolute;
@@ -325,7 +330,7 @@
         <span class="live-text" id="liveText">Live</span>
       </div>
       
-      <button class="sharpie-toggle" id="sharpieToggle" title="Toggle sharpie lines">
+      <button class="sharpie-toggle" id="sharpieToggle" title="Toggle Progress">
         <svg viewBox="195 40 100 130">
           <defs>
             <linearGradient id="sCapG" x1="0%" y1="0%" x2="100%" y2="0%">
