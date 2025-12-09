@@ -212,83 +212,113 @@
       -webkit-overflow-scrolling: touch;
     }
     
-    /* ===== DRAG HANDLES ===== */
-    #schedule-container tr[data-id] td.ad-drag-handle {
-      cursor: grab;
-      user-select: none;
-      background: #2a2d36;
-      color: #888;
+    /* ===== DRAG & ACTION COLUMNS - EXACT DOM STYLING ===== */
+    #schedule-container table thead th[data-key="drag"],
+    #schedule-container table thead th[data-key="actions"],
+    #schedule-container table tbody td[data-key="drag"],
+    #schedule-container table tbody td[data-key="actions"] {
+      background: #222a35;
+      border-top: 1px solid #ffffff;
+      border-right: 1px solid #ffffff;
+      border-bottom: 1px solid #ffffff;
+      border-left: 1px solid #ffffff;
+      overflow: hidden;
     }
     
-    #schedule-container tr[data-id] td.ad-drag-handle:active {
+    /* Drag column */
+    #schedule-container table thead th[data-key="drag"],
+    #schedule-container table tbody td[data-key="drag"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      text-align: center;
+      vertical-align: middle;
+      cursor: grab;
+      user-select: none;
+    }
+    
+    #schedule-container table tbody td[data-key="drag"]:active {
       cursor: grabbing;
     }
     
-    #schedule-container tr[data-id]:hover td.ad-drag-handle {
-      background: #3a3d46;
-      color: #aaa;
+    /* 3x3 drag handle dots - exact DOM pattern */
+    .drag-dots {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      vertical-align: middle;
+      background-image: 
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px);
+      background-size: 2px 2px;
+      background-position: 
+        0 0,
+        5px 0,
+        10px 0,
+        0 5px,
+        5px 5px,
+        10px 5px,
+        0 10px,
+        5px 10px,
+        10px 10px;
+      background-repeat: no-repeat;
     }
     
-    #schedule-container tr[data-id].dragging {
-      opacity: 0.5;
-      background: rgba(163, 113, 247, 0.2) !important;
-    }
-    
-    #schedule-container tr[data-id].drag-over {
-      border-top: 3px solid var(--ad-purple);
-    }
-    
-    /* ===== ACTION COLUMN (right side sharpie buttons) ===== */
-    #schedule-container tr td.ad-action-cell {
-      background: #2a2d36;
+    /* Action column */
+    #schedule-container table thead th[data-key="actions"],
+    #schedule-container table tbody td[data-key="actions"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
       text-align: center;
       vertical-align: middle;
-      padding: 2px 4px;
-      width: 32px;
-      min-width: 32px;
+      padding: 0;
     }
     
-    #schedule-container thead th.ad-action-header {
-      background: #2a2d36;
-      width: 32px;
-      min-width: 32px;
-    }
-    
+    /* Sharpie button in action cell */
     .ad-sharpie-btn {
-      width: 24px;
-      height: 24px;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      padding: 2px;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid #e0e0e0;
+      background: white;
       border-radius: 4px;
-      display: flex;
+      cursor: pointer;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s ease;
-    }
-    
-    .ad-sharpie-btn:hover {
-      background: rgba(255,255,255,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .ad-sharpie-btn svg {
-      width: 18px;
-      height: 18px;
-      opacity: 0.4;
-      transition: opacity 0.15s ease;
+      width: 14px;
+      height: 14px;
+      opacity: 0.5;
     }
     
     .ad-sharpie-btn:hover svg {
-      opacity: 0.7;
+      opacity: 0.8;
     }
     
     .ad-sharpie-btn.marked svg {
       opacity: 1;
     }
     
-    #schedule-container tr[data-id]:hover td.ad-action-cell {
-      background: #3a3d46;
+    /* Dragging states */
+    #schedule-container tr[data-id].dragging {
+      opacity: 0.5;
+      background: rgba(163, 113, 247, 0.2);
+    }
+    
+    #schedule-container tr[data-id].drag-over {
+      border-top: 3px solid var(--ad-purple);
     }
     
     /* ===== DURATION EDITING ===== */
@@ -525,31 +555,58 @@
     
     function setupDragHandles() {
       const container = document.getElementById('schedule-container');
+      const table = container.querySelector('table');
+      if (!table) return;
       
-      // Don't add new columns for drag - use existing first cell as drag area
-      const rows = container.querySelectorAll('tr[data-id]');
-      rows.forEach(row => {
-        const firstCell = row.querySelector('td:first-child');
-        if (firstCell && !firstCell.dataset.dragHandle) {
-          firstCell.dataset.dragHandle = 'true';
-          firstCell.style.cursor = 'grab';
-          firstCell.classList.add('ad-drag-handle');
-        }
-      });
+      // Add drag column header
+      const headerRow = table.querySelector('thead tr');
+      if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
+        const th = document.createElement('th');
+        th.setAttribute('data-key', 'drag');
+        headerRow.insertBefore(th, headerRow.firstChild);
+      }
       
       // Add action column header
-      const headerRow = container.querySelector('thead tr');
-      if (headerRow && !headerRow.querySelector('.ad-action-header')) {
+      if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
         const th = document.createElement('th');
-        th.className = 'ad-action-header';
+        th.setAttribute('data-key', 'actions');
         headerRow.appendChild(th);
       }
       
-      // Add action cell with sharpie button to each row
+      // Add colgroup entries if colgroup exists
+      const colgroup = table.querySelector('colgroup');
+      if (colgroup) {
+        // Add drag col at start
+        if (!colgroup.querySelector('col[data-key="drag"]')) {
+          const col = document.createElement('col');
+          col.setAttribute('data-key', 'drag');
+          col.style.width = '36px';
+          colgroup.insertBefore(col, colgroup.firstChild);
+        }
+        // Add actions col at end
+        if (!colgroup.querySelector('col[data-key="actions"]')) {
+          const col = document.createElement('col');
+          col.setAttribute('data-key', 'actions');
+          col.style.width = '36px';
+          colgroup.appendChild(col);
+        }
+      }
+      
+      // Add drag cell and action cell to each row
+      const rows = table.querySelectorAll('tbody tr[data-id]');
       rows.forEach(row => {
-        if (!row.querySelector('.ad-action-cell')) {
+        // Add drag cell at start
+        if (!row.querySelector('td[data-key="drag"]')) {
           const td = document.createElement('td');
-          td.className = 'ad-action-cell';
+          td.setAttribute('data-key', 'drag');
+          td.innerHTML = '<span class="drag-dots"></span>';
+          row.insertBefore(td, row.firstChild);
+        }
+        
+        // Add action cell at end with sharpie button
+        if (!row.querySelector('td[data-key="actions"]')) {
+          const td = document.createElement('td');
+          td.setAttribute('data-key', 'actions');
           td.innerHTML = `<button class="ad-sharpie-btn" title="Mark complete">
             <svg viewBox="195 40 100 130">
               <defs>
@@ -612,7 +669,7 @@
         row.addEventListener('drop', handleDrop);
         
         // Duration editing
-        const durCell = row.querySelector('td[data-col="duration"]');
+        const durCell = row.querySelector('td[data-key="duration"]');
         if (durCell) {
           durCell.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -717,7 +774,7 @@
       
       // Get button if not passed
       if (!btn) {
-        btn = row.querySelector('.ad-sharpie-btn');
+        btn = row.querySelector('td[data-key="actions"] .ad-sharpie-btn');
       }
       
       // Check if already has sharpie line
@@ -733,10 +790,10 @@
         line.className = 'sharpie-line-element';
         line.dataset.rowId = rowId;
         
-        // Position it on the row
+        // Position it on the row (accounting for drag column on left, action column on right)
         line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        line.style.left = '6px';
-        line.style.right = '6px';
+        line.style.left = '42px';
+        line.style.right = '42px';
         
         scrollContainer.appendChild(line);
         if (btn) btn.classList.add('marked');
@@ -806,15 +863,15 @@
       if (!scrollContainer || !row) return;
       
       const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
-      const btn = row.querySelector('.ad-sharpie-btn');
+      const btn = row.querySelector('td[data-key="actions"] .ad-sharpie-btn');
       
       if (payload.marked && !existing) {
         const line = document.createElement('div');
         line.className = 'sharpie-line-element';
         line.dataset.rowId = payload.rowId;
         line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        line.style.left = '6px';
-        line.style.right = '6px';
+        line.style.left = '42px';
+        line.style.right = '42px';
         scrollContainer.appendChild(line);
         if (btn) btn.classList.add('marked');
       } else if (!payload.marked && existing) {
