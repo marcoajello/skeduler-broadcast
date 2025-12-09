@@ -396,6 +396,7 @@
   let isLiveMode = false;
   let realtimeChannel = null;
   let markedRows = new Set();
+  let hasLoadedOnce = false;
   
   async function init() {
     const params = new URLSearchParams(window.location.search);
@@ -428,7 +429,10 @@
         .single();
       
       if (lookupError || !broadcast) {
-        showError('Broadcast not found');
+        // Only show error on initial load, not refreshes
+        if (!hasLoadedOnce) {
+          showError('Broadcast not found');
+        }
         return;
       }
       
@@ -466,7 +470,10 @@
       
       const response = await fetch(publicUrl);
       if (!response.ok) {
-        showError('Could not load schedule');
+        // Only show error on initial load
+        if (!hasLoadedOnce) {
+          showError('Could not load schedule');
+        }
         return;
       }
       
@@ -485,14 +492,19 @@
       // Setup sharpie toggle
       setupSharpieToggle();
       
-      // Start auto-refresh if live (every 5 seconds)
-      if (isLiveMode) {
+      // Start auto-refresh if live (every 5 seconds) - only once
+      if (isLiveMode && !hasLoadedOnce) {
         refreshInterval = setInterval(loadBroadcast, 5000);
       }
       
+      hasLoadedOnce = true;
+      
     } catch (err) {
       console.error('Load error:', err);
-      showError('Failed to load broadcast');
+      // Only show error on initial load
+      if (!hasLoadedOnce) {
+        showError('Failed to load broadcast');
+      }
     }
   }
   
