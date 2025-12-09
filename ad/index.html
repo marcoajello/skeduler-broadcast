@@ -141,6 +141,8 @@
       width: 100%;
       table-layout: fixed;
       background: var(--row);
+      box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
+      border-radius: 8px;
     }
     
     table.schedule th,
@@ -494,7 +496,7 @@
       return;
     }
     
-    document.getElementById('channelName').textContent = `Channel: ${channelCode}`;
+    document.getElementById('channelName').textContent = 'Loading...';
     
     // Init Supabase
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -509,9 +511,33 @@
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
+      // Look up broadcast by code (same as CHANNELS viewer)
+      const { data: broadcast, error: lookupError } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .eq('code', channelCode.toUpperCase())
+        .single();
+      
+      if (lookupError || !broadcast) {
+        throw new Error('Broadcast not found');
+      }
+      
+      // Set channel name
+      const channelName = broadcast.title || `Channel ${channelCode}`;
+      document.getElementById('channelName').textContent = channelName;
+      
+      // Build the HTML path (same logic as CHANNELS viewer)
+      let htmlPath;
+      if (broadcast.channel_number) {
+        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+      } else {
+        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+      }
+      
+      // Download from schedule-files bucket
       const { data, error } = await supabase.storage
-        .from('broadcast-schedules')
-        .download(`${channelCode}.html`);
+        .from('schedule-files')
+        .download(htmlPath);
       
       if (error) throw error;
       
