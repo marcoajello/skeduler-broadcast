@@ -217,6 +217,18 @@
       -webkit-overflow-scrolling: touch;
     }
     
+    /* Hide action column buttons from loaded schedule */
+    #schedule-container th[data-key="actions"],
+    #schedule-container td[data-key="actions"] {
+      display: none;
+    }
+    
+    /* Hide drag column */
+    #schedule-container th[data-key="drag"],
+    #schedule-container td[data-key="drag"] {
+      display: none;
+    }
+    
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
       position: absolute;
