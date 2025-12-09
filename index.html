@@ -88,6 +88,18 @@
       justify-self: end;
     }
     
+    /* Progress toggle button from loaded schedule */
+    .header-right .progress-toggle {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+    }
+    
     /* ===== LIVE INDICATOR ===== */
     .live-badge {
       display: flex;
@@ -383,6 +395,13 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('schedule-container').style.display = 'block';
       document.getElementById('schedule-container').innerHTML = html;
+      
+      // Move progress-toggle button from schedule into header
+      const progressBtn = document.querySelector('#schedule-container .progress-toggle');
+      if (progressBtn) {
+        const headerRight = document.querySelector('.header-right');
+        headerRight.appendChild(progressBtn);
+      }
       
       // Show last updated
       const updated = new Date(broadcast.updated_at);
