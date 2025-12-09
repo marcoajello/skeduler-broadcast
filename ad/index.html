@@ -640,6 +640,9 @@
     // Remove any embedded style tags
     container.querySelectorAll('style').forEach(s => s.remove());
     
+    // Remove baked-in completed lines - AD viewer creates its own
+    container.querySelectorAll('.completed-line').forEach(el => el.remove());
+    
     // Add drag and action columns
     setupColumns();
     
@@ -649,18 +652,36 @@
     // Setup master sharpie in action header
     setupMasterSharpie();
     
+    // Initialize markedRows from loaded completed state
+    initCompletedState();
+    
     // Force background colors AFTER render
     requestAnimationFrame(() => {
       document.querySelectorAll('[data-key="drag"], [data-key="actions"]').forEach(cell => {
         cell.style.setProperty('background', '#222a35', 'important');
       });
-      // Double-tap with setTimeout for good measure
-      setTimeout(() => {
-        document.querySelectorAll('[data-key="drag"], [data-key="actions"]').forEach(cell => {
-          cell.style.setProperty('background', '#222a35', 'important');
-        });
-      }, 100);
     });
+  }
+  
+  function initCompletedState() {
+    // Find rows marked as completed in loaded HTML
+    const completedRows = document.querySelectorAll('#scheduleScroll tr[data-completed="true"], #scheduleScroll tr.row-complete');
+    
+    completedRows.forEach(row => {
+      const rowId = row.dataset.id;
+      if (rowId && !markedRows.has(rowId)) {
+        markedRows.add(rowId);
+        
+        // Activate sharpie button
+        const btn = row.querySelector('button.sharpie');
+        if (btn) btn.classList.add('active');
+        
+        // Create line element
+        addSharpieLineElement(row);
+      }
+    });
+    
+    console.log('[AD] Initialized', markedRows.size, 'completed rows');
   }
   
   // === SETUP COLUMNS ===
@@ -850,7 +871,7 @@
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
       btn.classList.toggle('lines-hidden', linesHidden);
-      broadcastEvent('sharpie-visibility', { hidden: linesHidden });
+      broadcastEvent('sharpie-visibility', { hidden: linesHidden, source: 'ad' });
     });
   }
   
@@ -869,7 +890,7 @@
       const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
       if (line) line.remove();
       
-      broadcastEvent('sharpie-toggle', { rowId, marked: false });
+      broadcastEvent('sharpie-toggle', { rowId, marked: false, source: 'ad' });
     } else {
       // Mark
       markedRows.add(rowId);
@@ -878,7 +899,7 @@
       // Add line
       addSharpieLineElement(row);
       
-      broadcastEvent('sharpie-toggle', { rowId, marked: true });
+      broadcastEvent('sharpie-toggle', { rowId, marked: true, source: 'ad' });
     }
   }
   
@@ -896,11 +917,12 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
     
-    // Position - constrained to table width (skip drag and action columns)
+    // Position - account for table offset (padding) and constrain to table width
+    const tableTop = table.offsetTop;
     const tableLeft = table.offsetLeft;
     const tableWidth = table.offsetWidth;
     
-    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    line.style.top = (tableTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
     line.style.left = (tableLeft + 36) + 'px';  // Skip drag column
     line.style.width = (tableWidth - 72) + 'px';  // Skip both 36px columns
     
@@ -912,6 +934,7 @@
     const table = scrollContainer?.querySelector('table');
     if (!table) return;
     
+    const tableTop = table.offsetTop;
     const tableLeft = table.offsetLeft;
     const tableWidth = table.offsetWidth;
     
@@ -920,7 +943,7 @@
       if (row) {
         const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
         if (line) {
-          line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+          line.style.top = (tableTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
           line.style.left = (tableLeft + 36) + 'px';
           line.style.width = (tableWidth - 72) + 'px';
         }
@@ -952,7 +975,7 @@
       const newValue = input.value.trim();
       if (newValue !== cell.textContent.trim()) {
         cell.textContent = newValue;
-        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue });
+        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue, source: 'ad' });
       }
       close();
     };
