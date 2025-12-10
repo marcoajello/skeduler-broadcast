@@ -9,11 +9,11 @@
     /* ===== EXACT DOM VARIABLES ===== */
     :root {
       --bg: #0a0e13;
-      --panel: #222a35;
+      --panel: #161b22;
       --muted: #9ca3af;
       --text: #f9fafb;
       --accent: #3b82f6;
-      --row: #222a35;
+      --row: #0d1117;
       --rowAlt: #1a2129;
       --border: #374151;
       --ad-purple: #a371f7;
@@ -218,7 +218,7 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: #222a35;
+      background: #161b22;
       font-weight: 600;
       color: var(--text);
     }
@@ -234,21 +234,31 @@
     }
     
     /* ===== DRAG & ACTION COLUMNS - ISOLATED BACKGROUND ===== */
-    /* These columns ignore row background - always #222a35 */
+    /* These columns ignore row background - always #ffffff */
     #scheduleScroll table tbody tr td[data-key="drag"],
     #scheduleScroll table tbody tr td[data-key="actions"],
     table.schedule tbody tr td[data-key="drag"],
     table.schedule tbody tr td[data-key="actions"] {
-      background: #222a35;
-      background-color: #222a35;
-      /* Isolation from row background */
-      isolation: isolate;
+      background: #ffffff;
+      background-color: #ffffff;
+      padding: 0;
+    }
+    
+    /* Wrapper div covers row background completely */
+    td[data-key="drag"] .cell-bg,
+    td[data-key="actions"] .cell-bg {
+      background: #ffffff;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     /* Force override any inline row styles */
     td[data-key="drag"],
     td[data-key="actions"] {
-      background: #222a35 !important;
+      background: #ffffff !important;
     }
     
     /* Drag column */
@@ -508,7 +518,7 @@
         <span class="live-text" id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
-      <button class="header-progress-btn lines-hidden" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');">
+      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');">
         <svg width="18" height="18" viewBox="195 40 100 130"><defs><linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
       </button>
     </div>
@@ -658,7 +668,7 @@
     // Force background colors AFTER render
     requestAnimationFrame(() => {
       document.querySelectorAll('[data-key="drag"], [data-key="actions"]').forEach(cell => {
-        cell.style.setProperty('background', '#222a35', 'important');
+        cell.style.setProperty('background', '#ffffff', 'important');
       });
     });
   }
@@ -694,7 +704,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
-      th.style.setProperty('background', '#222a35', 'important');
+      th.style.background = '#161b22';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
     
@@ -702,7 +712,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'actions');
-      th.style.setProperty('background', '#222a35', 'important');
+      th.style.background = '#161b22';
       headerRow.appendChild(th);
     }
     
@@ -726,27 +736,25 @@
     // Add cells to each row
     const rows = table.querySelectorAll('tbody tr[data-id]');
     rows.forEach(row => {
-      // Drag cell
+      // Drag cell - use wrapper div to block row background
       let dragTd = row.querySelector('td[data-key="drag"]');
       if (!dragTd) {
         dragTd = document.createElement('td');
         dragTd.setAttribute('data-key', 'drag');
-        dragTd.innerHTML = '<span class="drag-dots"></span>';
         row.insertBefore(dragTd, row.firstChild);
       }
-      dragTd.style.setProperty('background', '#222a35', 'important');
-      dragTd.style.setProperty('background-color', '#222a35', 'important');
+      dragTd.style.background = '#ffffff';
+      dragTd.innerHTML = '<div class="cell-bg"><span class="drag-dots"></span></div>';
       
-      // Action cell with sharpie button
+      // Action cell with sharpie button - use wrapper div
       let actionTd = row.querySelector('td[data-key="actions"]');
       if (!actionTd) {
         actionTd = document.createElement('td');
         actionTd.setAttribute('data-key', 'actions');
-        actionTd.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
         row.appendChild(actionTd);
       }
-      actionTd.style.setProperty('background', '#222a35', 'important');
-      actionTd.style.setProperty('background-color', '#222a35', 'important');
+      actionTd.style.background = '#ffffff';
+      actionTd.innerHTML = `<div class="cell-bg"><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
     });
   }
   
