@@ -684,6 +684,12 @@
         }
         updateAllSharpieLines();
       })
+      .on('broadcast', { event: 'sync-status' }, ({ payload }) => {
+        if (typeof payload?.live === 'boolean') {
+          isLiveMode = payload.live;
+          updateLiveStatus();
+        }
+      })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           updateFooter('Connected');
