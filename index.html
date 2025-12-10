@@ -157,6 +157,7 @@
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      background: var(--bg);
     }
     
     .loading, .error {
@@ -408,6 +409,17 @@
         document.getElementById('error').style.display = 'none';
         document.getElementById('schedule-container').style.display = 'block';
         document.getElementById('schedule-container').innerHTML = html;
+        
+        // Strip light mode garbage from injected HTML
+        const container = document.getElementById('schedule-container');
+        const table = container.querySelector('table');
+        if (table) {
+          table.style.background = '#000';
+        }
+        const scheduleScroll = container.querySelector('.schedule-scroll');
+        if (scheduleScroll) {
+          scheduleScroll.style.background = '#000';
+        }
         
         // Show last updated
         const updated = new Date(broadcast.updated_at);
