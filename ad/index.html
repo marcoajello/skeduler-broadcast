@@ -273,7 +273,7 @@
         <span class="live-text" id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
-      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');">
+      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');localStorage.setItem('ad-sharpie-hidden', document.body.classList.contains('sharpie-lines-hidden'));">
         <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
     </div>
@@ -307,6 +307,12 @@
   let isLiveMode = false;
   
   async function init() {
+    // Restore sharpie visibility state
+    if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
+      document.body.classList.add('sharpie-lines-hidden');
+      document.getElementById('progressBtn')?.classList.add('lines-hidden');
+    }
+    
     const params = new URLSearchParams(window.location.search);
     channelCode = params.get('c');
     
