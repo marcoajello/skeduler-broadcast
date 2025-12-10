@@ -145,7 +145,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: var(--border); }
+    .header-progress-btn.lines-hidden { background: #3b82f6; }
     .header-progress-btn:not(.lines-hidden) { background: #f44336; }
     
     /* ===== CONTENT ===== */
@@ -203,17 +203,11 @@
     
     #schedule-container table {
       border-collapse: collapse;
-      background: #000;
     }
     
     #schedule-container .schedule-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      background: #000;
-    }
-    
-    .content {
-      background: #000;
     }
     
     /* ===== SHARPIE LINES ===== */
@@ -243,6 +237,10 @@
 <body>
   <div class="header">
     <div class="header-left">
+      <div class="channel-name" id="channelName">Channel: Loading...</div>
+    </div>
+    
+    <div class="header-center">
       <div class="header-logo">
         <svg viewBox="195 40 100 130">
           <defs>
@@ -280,10 +278,6 @@
         </svg>
         <span>SKEDULER</span>
       </div>
-    </div>
-    
-    <div class="header-center">
-      <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
     <div class="header-right">
@@ -374,7 +368,7 @@
         
         // Update channel name (centered)
         const channelName = broadcast.title || 'Untitled';
-        document.getElementById('channelName').textContent = channelName;
+        document.getElementById('channelName').textContent = 'Channel: ' + channelName;
         document.title = channelName + ' - SKEDULER';
         
         // Update LIVE badge based on auto_update field
