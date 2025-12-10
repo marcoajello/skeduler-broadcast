@@ -567,7 +567,7 @@
     const rect = cell.getBoundingClientRect();
     
     popup.style.left = rect.left + 'px';
-    popup.style.top = (rect.bottom + 4) + 'px';
+    popup.style.top = rect.top + 'px';
     popup.classList.add('show');
     input.value = cell.textContent.trim();
     input.focus();
