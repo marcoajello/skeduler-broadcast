@@ -9,11 +9,11 @@
     /* ===== EXACT DOM VARIABLES ===== */
     :root {
       --bg: #0a0e13;
-      --panel: #161b22;
+      --panel: #222a35;
       --muted: #9ca3af;
       --text: #f9fafb;
       --accent: #3b82f6;
-      --row: #0d1117;
+      --row: #222a35;
       --rowAlt: #1a2129;
       --border: #374151;
       --ad-purple: #a371f7;
@@ -30,15 +30,15 @@
       flex-direction: column;
     }
     
-    /* ===== HEADER ===== */
+    /* ===== HEADER - AD STYLE ===== */
     .header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
-      padding: 12px 16px;
+      justify-content: space-between;
+      padding: 8px 16px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
-      min-height: 48px;
+      height: 48px;
       flex-shrink: 0;
     }
     
@@ -46,97 +46,46 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      justify-self: start;
     }
     
-    .channel-label {
-      font-size: 14px;
-      color: var(--text);
-    }
-    
-    .channel-label span {
-      color: var(--muted);
-    }
-    
-    .header-center {
-      justify-self: center;
+    .status-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    
+    .status-dot.connected {
+      background: var(--ad-purple);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.7); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(163, 113, 247, 0); }
+    }
+    
+    .channel-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
     }
     
     .header-right {
       display: flex;
       align-items: center;
       gap: 12px;
-      justify-self: end;
-    }
-    
-    /* ===== LIVE INDICATOR ===== */
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      height: 28px;
-    }
-    
-    .live-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
-    
-    .live-badge.live .live-dot {
-      background: var(--ad-purple);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    
-    .live-badge.live .live-text {
-      color: var(--ad-purple);
-      text-transform: uppercase;
-    }
-    
-    .live-badge.manual .live-dot {
-      background: var(--muted);
-    }
-    
-    .live-badge.manual .live-text {
-      display: none;
-    }
-    
-    /* Header progress button */
-    .header-progress-btn {
-      width: 28px;
-      height: 28px;
-      padding: 4px;
-      border-radius: 4px;
-      border: none;
-      background: var(--ad-purple);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .header-progress-btn:hover {
-      filter: brightness(1.1);
-    }
-    
-    .header-progress-btn.lines-hidden {
-      background: var(--ad-purple);
-    }
-    
-    .header-progress-btn:not(.lines-hidden) {
-      background: #f44336;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(0.9); }
     }
     
     .header-logo {
@@ -147,7 +96,6 @@
       font-weight: 700;
       letter-spacing: 2px;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
     }
     
     .ad-badge {
@@ -185,22 +133,16 @@
       width: 100%;
       height: 100%;
       overflow: auto;
-      padding: 16px;
     }
     
     /* ===== TABLE STYLING - EXACT DOM CLONE ===== */
-    #scheduleScroll table,
     table.schedule {
       border-collapse: collapse;
       width: 100%;
       table-layout: fixed;
       background: var(--row);
-      box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
-      border-radius: 8px;
     }
     
-    #scheduleScroll table th,
-    #scheduleScroll table td,
     table.schedule th,
     table.schedule td {
       border: 1px solid var(--border);
@@ -213,57 +155,36 @@
       white-space: nowrap;
     }
     
-    #scheduleScroll table thead th,
     table.schedule thead th {
       position: sticky;
       top: 0;
       z-index: 100;
-      background: #161b22;
+      background: #141920;
       font-weight: 600;
       color: var(--text);
     }
     
-    #scheduleScroll table tbody tr,
     table.schedule tbody tr {
       background: var(--row);
     }
     
-    #scheduleScroll table tbody tr:nth-child(even),
     table.schedule tbody tr:nth-child(even) {
       background: var(--rowAlt);
     }
     
-    /* ===== DRAG & ACTION COLUMNS - ISOLATED BACKGROUND ===== */
-    /* These columns ignore row background - light gray to match DOM */
-    #scheduleScroll table tbody tr td[data-key="drag"],
-    #scheduleScroll table tbody tr td[data-key="actions"],
-    table.schedule tbody tr td[data-key="drag"],
-    table.schedule tbody tr td[data-key="actions"] {
-      background: #f0f0f0 !important;
-      background-color: #f0f0f0 !important;
-      padding: 0;
-    }
-    
-    /* Wrapper div covers row background completely */
-    td[data-key="drag"] .cell-bg,
-    td[data-key="actions"] .cell-bg {
-      background: #f0f0f0;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    /* Force override any inline row styles */
-    td[data-key="drag"],
-    td[data-key="actions"] {
-      background: #f0f0f0 !important;
+    /* ===== DRAG & ACTION COLUMNS - EXACT DOM STYLING ===== */
+    table.schedule thead th[data-key="drag"],
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="drag"],
+    table.schedule tbody td[data-key="actions"] {
+      background: #222a35;
+      border: 1px solid #ffffff;
+      overflow: hidden;
     }
     
     /* Drag column */
-    #scheduleScroll table thead th[data-key="drag"],
-    #scheduleScroll table tbody td[data-key="drag"] {
+    table.schedule thead th[data-key="drag"],
+    table.schedule tbody td[data-key="drag"] {
       width: 36px;
       min-width: 36px;
       max-width: 36px;
@@ -272,14 +193,13 @@
       cursor: grab;
       user-select: none;
       padding: 0;
-      color: #666;
     }
     
-    #scheduleScroll table tbody td[data-key="drag"]:active {
+    table.schedule tbody td[data-key="drag"]:active {
       cursor: grabbing;
     }
     
-    /* 3x3 drag handle dots - exact DOM colors */
+    /* 3x3 drag handle dots - exact DOM pattern */
     .drag-dots {
       display: inline-block;
       width: 12px;
@@ -304,8 +224,8 @@
     }
     
     /* Action column */
-    #scheduleScroll table thead th[data-key="actions"],
-    #scheduleScroll table tbody td[data-key="actions"] {
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="actions"] {
       width: 36px;
       min-width: 36px;
       max-width: 36px;
@@ -359,6 +279,38 @@
       border-color: #d32f2f;
     }
     
+    /* Master sharpie in header */
+    button.master-sharpie-toggle {
+      margin: 0;
+      padding: 0;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f44336;
+      color: white;
+      border: 1px solid #d32f2f;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    button.master-sharpie-toggle svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    button.master-sharpie-toggle.lines-hidden {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    
     /* ===== DRAGGING STATES - EXACT DOM ===== */
     tr.dragging {
       opacity: 0.6;
@@ -380,24 +332,6 @@
     
     body.sharpie-lines-hidden .sharpie-line-element {
       display: none;
-    }
-    
-    /* ===== COMPLETED/PROGRESS LINES ===== */
-    .completed-line {
-      position: absolute;
-      left: 0;
-      top: 50%;
-      width: 5000px;
-      height: 4px;
-      background: #ef4444;
-      pointer-events: none;
-      transform: translateY(-50%);
-      z-index: 100;
-      display: none;
-    }
-    
-    body.show-progress .completed-line {
-      display: block;
     }
     
     /* ===== DURATION EDITOR POPUP ===== */
@@ -467,12 +401,13 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="channel-label">
-        <span>Channel:</span> <strong id="channelName">Loading...</strong>
-      </div>
+      <button class="status-btn" id="statusBtn" title="Connection status">
+        <span class="status-dot" id="statusDot"></span>
+      </button>
+      <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
-    <div class="header-center">
+    <div class="header-right">
       <div class="header-logo">
         <span>SKEDULER</span>
         <span class="ad-badge">AD</span>
@@ -512,16 +447,6 @@
         </svg>
       </div>
     </div>
-    
-    <div class="header-right">
-      <div class="live-badge manual" id="liveBadge">
-        <span class="live-text" id="liveText">LIVE</span>
-        <span class="live-dot"></span>
-      </div>
-      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');">
-        <svg width="18" height="18" viewBox="195 40 100 130"><defs><linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
-      </button>
-    </div>
   </div>
   
   <div class="main-content">
@@ -546,8 +471,8 @@
   'use strict';
   
   // === CONFIG ===
-  const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+  const SUPABASE_URL = 'https://goscwhzglyjvqexarxov.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdvc2N3aHpnbHlqdnFleGFyeG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI2NzU4NzAsImV4cCI6MjA0ODI1MTg3MH0.v_BjG9Szq7aSn9Sk0CwUJH07dQvhGzEPgJxrXRaQhuw';
   
   // === STATE ===
   let supabase = null;
@@ -556,7 +481,6 @@
   let draggingRow = null;
   let markedRows = new Set();
   let linesHidden = false;
-  let isLiveMode = false;
   
   // === INIT ===
   async function init() {
@@ -570,7 +494,7 @@
       return;
     }
     
-    document.getElementById('channelName').textContent = 'Loading...';
+    document.getElementById('channelName').textContent = `Channel: ${channelCode}`;
     
     // Init Supabase
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -585,49 +509,13 @@
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      // Look up broadcast by code (same as CHANNELS viewer)
-      const { data: broadcast, error: lookupError } = await supabase
-        .from('broadcasts')
-        .select('*')
-        .eq('code', channelCode.toUpperCase())
-        .single();
+      const { data, error } = await supabase.storage
+        .from('broadcast-schedules')
+        .download(`${channelCode}.html`);
       
-      if (lookupError || !broadcast) {
-        throw new Error('Broadcast not found');
-      }
+      if (error) throw error;
       
-      // Set live mode and update badge
-      isLiveMode = broadcast.auto_update === true;
-      updateLiveStatus();
-      
-      // Set channel name
-      const channelName = broadcast.title || `Channel ${channelCode}`;
-      document.getElementById('channelName').textContent = channelName;
-      
-      // Build the HTML path (same logic as CHANNELS viewer)
-      let htmlPath;
-      if (broadcast.channel_number) {
-        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
-      } else {
-        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
-      }
-      
-      // Use public URL with cache-busting (same as CHANNELS viewer)
-      const { data: urlData } = supabase.storage
-        .from('schedule-files')
-        .getPublicUrl(htmlPath);
-      
-      const cacheBuster = Date.now();
-      const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
-      
-      console.log('[AD] Fetching:', publicUrl);
-      
-      const response = await fetch(publicUrl);
-      if (!response.ok) {
-        throw new Error('Could not load schedule');
-      }
-      
-      const html = await response.text();
+      const html = await data.text();
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
@@ -644,21 +532,6 @@
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
     
-    // NUCLEAR: Remove any buttons from loaded HTML
-    container.querySelectorAll('button').forEach(btn => btn.remove());
-    
-    // Remove any embedded style tags
-    container.querySelectorAll('style').forEach(s => s.remove());
-    
-    // Remove baked-in completed lines - AD viewer creates its own
-    container.querySelectorAll('.completed-line').forEach(el => el.remove());
-    
-    // NUCLEAR: Strip ALL inline background styles from everything
-    container.querySelectorAll('*').forEach(el => {
-      el.style.removeProperty('background');
-      el.style.removeProperty('background-color');
-    });
-    
     // Add drag and action columns
     setupColumns();
     
@@ -667,41 +540,6 @@
     
     // Setup master sharpie in action header
     setupMasterSharpie();
-    
-    // Initialize markedRows from loaded completed state
-    initCompletedState();
-    
-    // Force background colors AFTER render - use actual DOM gray color
-    requestAnimationFrame(() => {
-      document.querySelectorAll('td[data-key="drag"], td[data-key="actions"]').forEach(cell => {
-        cell.style.setProperty('background', '#f0f0f0', 'important');
-        cell.style.setProperty('background-color', '#f0f0f0', 'important');
-      });
-      document.querySelectorAll('th[data-key="drag"], th[data-key="actions"]').forEach(cell => {
-        cell.style.setProperty('background', '#161b22', 'important');
-      });
-    });
-  }
-  
-  function initCompletedState() {
-    // Find rows marked as completed in loaded HTML
-    const completedRows = document.querySelectorAll('#scheduleScroll tr[data-completed="true"], #scheduleScroll tr.row-complete');
-    
-    completedRows.forEach(row => {
-      const rowId = row.dataset.id;
-      if (rowId && !markedRows.has(rowId)) {
-        markedRows.add(rowId);
-        
-        // Activate sharpie button
-        const btn = row.querySelector('button.sharpie');
-        if (btn) btn.classList.add('active');
-        
-        // Create line element
-        addSharpieLineElement(row);
-      }
-    });
-    
-    console.log('[AD] Initialized', markedRows.size, 'completed rows');
   }
   
   // === SETUP COLUMNS ===
@@ -714,15 +552,14 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
-      th.style.background = '#161b22';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
     
-    // Add action column header (empty - header has progress button)
+    // Add action column header with master sharpie
     if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'actions');
-      th.style.background = '#161b22';
+      th.innerHTML = `<div><button class="master-sharpie-toggle" id="masterSharpie" title="Toggle all sharpie lines">${getSharpieIconSVG()}</button></div>`;
       headerRow.appendChild(th);
     }
     
@@ -746,25 +583,21 @@
     // Add cells to each row
     const rows = table.querySelectorAll('tbody tr[data-id]');
     rows.forEach(row => {
-      // Drag cell - use wrapper div to block row background
-      let dragTd = row.querySelector('td[data-key="drag"]');
-      if (!dragTd) {
-        dragTd = document.createElement('td');
-        dragTd.setAttribute('data-key', 'drag');
-        row.insertBefore(dragTd, row.firstChild);
+      // Drag cell
+      if (!row.querySelector('td[data-key="drag"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'drag');
+        td.innerHTML = '<span class="drag-dots"></span>';
+        row.insertBefore(td, row.firstChild);
       }
-      dragTd.style.setProperty('background', '#f0f0f0', 'important');
-      dragTd.innerHTML = '<div class="cell-bg"><span class="drag-dots"></span></div>';
       
-      // Action cell with sharpie button - use wrapper div
-      let actionTd = row.querySelector('td[data-key="actions"]');
-      if (!actionTd) {
-        actionTd = document.createElement('td');
-        actionTd.setAttribute('data-key', 'actions');
-        row.appendChild(actionTd);
+      // Action cell with sharpie button
+      if (!row.querySelector('td[data-key="actions"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'actions');
+        td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
+        row.appendChild(td);
       }
-      actionTd.style.setProperty('background', '#f0f0f0', 'important');
-      actionTd.innerHTML = `<div class="cell-bg"><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
     });
   }
   
@@ -893,7 +726,7 @@
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
       btn.classList.toggle('lines-hidden', linesHidden);
-      broadcastEvent('sharpie-visibility', { hidden: linesHidden, source: 'ad' });
+      broadcastEvent('sharpie-visibility', { hidden: linesHidden });
     });
   }
   
@@ -912,7 +745,7 @@
       const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
       if (line) line.remove();
       
-      broadcastEvent('sharpie-toggle', { rowId, marked: false, source: 'ad' });
+      broadcastEvent('sharpie-toggle', { rowId, marked: false });
     } else {
       // Mark
       markedRows.add(rowId);
@@ -921,7 +754,7 @@
       // Add line
       addSharpieLineElement(row);
       
-      broadcastEvent('sharpie-toggle', { rowId, marked: true, source: 'ad' });
+      broadcastEvent('sharpie-toggle', { rowId, marked: true });
     }
   }
   
@@ -939,35 +772,23 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
     
-    // Position - account for table offset (padding) and constrain to table width
-    const tableTop = table.offsetTop;
-    const tableLeft = table.offsetLeft;
-    const tableWidth = table.offsetWidth;
-    
-    line.style.top = (tableTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = (tableLeft + 36) + 'px';  // Skip drag column
-    line.style.width = (tableWidth - 72) + 'px';  // Skip both 36px columns
+    // Position (skip drag column, end before action column)
+    const padding = 42; // 36px column + 6px padding
+    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    line.style.left = padding + 'px';
+    line.style.right = padding + 'px';
     
     scrollContainer.appendChild(line);
   }
   
   function updateAllSharpieLines() {
     const scrollContainer = document.getElementById('scheduleScroll');
-    const table = scrollContainer?.querySelector('table');
-    if (!table) return;
-    
-    const tableTop = table.offsetTop;
-    const tableLeft = table.offsetLeft;
-    const tableWidth = table.offsetWidth;
-    
     markedRows.forEach(rowId => {
       const row = document.querySelector(`tr[data-id="${rowId}"]`);
       if (row) {
         const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
         if (line) {
-          line.style.top = (tableTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-          line.style.left = (tableLeft + 36) + 'px';
-          line.style.width = (tableWidth - 72) + 'px';
+          line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
         }
       }
     });
@@ -997,7 +818,7 @@
       const newValue = input.value.trim();
       if (newValue !== cell.textContent.trim()) {
         cell.textContent = newValue;
-        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue, source: 'ad' });
+        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue });
       }
       close();
     };
@@ -1025,7 +846,7 @@
   
   // === REALTIME SYNC ===
   function subscribeToChannel() {
-    channel = supabase.channel(`ad-sync-${channelCode.toUpperCase()}`, {
+    channel = supabase.channel(`ad-sync-${channelCode}`, {
       config: { broadcast: { self: false } }
     });
     
@@ -1038,12 +859,15 @@
       .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
       .subscribe((status) => {
+        const dot = document.getElementById('statusDot');
         if (status === 'SUBSCRIBED') {
+          dot.classList.add('connected');
           updateFooter('Connected');
           
           // Request full sync from DOM
           broadcastEvent('request-sync', {});
         } else {
+          dot.classList.remove('connected');
           updateFooter('Disconnected');
         }
       });
@@ -1171,47 +995,6 @@
     footer.textContent = `${status} • ${new Date().toLocaleTimeString()}`;
   }
   
-  function updateLiveStatus() {
-    const badge = document.getElementById('liveBadge');
-    if (!badge) return;
-    
-    badge.classList.remove('live', 'manual');
-    
-    if (isLiveMode) {
-      badge.classList.add('live');
-    } else {
-      badge.classList.add('manual');
-    }
-  }
-  
-  // Check if LIVE status changed every 30s
-  async function checkLiveStatus() {
-    if (!channelCode) return;
-    
-    try {
-      const { data: broadcast } = await supabase
-        .from('broadcasts')
-        .select('auto_update')
-        .eq('code', channelCode.toUpperCase())
-        .single();
-      
-      if (!broadcast) return;
-      
-      const wasLive = isLiveMode;
-      isLiveMode = broadcast.auto_update === true;
-      
-      if (wasLive !== isLiveMode) {
-        console.log('[AD] LIVE status changed:', isLiveMode);
-        updateLiveStatus();
-      }
-    } catch (e) {
-      console.error('[AD] Status check error:', e);
-    }
-  }
-  
-  // Start status polling
-  setInterval(checkLiveStatus, 30000);
-
   // === START ===
   document.addEventListener('DOMContentLoaded', init);
 })();
