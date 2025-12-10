@@ -245,11 +245,20 @@
     }
     
     /* Wrapper div covers row background completely */
+    td[data-key="drag"],
+    td[data-key="actions"] {
+      position: relative;
+      padding: 0 !important;
+    }
+    
     td[data-key="drag"] .cell-bg,
     td[data-key="actions"] .cell-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: #f0f0f0;
-      width: 100%;
-      height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
