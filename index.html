@@ -50,22 +50,6 @@
       justify-self: start;
     }
     
-    .channel-label {
-      font-size: 14px;
-      color: var(--text);
-    }
-    
-    .channel-label span {
-      color: var(--muted);
-    }
-    
-    .header-center {
-      justify-self: center;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
     .header-logo {
       display: flex;
       align-items: center;
@@ -74,12 +58,26 @@
       font-weight: 700;
       letter-spacing: 2px;
       color: var(--text);
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     }
     
     .header-logo svg {
       width: 20px;
       height: 20px;
+    }
+    
+    .header-center {
+      justify-self: center;
+      text-align: center;
+    }
+    
+    .channel-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
     .header-right {
@@ -94,41 +92,82 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
       font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      height: 28px;
+      font-weight: 700;
+      letter-spacing: 1px;
       text-transform: uppercase;
     }
     
-    .live-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: var(--muted);
+    .live-badge.live {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--live-red);
+      border: 1px solid rgba(248, 81, 73, 0.3);
     }
     
     .live-badge.live .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: var(--live-red);
       animation: pulse 1.5s ease-in-out infinite;
     }
     
-    .live-badge.live .live-text {
-      color: var(--live-red);
-      text-transform: uppercase;
+    .live-badge.manual {
+      background: rgba(125, 133, 144, 0.15);
+      color: var(--muted);
+      border: 1px solid rgba(125, 133, 144, 0.3);
     }
     
     .live-badge.manual .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: var(--muted);
     }
     
-    .live-badge.manual .live-text {
-      display: none;
+    .live-badge.offline {
+      background: rgba(248, 81, 73, 0.1);
+      color: var(--live-red);
+      border: 1px solid rgba(248, 81, 73, 0.2);
     }
     
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(0.9); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+    
+    /* ===== SHARPIE TOGGLE ===== */
+    .sharpie-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    
+    .sharpie-toggle:hover {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--muted);
+    }
+    
+    .sharpie-toggle.active {
+      background: rgba(244, 67, 54, 0.1);
+      border-color: #f44336;
+      color: #f44336;
+    }
+    
+    .sharpie-toggle .sharpie-icon {
+      width: 14px;
+      height: 14px;
     }
     
     /* ===== CONTENT ===== */
@@ -143,14 +182,26 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 50vh;
+      min-height: 60vh;
       text-align: center;
-      color: var(--muted);
+      padding: 24px;
     }
     
+    .loading h2, .error h2 {
+      font-size: 18px;
+      margin: 0 0 8px;
+    }
+    
+    .loading p, .error p {
+      color: var(--muted);
+      margin: 0;
+    }
+    
+    .error h2 { color: var(--live-red); }
+    
     .spinner {
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       border: 3px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -164,8 +215,7 @@
     
     /* ===== SCHEDULE CONTAINER ===== */
     #schedule-container {
-      position: relative;
-      background: #fff;
+      background: #000;
       border-radius: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -178,45 +228,10 @@
     }
     
     #schedule-container .schedule-scroll {
-      position: relative;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
     
-    /* Hide drag and action columns from loaded schedule */
-    #schedule-container th[data-key="actions"],
-    #schedule-container td[data-key="actions"],
-    #schedule-container th[data-key="drag"],
-    #schedule-container td[data-key="drag"] {
-      display: none;
-    }
-    
-    /* Header progress button */
-    .header-progress-btn {
-      width: 28px;
-      height: 28px;
-      padding: 4px;
-      border-radius: 4px;
-      border: none;
-      background: #2563eb;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .header-progress-btn:hover {
-      filter: brightness(1.1);
-    }
-    
-    .header-progress-btn.lines-hidden {
-      background: #2563eb;
-    }
-    
-    .header-progress-btn:not(.lines-hidden) {
-      background: #f44336;
-    }
-
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
       position: absolute;
@@ -224,11 +239,10 @@
       background: #f44336;
       pointer-events: none;
       z-index: 500;
-      left: 0;
-      right: 0;
     }
     
-    body.sharpie-hidden .sharpie-line-element {
+    body.sharpie-hidden .sharpie-line-element,
+    body.sharpie-hidden .row-complete::after {
       display: none;
     }
     
@@ -245,14 +259,7 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="channel-label">
-        <span>Channel:</span> <strong id="channelName">Loading...</strong>
-      </div>
-    </div>
-    
-    <div class="header-center">
       <div class="header-logo">
-        <span>SKEDULER</span>
         <svg viewBox="195 40 100 130">
           <defs>
             <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -287,17 +294,28 @@
             <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
           </g>
         </svg>
+        <span>SKEDULER</span>
       </div>
     </div>
     
+    <div class="header-center">
+      <div class="channel-name" id="channelName">Loading...</div>
+    </div>
+    
     <div class="header-right">
-      <div class="live-badge manual" id="liveBadge">
-        <span class="live-text" id="liveText">LIVE</span>
-        <span class="live-dot"></span>
-      </div>
-      <button class="header-progress-btn lines-hidden" title="Toggle Progress" onclick="document.body.classList.toggle('show-progress');this.classList.toggle('lines-hidden');">
-        <svg width="18" height="18" viewBox="195 40 100 130"><defs><linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#cc2222"/><stop offset="40%" stop-color="#ee3333"/><stop offset="100%" stop-color="#aa1111"/></linearGradient><linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#dd2222"/><stop offset="100%" stop-color="#991111"/></linearGradient><linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#d0d0d0"/><stop offset="30%" stop-color="#eeeeee"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#c8c8c8"/></linearGradient><linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#aa1111"/><stop offset="50%" stop-color="#dd3333"/><stop offset="100%" stop-color="#991111"/></linearGradient></defs><g transform="rotate(45 245 96)"><path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/><path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/><ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/><path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/><path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/><path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/></g></svg>
+      <button class="sharpie-toggle active" id="sharpieToggle" title="Toggle completion lines">
+        <svg class="sharpie-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+          <path d="M2 2l7.586 7.586"/>
+        </svg>
+        <span>SHARPIE</span>
       </button>
+      
+      <div class="live-badge manual" id="liveBadge">
+        <span class="live-dot"></span>
+        <span id="liveText">MANUAL</span>
+      </div>
     </div>
   </div>
   
@@ -317,277 +335,143 @@
     <div id="updated-at" class="updated-at"></div>
   </div>
 
-<script>
-(function() {
-  'use strict';
-  
-  const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
-  
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  
-  let broadcastCode = null;
-  let broadcastData = null;
-  let refreshInterval = null;
-  let sharpieVisible = true;
-  let isLiveMode = false;
-  let realtimeChannel = null;
-  let markedRows = new Set();
-  let hasLoadedOnce = false;
-  
-  async function init() {
-    const params = new URLSearchParams(window.location.search);
-    broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+  <script>
+    const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
     
-    if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '') {
-      showError('No broadcast code provided');
-      return;
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    let broadcastCode = null;
+    let broadcastData = null;
+    let refreshInterval = null;
+    let sharpieVisible = true;
+    
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+      
+      if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '' || broadcastCode === 'broadcast-viewer-index.html') {
+        showError('No broadcast code provided');
+        return;
+      }
+      
+      // Setup sharpie toggle
+      const sharpieToggle = document.getElementById('sharpieToggle');
+      sharpieToggle.addEventListener('click', toggleSharpie);
+      
+      await loadBroadcast();
+      
+      // Auto-refresh every 30 seconds
+      refreshInterval = setInterval(loadBroadcast, 30000);
     }
     
-    await loadBroadcast();
-    
-    // Subscribe to realtime for AD sync
-    subscribeToRealtime();
-  }
-  
-  function showError(message) {
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').style.display = 'flex';
-    document.getElementById('error').querySelector('p').textContent = message;
-  }
-  
-  async function loadBroadcast() {
-    try {
-      // Look up broadcast by code
-      const { data: broadcast, error: lookupError } = await supabase
-        .from('broadcasts')
-        .select('*')
-        .eq('code', broadcastCode.toUpperCase())
-        .single();
+    function toggleSharpie() {
+      sharpieVisible = !sharpieVisible;
+      const btn = document.getElementById('sharpieToggle');
       
-      if (lookupError || !broadcast) {
-        // Only show error on initial load, not refreshes
-        if (!hasLoadedOnce) {
-          showError('Broadcast not found');
-        }
-        return;
-      }
-      
-      broadcastData = broadcast;
-      isLiveMode = broadcast.auto_update === true;
-      
-      // Update title
-      const channelName = broadcast.title || 'Untitled';
-      document.getElementById('channelName').textContent = channelName;
-      document.title = channelName + ' - SKEDULER LIVE';
-      
-      // Update live badge
-      updateLiveStatus();
-      
-      // Fetch HTML from storage
-      let htmlPath;
-      if (broadcast.channel_number) {
-        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+      if (sharpieVisible) {
+        document.body.classList.remove('sharpie-hidden');
+        btn.classList.add('active');
       } else {
-        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+        document.body.classList.add('sharpie-hidden');
+        btn.classList.remove('active');
       }
-      
-      const { data: urlData } = supabase.storage
-        .from('schedule-files')
-        .getPublicUrl(htmlPath);
-      
-      const cacheBuster = Date.now();
-      const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
-      
-      const response = await fetch(publicUrl);
-      if (!response.ok) {
-        // Only show error on initial load
-        if (!hasLoadedOnce) {
-          showError('Could not load schedule');
+    }
+    
+    async function loadBroadcast() {
+      try {
+        // Look up broadcast by code
+        const { data: broadcast, error: lookupError } = await supabase
+          .from('broadcasts')
+          .select('*')
+          .eq('code', broadcastCode.toUpperCase())
+          .single();
+        
+        if (lookupError || !broadcast) {
+          showError('Broadcast not found');
+          return;
         }
-        return;
-      }
-      
-      const html = await response.text();
-      
-      // Display
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error').style.display = 'none';
-      document.getElementById('schedule-container').style.display = 'block';
-      document.getElementById('schedule-container').innerHTML = html;
-      
-      // Show last updated
-      const updated = new Date(broadcast.updated_at);
-      document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleTimeString();
-      
-      // Start auto-refresh if live (every 5 seconds) - only once
-      if (isLiveMode && !hasLoadedOnce) {
-        refreshInterval = setInterval(loadBroadcast, 5000);
-      }
-      
-      hasLoadedOnce = true;
-      
-    } catch (err) {
-      console.error('Load error:', err);
-      // Only show error on initial load
-      if (!hasLoadedOnce) {
+        
+        broadcastData = broadcast;
+        
+        // Update channel name (centered)
+        const channelName = broadcast.title || 'Untitled';
+        document.getElementById('channelName').textContent = channelName;
+        document.title = channelName + ' - SKEDULER';
+        
+        // Update LIVE badge based on auto_update field
+        updateLiveBadge(broadcast.auto_update);
+        
+        // Fetch HTML from storage
+        let htmlPath;
+        if (broadcast.channel_number) {
+          htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+        } else {
+          htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+        }
+        
+        const { data: urlData } = supabase.storage
+          .from('schedule-files')
+          .getPublicUrl(htmlPath);
+        
+        const cacheBuster = Date.now();
+        const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
+        
+        console.log('[Broadcast] Fetching:', publicUrl);
+        
+        const response = await fetch(publicUrl);
+        if (!response.ok) {
+          showError('Could not load schedule');
+          return;
+        }
+        
+        const html = await response.text();
+        
+        // Display
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        document.getElementById('schedule-container').style.display = 'block';
+        document.getElementById('schedule-container').innerHTML = html;
+        
+        // Show last updated
+        const updated = new Date(broadcast.updated_at);
+        document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleString();
+        
+      } catch (err) {
+        console.error('Load error:', err);
         showError('Failed to load broadcast');
       }
     }
-  }
-  
-  function updateLiveStatus() {
-    const badge = document.getElementById('liveBadge');
     
-    badge.classList.remove('live', 'manual');
-    
-    if (isLiveMode) {
-      badge.classList.add('live');
-    } else {
-      badge.classList.add('manual');
-    }
-  }
-  
-  // Check if LIVE status changed every 30s
-  async function checkLiveStatus() {
-    try {
-      const { data: broadcast } = await supabase
-        .from('broadcasts')
-        .select('auto_update')
-        .eq('code', broadcastCode)
-        .single();
+    function updateLiveBadge(isLive) {
+      const badge = document.getElementById('liveBadge');
+      const text = document.getElementById('liveText');
       
-      if (!broadcast) return;
+      badge.classList.remove('live', 'manual', 'offline');
       
-      const wasLive = isLiveMode;
-      isLiveMode = broadcast.auto_update === true;
-      
-      // Status changed?
-      if (wasLive !== isLiveMode) {
-        console.log('[Viewer] LIVE status changed:', isLiveMode);
-        updateLiveStatus();
-        
-        if (isLiveMode && !refreshInterval) {
-          // Switched to LIVE - start polling
-          refreshInterval = setInterval(loadBroadcast, 5000);
-          loadBroadcast(); // Immediate refresh
-        } else if (!isLiveMode && refreshInterval) {
-          // Switched to MANUAL - stop polling
-          clearInterval(refreshInterval);
-          refreshInterval = null;
-        }
+      if (isLive) {
+        badge.classList.add('live');
+        text.textContent = 'LIVE';
+      } else {
+        badge.classList.add('manual');
+        text.textContent = 'MANUAL';
       }
-    } catch (e) {
-      console.error('[Viewer] Status check error:', e);
     }
-  }
-  
-  // Start status polling
-  setInterval(checkLiveStatus, 30000);
-
-  // === REALTIME SYNC ===
-  function subscribeToRealtime() {
-    realtimeChannel = supabase.channel(`ad-sync-${broadcastCode}`, {
-      config: { broadcast: { self: false } }
-    });
     
-    realtimeChannel
-      .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
-      .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
-      .on('broadcast', { event: 'sharpie-visibility' }, handleSharpieVisibility)
-      .on('broadcast', { event: 'duration-change' }, handleDurationChange)
-      .subscribe();
-  }
-  
-  function handleRowReorder({ payload }) {
-    if (!payload?.order || payload.source === 'viewer') return;
-    
-    const tbody = document.querySelector('#schedule-container tbody');
-    if (!tbody) return;
-    
-    payload.order.forEach(id => {
-      const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (row) tbody.appendChild(row);
-    });
-    
-    updateSharpieLines();
-  }
-  
-  function handleSharpieToggle({ payload }) {
-    if (!payload?.rowId) return;
-    
-    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-    if (!row) return;
-    
-    const container = document.querySelector('#schedule-container');
-    
-    if (payload.marked) {
-      markedRows.add(payload.rowId);
-      addSharpieLineElement(row, container);
-    } else {
-      markedRows.delete(payload.rowId);
-      const line = container.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
-      if (line) line.remove();
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('schedule-container').style.display = 'none';
+      document.getElementById('error').style.display = 'flex';
+      document.getElementById('error').querySelector('p').textContent = msg;
+      
+      const badge = document.getElementById('liveBadge');
+      const text = document.getElementById('liveText');
+      badge.classList.remove('live', 'manual');
+      badge.classList.add('offline');
+      text.textContent = 'OFFLINE';
     }
-  }
-  
-  function handleSharpieVisibility({ payload }) {
-    if (payload.hidden !== undefined) {
-      sharpieVisible = !payload.hidden;
-      document.body.classList.toggle('sharpie-hidden', payload.hidden);
-    }
-  }
-  
-  function handleDurationChange({ payload }) {
-    if (!payload?.rowId) return;
     
-    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-    if (!row) return;
-    
-    const cell = row.querySelector('td[data-key="duration"]');
-    if (cell) cell.textContent = payload.duration;
-  }
-  
-  function addSharpieLineElement(row, container) {
-    // Remove existing
-    const existing = container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
-    if (existing) existing.remove();
-    
-    // Find scroll container
-    const scrollContainer = container.querySelector('.schedule-scroll') || container;
-    
-    // Create line
-    const line = document.createElement('div');
-    line.className = 'sharpie-line-element';
-    line.dataset.rowId = row.dataset.id;
-    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    
-    scrollContainer.appendChild(line);
-  }
-  
-  function updateSharpieLines() {
-    const container = document.querySelector('#schedule-container');
-    if (!container) return;
-    
-    markedRows.forEach(rowId => {
-      const row = document.querySelector(`tr[data-id="${rowId}"]`);
-      if (row) {
-        const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
-        if (line) {
-          line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        }
-      }
-    });
-  }
-  
-  // Cleanup
-  window.addEventListener('beforeunload', () => {
-    if (refreshInterval) clearInterval(refreshInterval);
-    if (realtimeChannel) realtimeChannel.unsubscribe();
-  });
-  
-  document.addEventListener('DOMContentLoaded', init);
-})();
-</script>
+    init();
+  </script>
 </body>
 </html>
