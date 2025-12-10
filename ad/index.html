@@ -540,8 +540,8 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
     line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = (table.offsetLeft + 36) + 'px';
-    line.style.width = (table.offsetWidth - 72) + 'px';
+    line.style.left = (table.offsetLeft + 16) + 'px';
+    line.style.width = (table.offsetWidth - 32) + 'px';
     container.appendChild(line);
   }
   
@@ -555,8 +555,8 @@
       const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
       if (row && line) {
         line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        line.style.left = (table.offsetLeft + 36) + 'px';
-        line.style.width = (table.offsetWidth - 72) + 'px';
+        line.style.left = (table.offsetLeft + 16) + 'px';
+        line.style.width = (table.offsetWidth - 32) + 'px';
       }
     });
   }
