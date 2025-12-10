@@ -233,22 +233,22 @@
       background: var(--rowAlt);
     }
     
-    /* ===== DRAG & ACTION COLUMNS - EXACT DOM COLORS ===== */
-    /* Ultra-high specificity to beat any loaded styles */
-    html body .main-content #schedule-container #scheduleScroll table thead tr th[data-key="drag"],
-    html body .main-content #schedule-container #scheduleScroll table thead tr th[data-key="actions"],
-    html body .main-content #schedule-container #scheduleScroll table tbody tr td[data-key="drag"],
-    html body .main-content #schedule-container #scheduleScroll table tbody tr td[data-key="actions"],
-    #scheduleScroll table thead th[data-key="drag"],
-    #scheduleScroll table thead th[data-key="actions"],
-    #scheduleScroll table tbody td[data-key="drag"],
-    #scheduleScroll table tbody td[data-key="actions"],
-    th[data-key="drag"],
-    th[data-key="actions"],
+    /* ===== DRAG & ACTION COLUMNS - ISOLATED BACKGROUND ===== */
+    /* These columns ignore row background - always #222a35 */
+    #scheduleScroll table tbody tr td[data-key="drag"],
+    #scheduleScroll table tbody tr td[data-key="actions"],
+    table.schedule tbody tr td[data-key="drag"],
+    table.schedule tbody tr td[data-key="actions"] {
+      background: #222a35;
+      background-color: #222a35;
+      /* Isolation from row background */
+      isolation: isolate;
+    }
+    
+    /* Force override any inline row styles */
     td[data-key="drag"],
     td[data-key="actions"] {
       background: #222a35 !important;
-      background-color: #222a35 !important;
     }
     
     /* Drag column */
@@ -727,22 +727,26 @@
     const rows = table.querySelectorAll('tbody tr[data-id]');
     rows.forEach(row => {
       // Drag cell
-      if (!row.querySelector('td[data-key="drag"]')) {
-        const td = document.createElement('td');
-        td.setAttribute('data-key', 'drag');
-        td.style.setProperty('background', '#222a35', 'important');
-        td.innerHTML = '<span class="drag-dots"></span>';
-        row.insertBefore(td, row.firstChild);
+      let dragTd = row.querySelector('td[data-key="drag"]');
+      if (!dragTd) {
+        dragTd = document.createElement('td');
+        dragTd.setAttribute('data-key', 'drag');
+        dragTd.innerHTML = '<span class="drag-dots"></span>';
+        row.insertBefore(dragTd, row.firstChild);
       }
+      dragTd.style.setProperty('background', '#222a35', 'important');
+      dragTd.style.setProperty('background-color', '#222a35', 'important');
       
       // Action cell with sharpie button
-      if (!row.querySelector('td[data-key="actions"]')) {
-        const td = document.createElement('td');
-        td.setAttribute('data-key', 'actions');
-        td.style.setProperty('background', '#222a35', 'important');
-        td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
-        row.appendChild(td);
+      let actionTd = row.querySelector('td[data-key="actions"]');
+      if (!actionTd) {
+        actionTd = document.createElement('td');
+        actionTd.setAttribute('data-key', 'actions');
+        actionTd.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
+        row.appendChild(actionTd);
       }
+      actionTd.style.setProperty('background', '#222a35', 'important');
+      actionTd.style.setProperty('background-color', '#222a35', 'important');
     });
   }
   
@@ -1003,7 +1007,7 @@
   
   // === REALTIME SYNC ===
   function subscribeToChannel() {
-    channel = supabase.channel(`ad-sync-${channelCode}`, {
+    channel = supabase.channel(`ad-sync-${channelCode.toUpperCase()}`, {
       config: { broadcast: { self: false } }
     });
     
