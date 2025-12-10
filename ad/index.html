@@ -153,28 +153,32 @@
     td[data-key="actions"] {
       position: relative;
       padding: 0 !important;
-      width: 36px;
-      min-width: 36px;
-      max-width: 36px;
+      width: 60px;
+      min-width: 60px;
+      max-width: 60px;
     }
     
     th[data-key="drag"],
     th[data-key="actions"] {
-      width: 36px;
-      min-width: 36px;
-      max-width: 36px;
+      width: 60px;
+      min-width: 60px;
+      max-width: 60px;
       background: #4b5563;
     }
     
     /* White borders on drag/action columns like DOM */
     th[data-key="drag"],
-    td[data-key="drag"] {
-      border: 2px solid #ffffff;
-    }
-    
+    td[data-key="drag"],
     th[data-key="actions"],
     td[data-key="actions"] {
       border: 2px solid #ffffff;
+    }
+    
+    /* Hide separator column borders */
+    th[data-type="separator"],
+    td[data-type="separator"] {
+      border-left: none;
+      border-right: none;
     }
     
     /* Absolute div covers row background */
@@ -420,13 +424,13 @@
       if (!colgroup.querySelector('col[data-key="drag"]')) {
         const col = document.createElement('col');
         col.setAttribute('data-key', 'drag');
-        col.style.width = '36px';
+        col.style.width = '60px';
         colgroup.insertBefore(col, colgroup.firstChild);
       }
       if (!colgroup.querySelector('col[data-key="actions"]')) {
         const col = document.createElement('col');
         col.setAttribute('data-key', 'actions');
-        col.style.width = '36px';
+        col.style.width = '60px';
         colgroup.appendChild(col);
       }
     }
