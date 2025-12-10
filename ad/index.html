@@ -146,12 +146,27 @@
       background: #4b5563;
     }
     
-    /* White borders on drag/action columns like DOM */
+    /* White borders on drag/action columns - specific sides to avoid doubling */
     th[data-key="drag"],
-    td[data-key="drag"],
+    td[data-key="drag"] {
+      border-left: 2px solid #ffffff;
+      border-top: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      border-right: 2px solid #ffffff;
+    }
+    
     th[data-key="actions"],
     td[data-key="actions"] {
-      border: 2px solid #ffffff;
+      border-left: 2px solid #ffffff;
+      border-top: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      border-right: 2px solid #ffffff;
+    }
+    
+    /* Remove internal horizontal borders to prevent doubling */
+    tbody td[data-key="drag"],
+    tbody td[data-key="actions"] {
+      border-top: none;
     }
     
     /* Absolute div covers row background */
