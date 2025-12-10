@@ -83,7 +83,7 @@
       table-layout: fixed;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #222a35; /* Fill corner gaps */
+      background: #141920; /* Fill corner gaps - match header */
       box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
     }
     
@@ -91,10 +91,12 @@
     #scheduleScroll table thead tr:first-child th:first-child {
       border-top-left-radius: 8px;
       overflow: hidden;
+      background: #4b5563;
     }
     #scheduleScroll table thead tr:first-child th:last-child {
       border-top-right-radius: 8px;
       overflow: hidden;
+      background: #4b5563;
     }
     #scheduleScroll table tbody tr:last-child td:first-child {
       border-bottom-left-radius: 8px;
@@ -103,6 +105,14 @@
     #scheduleScroll table tbody tr:last-child td:last-child {
       border-bottom-right-radius: 8px;
       overflow: hidden;
+    }
+    
+    /* Bottom corner cells need the cell-bg to also have rounded corners */
+    #scheduleScroll table tbody tr:last-child td:first-child .cell-bg {
+      border-bottom-left-radius: 6px;
+    }
+    #scheduleScroll table tbody tr:last-child td:last-child .cell-bg {
+      border-bottom-right-radius: 6px;
     }
     
     #scheduleScroll table th,
@@ -118,9 +128,15 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: #161b22;
+      background: #141920;
       font-weight: 600;
       color: var(--text);
+    }
+    
+    /* Override for drag/action header cells */
+    #scheduleScroll table thead th[data-key="drag"],
+    #scheduleScroll table thead th[data-key="actions"] {
+      background: #4b5563;
     }
     
     /* ===== DRAG & ACTION COLUMNS ===== */
@@ -138,14 +154,29 @@
       width: 36px;
       min-width: 36px;
       max-width: 36px;
-      background: #161b22;
+      background: #4b5563;
+    }
+    
+    /* White borders on drag/action columns like DOM */
+    th[data-key="drag"],
+    td[data-key="drag"] {
+      border-left: 2px solid #ffffff;
+      border-top: 1px solid #ffffff;
+      border-bottom: 1px solid #ffffff;
+    }
+    
+    th[data-key="actions"],
+    td[data-key="actions"] {
+      border-right: 2px solid #ffffff;
+      border-top: 1px solid #ffffff;
+      border-bottom: 1px solid #ffffff;
     }
     
     /* Absolute div covers row background */
     .cell-bg {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: #9ca3af;
+      background: #4b5563;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -158,15 +189,15 @@
       display: inline-block;
       width: 12px; height: 12px;
       background-image: 
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px),
-        radial-gradient(circle, #666 1px, transparent 1px);
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px);
       background-size: 2px 2px;
       background-position: 0 0, 5px 0, 10px 0, 0 5px, 5px 5px, 10px 5px, 0 10px, 5px 10px, 10px 10px;
       background-repeat: no-repeat;
@@ -177,9 +208,9 @@
       width: 22px; height: 22px;
       min-width: 22px; min-height: 22px;
       display: inline-flex; align-items: center; justify-content: center;
-      background: white; color: var(--accent);
-      border: 1px solid #e0e0e0; border-radius: 4px;
-      cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: #4b5563; color: #9ca3af;
+      border: 1px solid #6b7280; border-radius: 4px;
+      cursor: pointer;
     }
     button.sharpie svg { width: 14px; height: 14px; }
     button.sharpie.active { background: #f44336; color: white; border-color: #d32f2f; }
