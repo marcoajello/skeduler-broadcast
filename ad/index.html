@@ -80,9 +80,7 @@
       border-collapse: collapse;
       width: 100%;
       table-layout: fixed;
-      border: 2px solid #ffffff;
       border-radius: 8px;
-      background: #141920; /* Fill corner gaps - match header */
       box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
     }
     
@@ -91,27 +89,19 @@
       border-top-left-radius: 8px;
       overflow: hidden;
       background: #4b5563;
-      border-left: 2px solid #ffffff;
-      border-top: 2px solid #ffffff;
     }
     #scheduleScroll table thead tr:first-child th:last-child {
       border-top-right-radius: 8px;
       overflow: hidden;
       background: #4b5563;
-      border-right: 2px solid #ffffff;
-      border-top: 2px solid #ffffff;
     }
     #scheduleScroll table tbody tr:last-child td:first-child {
       border-bottom-left-radius: 8px;
       overflow: hidden;
-      border-left: 2px solid #ffffff;
-      border-bottom: 2px solid #ffffff;
     }
     #scheduleScroll table tbody tr:last-child td:last-child {
       border-bottom-right-radius: 8px;
       overflow: hidden;
-      border-right: 2px solid #ffffff;
-      border-bottom: 2px solid #ffffff;
     }
     
     /* Bottom corner cells need the cell-bg to also have rounded corners */
@@ -122,15 +112,6 @@
       border-bottom-right-radius: 6px;
     }
     
-    #scheduleScroll table th,
-    #scheduleScroll table td {
-      border: 1px solid #000000;
-      padding: 6px 8px;
-      text-align: left;
-      vertical-align: middle;
-      font-size: 12px;
-    }
-    
     #scheduleScroll table thead th {
       position: sticky;
       top: 0;
@@ -138,14 +119,13 @@
       background: #141920;
       font-weight: 600;
       color: var(--text);
-      border: 1px solid #000000;
-      border-bottom: 2px solid #ffffff;
     }
     
     /* Override for drag/action header cells */
     #scheduleScroll table thead th[data-key="drag"],
     #scheduleScroll table thead th[data-key="actions"] {
       background: #4b5563;
+      border: 2px solid #ffffff;
     }
     
     /* ===== DRAG & ACTION COLUMNS ===== */
@@ -172,13 +152,6 @@
     th[data-key="actions"],
     td[data-key="actions"] {
       border: 2px solid #ffffff;
-    }
-    
-    /* Hide separator column borders */
-    th[data-type="separator"],
-    td[data-type="separator"] {
-      border-left: none;
-      border-right: none;
     }
     
     /* Absolute div covers row background */
@@ -217,9 +190,10 @@
       width: 22px; height: 22px;
       min-width: 22px; min-height: 22px;
       display: inline-flex; align-items: center; justify-content: center;
-      background: #4b5563; color: #9ca3af;
-      border: 1px solid #6b7280; border-radius: 4px;
+      background: white; color: var(--accent);
+      border: 1px solid #e0e0e0; border-radius: 4px;
       cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     button.sharpie svg { width: 14px; height: 14px; }
     button.sharpie.active { background: #f44336; color: white; border-color: #d32f2f; }
