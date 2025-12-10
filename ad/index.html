@@ -234,20 +234,20 @@
     }
     
     /* ===== DRAG & ACTION COLUMNS - ISOLATED BACKGROUND ===== */
-    /* These columns ignore row background - always #ffffff */
+    /* These columns ignore row background - light gray to match DOM */
     #scheduleScroll table tbody tr td[data-key="drag"],
     #scheduleScroll table tbody tr td[data-key="actions"],
     table.schedule tbody tr td[data-key="drag"],
     table.schedule tbody tr td[data-key="actions"] {
-      background: #ffffff;
-      background-color: #ffffff;
+      background: #f0f0f0 !important;
+      background-color: #f0f0f0 !important;
       padding: 0;
     }
     
     /* Wrapper div covers row background completely */
     td[data-key="drag"] .cell-bg,
     td[data-key="actions"] .cell-bg {
-      background: #ffffff;
+      background: #f0f0f0;
       width: 100%;
       height: 100%;
       display: flex;
@@ -258,7 +258,7 @@
     /* Force override any inline row styles */
     td[data-key="drag"],
     td[data-key="actions"] {
-      background: #ffffff !important;
+      background: #f0f0f0 !important;
     }
     
     /* Drag column */
@@ -653,6 +653,12 @@
     // Remove baked-in completed lines - AD viewer creates its own
     container.querySelectorAll('.completed-line').forEach(el => el.remove());
     
+    // NUCLEAR: Strip ALL inline background styles from everything
+    container.querySelectorAll('*').forEach(el => {
+      el.style.removeProperty('background');
+      el.style.removeProperty('background-color');
+    });
+    
     // Add drag and action columns
     setupColumns();
     
@@ -665,10 +671,14 @@
     // Initialize markedRows from loaded completed state
     initCompletedState();
     
-    // Force background colors AFTER render
+    // Force background colors AFTER render - use actual DOM gray color
     requestAnimationFrame(() => {
-      document.querySelectorAll('[data-key="drag"], [data-key="actions"]').forEach(cell => {
-        cell.style.setProperty('background', '#ffffff', 'important');
+      document.querySelectorAll('td[data-key="drag"], td[data-key="actions"]').forEach(cell => {
+        cell.style.setProperty('background', '#f0f0f0', 'important');
+        cell.style.setProperty('background-color', '#f0f0f0', 'important');
+      });
+      document.querySelectorAll('th[data-key="drag"], th[data-key="actions"]').forEach(cell => {
+        cell.style.setProperty('background', '#161b22', 'important');
       });
     });
   }
@@ -743,7 +753,7 @@
         dragTd.setAttribute('data-key', 'drag');
         row.insertBefore(dragTd, row.firstChild);
       }
-      dragTd.style.background = '#ffffff';
+      dragTd.style.setProperty('background', '#f0f0f0', 'important');
       dragTd.innerHTML = '<div class="cell-bg"><span class="drag-dots"></span></div>';
       
       // Action cell with sharpie button - use wrapper div
@@ -753,7 +763,7 @@
         actionTd.setAttribute('data-key', 'actions');
         row.appendChild(actionTd);
       }
-      actionTd.style.background = '#ffffff';
+      actionTd.style.setProperty('background', '#f0f0f0', 'important');
       actionTd.innerHTML = `<div class="cell-bg"><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
     });
   }
