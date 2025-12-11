@@ -874,6 +874,18 @@
       }
     } catch (e) {}
   }, 30000);
+  
+  // Poll for formatting updates every 5 seconds when in LIVE mode
+  setInterval(async () => {
+    if (!isLiveMode || !channelCode || !channel) return;
+    
+    try {
+      // Request full schedule to get latest formatting
+      broadcastEvent('request-sync', {});
+    } catch (e) {
+      console.log('[AD] Format sync request failed:', e);
+    }
+  }, 5000);
 
   document.addEventListener('DOMContentLoaded', init);
 })();
