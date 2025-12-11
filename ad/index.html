@@ -699,6 +699,39 @@
         linesHidden = payload.hidden;
         document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
       })
+      .on('broadcast', { event: 'cell-format' }, ({ payload }) => {
+        if (!payload?.rowId || !payload?.columnKey || !payload?.formatting) return;
+        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+        const cell = row?.querySelector(`td[data-key="${payload.columnKey}"]`);
+        if (cell) {
+          // Apply formatting via dataset
+          Object.entries(payload.formatting).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+              cell.dataset[key] = value;
+              // Also apply as inline styles for immediate visual feedback
+              applyFormatting(cell, payload.formatting);
+            }
+          });
+        }
+      })
+      .on('broadcast', { event: 'row-format' }, ({ payload }) => {
+        if (!payload?.rowId || !payload?.formatting) return;
+        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+        if (!row) return;
+        const cells = row.querySelectorAll('td[data-key]:not([data-key="drag"]):not([data-key="actions"])');
+        cells.forEach(cell => {
+          const key = cell.dataset.key;
+          const cellFormat = payload.formatting[key];
+          if (cellFormat) {
+            Object.entries(cellFormat).forEach(([fmtKey, fmtValue]) => {
+              if (fmtValue !== undefined && fmtValue !== null && fmtValue !== '') {
+                cell.dataset[fmtKey] = fmtValue;
+              }
+            });
+            applyFormatting(cell, cellFormat);
+          }
+        });
+      })
       .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
         if (payload?.html) injectSchedule(payload.html);
         if (payload?.order) {
@@ -723,6 +756,94 @@
   function broadcastEvent(event, payload) {
     if (channel) channel.send({ type: 'broadcast', event, payload: { ...payload, source: 'ad' } });
   }
+  
+  function applyFormatting(cell, formatting) {
+    if (!cell) return;
+    
+    // Text color
+    if (formatting.cellFg !== undefined) {
+      if (formatting.cellFg) {
+        cell.style.color = formatting.cellFg;
+      } else {
+        cell.style.removeProperty('color');
+      }
+    }
+    if (formatting.fgColor !== undefined) {
+      if (formatting.fgColor) {
+        cell.style.color = formatting.fgColor;
+      } else {
+        cell.style.removeProperty('color');
+      }
+    }
+    
+    // Background color
+    if (formatting.cellBg !== undefined) {
+      if (formatting.cellBg) {
+        cell.style.backgroundColor = formatting.cellBg;
+      } else {
+        cell.style.removeProperty('background-color');
+      }
+    }
+    if (formatting.bgColor !== undefined) {
+      if (formatting.bgColor) {
+        cell.style.backgroundColor = formatting.bgColor;
+      } else {
+        cell.style.removeProperty('background-color');
+      }
+    }
+    
+    // Alignment
+    if (formatting.align !== undefined) {
+      if (formatting.align) {
+        cell.style.textAlign = formatting.align;
+      } else {
+        cell.style.removeProperty('text-align');
+      }
+    }
+    
+    // Vertical alignment
+    if (formatting.valign !== undefined) {
+      if (formatting.valign) {
+        cell.style.verticalAlign = formatting.valign;
+      } else {
+        cell.style.removeProperty('vertical-align');
+      }
+    }
+    
+    // Font family
+    if (formatting.fontFamily !== undefined) {
+      if (formatting.fontFamily) {
+        cell.style.fontFamily = formatting.fontFamily;
+      } else {
+        cell.style.removeProperty('font-family');
+      }
+    }
+    
+    // Font size
+    if (formatting.fontSize !== undefined) {
+      if (formatting.fontSize) {
+        cell.style.fontSize = formatting.fontSize;
+      } else {
+        cell.style.removeProperty('font-size');
+      }
+    }
+    
+    // Bold
+    if (formatting.bold !== undefined) {
+      cell.style.fontWeight = formatting.bold ? 'bold' : 'normal';
+    }
+    
+    // Italic
+    if (formatting.italic !== undefined) {
+      cell.style.fontStyle = formatting.italic ? 'italic' : 'normal';
+    }
+    
+    // Underline
+    if (formatting.underline !== undefined) {
+      cell.style.textDecoration = formatting.underline ? 'underline' : 'none';
+    }
+  }
+  
   
   function broadcastRowOrder() {
     const tbody = document.querySelector('#scheduleScroll tbody');
