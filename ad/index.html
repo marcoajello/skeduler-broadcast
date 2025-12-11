@@ -47,43 +47,11 @@
     .header-center { justify-self: center; display: flex; align-items: center; gap: 6px; }
     .header-right { display: flex; align-items: center; gap: 12px; justify-self: end; }
     
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    .live-badge.live {
-      background: rgba(168, 85, 247, 0.15);
-      color: var(--ad-purple);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-    }
-    .live-badge.live .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--ad-purple);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    .live-badge.live .live-text {
-      color: var(--ad-purple);
-    }
-    .live-badge.manual {
-      background: rgba(125, 133, 144, 0.15);
-      color: var(--muted);
-      border: 1px solid rgba(125, 133, 144, 0.3);
-    }
-    .live-badge.manual .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
+    .live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; height: 28px; }
+    .live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
+    .live-badge.live .live-dot { background: var(--ad-purple); animation: pulse 1.5s ease-in-out infinite; }
+    .live-badge.live .live-text { color: var(--ad-purple); text-transform: uppercase; }
+    .live-badge.manual .live-dot { background: var(--muted); }
     .live-badge.manual .live-text { display: none; }
     
     .header-progress-btn {
@@ -492,55 +460,113 @@
     const tbody = document.querySelector('#scheduleScroll tbody');
     if (!tbody) return;
     
+    // Touch + Mouse drag system (replaces HTML5 Drag and Drop)
+    let dragState = null;
+    
     tbody.querySelectorAll('tr[data-id]').forEach(row => {
-      row.draggable = true;
+      // Drag handle (grab column) - mouse + touch
+      const dragHandle = row.querySelector('td[data-key="drag"]');
+      if (dragHandle) {
+        dragHandle.addEventListener('mousedown', startDrag);
+        dragHandle.addEventListener('touchstart', startDrag, { passive: false });
+      }
       
-      row.addEventListener('dragstart', (e) => {
-        draggingRow = row;
-        row.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', row.dataset.id);
-      });
-      
-      row.addEventListener('dragend', () => {
-        if (draggingRow) draggingRow.classList.remove('dragging');
-        draggingRow = null;
-        broadcastRowOrder();
-      });
-      
+      // Duration cell click
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
       
+      // Sharpie button
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
     });
     
-    tbody.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      if (!draggingRow) return;
+    function startDrag(e) {
+      const row = e.currentTarget.closest('tr[data-id]');
+      if (!row) return;
       
+      // Prevent text selection
+      if (e.type.startsWith('touch')) {
+        e.preventDefault();
+      }
+      
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+      
+      dragState = {
+        row: row,
+        startY: clientY,
+        currentY: clientY,
+        scrollContainer: document.querySelector('.schedule-scroll')
+      };
+      
+      row.classList.add('dragging');
+      draggingRow = row;
+      
+      document.addEventListener('mousemove', moveDrag);
+      document.addEventListener('touchmove', moveDrag, { passive: false });
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchend', endDrag);
+    }
+    
+    function moveDrag(e) {
+      if (!dragState) return;
+      
+      if (e.type.startsWith('touch')) {
+        e.preventDefault();
+      }
+      
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+      dragState.currentY = clientY;
+      
+      // Auto-scroll if dragging near edges
+      const scrollContainer = dragState.scrollContainer;
+      const rect = scrollContainer.getBoundingClientRect();
+      const scrollThreshold = 60;
+      const scrollSpeed = 5;
+      
+      if (clientY - rect.top < scrollThreshold) {
+        scrollContainer.scrollTop -= scrollSpeed;
+      } else if (rect.bottom - clientY < scrollThreshold) {
+        scrollContainer.scrollTop += scrollSpeed;
+      }
+      
+      // Find closest row and reorder
       const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
       let closest = { offset: -Infinity, element: null };
       
       candidates.forEach(el => {
         const box = el.getBoundingClientRect();
-        const offset = e.clientY - box.top - box.height / 2;
+        const offset = clientY - box.top - box.height / 2;
         if (offset < 0 && offset > closest.offset) {
           closest = { offset, element: el };
         }
       });
       
       if (closest.element === null) {
-        tbody.appendChild(draggingRow);
+        tbody.appendChild(dragState.row);
       } else {
-        tbody.insertBefore(draggingRow, closest.element);
+        tbody.insertBefore(dragState.row, closest.element);
       }
-    });
+    }
+    
+    function endDrag() {
+      if (!dragState) return;
+      
+      dragState.row.classList.remove('dragging');
+      draggingRow = null;
+      dragState = null;
+      
+      document.removeEventListener('mousemove', moveDrag);
+      document.removeEventListener('touchmove', moveDrag);
+      document.removeEventListener('mouseup', endDrag);
+      document.removeEventListener('touchend', endDrag);
+      
+      broadcastRowOrder();
+    }
   }
   
   function toggleRowSharpie(row) {
@@ -572,8 +598,8 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
     line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = (table.offsetLeft + 16) + 'px';
-    line.style.width = (table.offsetWidth - 32) + 'px';
+    line.style.left = (table.offsetLeft + 36) + 'px';
+    line.style.width = (table.offsetWidth - 72) + 'px';
     container.appendChild(line);
   }
   
@@ -587,8 +613,8 @@
       const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
       if (row && line) {
         line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        line.style.left = (table.offsetLeft + 16) + 'px';
-        line.style.width = (table.offsetWidth - 32) + 'px';
+        line.style.left = (table.offsetLeft + 36) + 'px';
+        line.style.width = (table.offsetWidth - 72) + 'px';
       }
     });
   }
@@ -599,7 +625,7 @@
     const rect = cell.getBoundingClientRect();
     
     popup.style.left = rect.left + 'px';
-    popup.style.top = rect.top + 'px';
+    popup.style.top = (rect.bottom + 4) + 'px';
     popup.classList.add('show');
     input.value = cell.textContent.trim();
     input.focus();
@@ -683,12 +709,6 @@
           });
         }
         updateAllSharpieLines();
-      })
-      .on('broadcast', { event: 'sync-status' }, ({ payload }) => {
-        if (typeof payload?.live === 'boolean') {
-          isLiveMode = payload.live;
-          updateLiveStatus();
-        }
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
