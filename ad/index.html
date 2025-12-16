@@ -264,51 +264,90 @@
     }
     
     /* Header design container - match table width */
+    /* Header design container - let it size to content */
     .header-design-container {
-      width: 100%;
+      display: flex;
+      justify-content: center;
       margin-bottom: 12px;
     }
     
-    .header-design-container > div {
-      margin: 0 auto;
+    .header-design-container > .print-header {
+      flex-shrink: 0;
     }
     
     /* ===== TAG PILLS ===== */
-    td[data-key="c_tags"] {
-      overflow: visible !important;
-    }
-    
     .tagsBox {
-      position: relative;
+      position: absolute;
+      inset: 0;
       display: flex;
+      pointer-events: none;
     }
     
-    .tagsBox > div {
+    .tags-pills {
+      flex: 1;
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 3px;
+      padding: 4px;
+      position: relative;
+      z-index: 11;
+      pointer-events: none;
       align-items: center;
     }
     
-    span.tag-pill {
+    /* Force pill styling - override any inline styles */
+    .tag-pill,
+    span[style*="border-radius: 999pt"],
+    span[style*="border-radius"],
+    #scheduleScroll .tag-pill {
       border-radius: 999px !important;
       display: inline-flex !important;
       align-items: center !important;
-      padding: 2px 8px 2px 2px !important;
-      gap: 4px !important;
-      font-size: 9px !important;
-      white-space: nowrap !important;
+      width: fit-content !important;
+      max-width: fit-content !important;
+      flex: 0 0 auto !important;
     }
     
-    span.tag-pill img {
+    .tag-pill {
+      background: var(--panel, #161b22);
+      color: var(--text, #f9fafb);
+      padding: 2px 6px 2px 2px;
+      border: 1px solid #94a3b8;
+      gap: 3px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      position: relative;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+    
+    .tag-pill.image-tag img,
+    span[style*="border-radius"] img {
       width: 20px !important;
       height: 20px !important;
       border-radius: 50% !important;
       object-fit: cover !important;
     }
     
+    .tag-pill .tag-dummy-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      background: transparent;
+    }
+    
+    .tag-pill.minor-tag {
+      border: 2px solid #dc2626;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
+    }
+    
+    /* Hide tag delete buttons in AD viewer */
     .tag-pill .tag-x {
-      display: none !important;
+      display: none;
     }
     
     /* ===== FOOTER ===== */
@@ -319,7 +358,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v16.7 -->
+  <!-- v16.8 -->
 </head>
 <body>
   <div class="header">
@@ -738,14 +777,7 @@
         if (!tbody) return;
         payload.order.forEach(id => {
           const row = tbody.querySelector(`tr[data-id="${id}"]`);
-          if (row) {
-            tbody.appendChild(row);
-            // If this is a SUB row, also move its subchildren
-            if (row.dataset.type === 'SUB') {
-              const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${id}"]`);
-              subchildren.forEach(child => tbody.appendChild(child));
-            }
-          }
+          if (row) tbody.appendChild(row);
         });
         updateAllSharpieLines();
       })
@@ -811,19 +843,10 @@
         if (payload?.html) injectSchedule(payload.html);
         if (payload?.order) {
           const tbody = document.querySelector('#scheduleScroll tbody');
-          if (tbody) {
-            payload.order.forEach(id => {
-              const row = tbody.querySelector(`tr[data-id="${id}"]`);
-              if (row) {
-                tbody.appendChild(row);
-                // If this is a SUB row, also move its subchildren
-                if (row.dataset.type === 'SUB') {
-                  const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${id}"]`);
-                  subchildren.forEach(child => tbody.appendChild(child));
-                }
-              }
-            });
-          }
+          payload.order.forEach(id => {
+            const row = tbody?.querySelector(`tr[data-id="${id}"]`);
+            if (row) tbody.appendChild(row);
+          });
         }
         updateAllSharpieLines();
       })
