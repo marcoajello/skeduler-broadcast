@@ -263,16 +263,15 @@
       margin: 0 auto;
     }
     
-    /* Header design container - match table width */
-    /* Header design container - let it size to content */
+    /* Header design container - center it */
     .header-design-container {
-      display: flex;
-      justify-content: center;
+      text-align: center;
       margin-bottom: 12px;
     }
     
     .header-design-container > .print-header {
-      flex-shrink: 0;
+      display: inline-block;
+      text-align: left;
     }
     
     /* ===== TAG PILLS ===== */
@@ -358,7 +357,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v16.8 -->
+  <!-- v16.9 -->
 </head>
 <body>
   <div class="header">
