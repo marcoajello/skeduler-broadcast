@@ -319,7 +319,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v16.6 -->
+  <!-- v16.7 -->
 </head>
 <body>
   <div class="header">
@@ -738,7 +738,14 @@
         if (!tbody) return;
         payload.order.forEach(id => {
           const row = tbody.querySelector(`tr[data-id="${id}"]`);
-          if (row) tbody.appendChild(row);
+          if (row) {
+            tbody.appendChild(row);
+            // If this is a SUB row, also move its subchildren
+            if (row.dataset.type === 'SUB') {
+              const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${id}"]`);
+              subchildren.forEach(child => tbody.appendChild(child));
+            }
+          }
         });
         updateAllSharpieLines();
       })
@@ -804,10 +811,19 @@
         if (payload?.html) injectSchedule(payload.html);
         if (payload?.order) {
           const tbody = document.querySelector('#scheduleScroll tbody');
-          payload.order.forEach(id => {
-            const row = tbody?.querySelector(`tr[data-id="${id}"]`);
-            if (row) tbody.appendChild(row);
-          });
+          if (tbody) {
+            payload.order.forEach(id => {
+              const row = tbody.querySelector(`tr[data-id="${id}"]`);
+              if (row) {
+                tbody.appendChild(row);
+                // If this is a SUB row, also move its subchildren
+                if (row.dataset.type === 'SUB') {
+                  const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${id}"]`);
+                  subchildren.forEach(child => tbody.appendChild(child));
+                }
+              }
+            });
+          }
         }
         updateAllSharpieLines();
       })
