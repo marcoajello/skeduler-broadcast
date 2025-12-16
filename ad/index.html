@@ -72,13 +72,18 @@
     /* ===== MAIN CONTENT ===== */
     .main-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
     #schedule-container { flex: 1; overflow: hidden; position: relative; }
-    .schedule-scroll { position: relative; width: 100%; height: 100%; overflow: auto; padding: 16px; }
+    .schedule-scroll { position: relative; width: 100%; height: 100%; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+    
+    /* Wrapper to keep header and table together */
+    .schedule-scroll > * {
+      flex-shrink: 0;
+    }
     
     /* ===== TABLE - Purple border glow ===== */
     #scheduleScroll table,
     table.schedule {
       border-collapse: collapse;
-      width: 100%;
+      width: auto;
       table-layout: fixed;
       border-radius: 8px;
       box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
@@ -245,6 +250,100 @@
       font-size: 14px; text-align: center;
     }
     
+    /* ===== SCHEDULE HEADER IMAGE ===== */
+    .header-image {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    
+    .header-image img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    /* Header design container - match table width */
+    .header-design-container {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .header-design-container > div {
+      margin: 0 auto;
+    }
+    
+    /* ===== TAG PILLS ===== */
+    .tagsBox {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      pointer-events: none;
+    }
+    
+    .tags-pills {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 4px;
+      position: relative;
+      z-index: 11;
+      pointer-events: none;
+      align-items: center;
+    }
+    
+    /* Force pill styling - override any inline styles */
+    .tag-pill,
+    span[style*="border-radius: 999pt"],
+    #scheduleScroll .tag-pill {
+      border-radius: 999px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+    
+    .tag-pill {
+      background: var(--panel, #161b22);
+      color: var(--text, #f9fafb);
+      padding: 2px 6px 2px 2px;
+      border: 1px solid #94a3b8;
+      gap: 3px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      position: relative;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+    
+    .tag-pill.image-tag img,
+    span[style*="border-radius"] img {
+      width: 20px !important;
+      height: 20px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+    }
+    
+    .tag-pill .tag-dummy-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      background: transparent;
+    }
+    
+    .tag-pill.minor-tag {
+      border: 2px solid #dc2626;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
+    }
+    
+    /* Hide tag delete buttons in AD viewer */
+    .tag-pill .tag-x {
+      display: none;
+    }
+    
     /* ===== FOOTER ===== */
     .footer {
       text-align: center; padding: 8px;
@@ -253,6 +352,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
+  <!-- v16.4 -->
 </head>
 <body>
   <div class="header">
@@ -874,18 +974,6 @@
       }
     } catch (e) {}
   }, 30000);
-  
-  // Poll for formatting updates every 5 seconds when in LIVE mode
-  setInterval(async () => {
-    if (!isLiveMode || !channelCode || !channel) return;
-    
-    try {
-      // Request full schedule to get latest formatting
-      broadcastEvent('request-sync', {});
-    } catch (e) {
-      console.log('[AD] Format sync request failed:', e);
-    }
-  }, 5000);
 
   document.addEventListener('DOMContentLoaded', init);
 })();
