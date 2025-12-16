@@ -296,10 +296,14 @@
     /* Force pill styling - override any inline styles */
     .tag-pill,
     span[style*="border-radius: 999pt"],
+    span[style*="border-radius"],
     #scheduleScroll .tag-pill {
       border-radius: 999px !important;
       display: inline-flex !important;
       align-items: center !important;
+      width: fit-content !important;
+      max-width: fit-content !important;
+      flex: 0 0 auto !important;
     }
     
     .tag-pill {
@@ -352,7 +356,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v16.4 -->
+  <!-- v16.5 -->
 </head>
 <body>
   <div class="header">
