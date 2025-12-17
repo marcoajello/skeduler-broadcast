@@ -137,7 +137,7 @@
     td[data-key="drag"],
     td[data-key="actions"] {
       position: relative;
-      padding: 0 !important;
+      padding: 0;
       width: 60px;
       min-width: 60px;
       max-width: 60px;
@@ -299,12 +299,12 @@
     span[style*="border-radius: 999pt"],
     span[style*="border-radius"],
     #scheduleScroll .tag-pill {
-      border-radius: 999px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      width: fit-content !important;
-      max-width: fit-content !important;
-      flex: 0 0 auto !important;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      max-width: fit-content;
+      flex: 0 0 auto;
     }
     
     .tag-pill {
@@ -323,12 +323,22 @@
       white-space: nowrap;
     }
     
+    /* Force tag pill images to be small */
+    .tag-pill img,
     .tag-pill.image-tag img,
-    span[style*="border-radius"] img {
-      width: 20px !important;
-      height: 20px !important;
-      border-radius: 50% !important;
-      object-fit: cover !important;
+    span[style*="border-radius"] img,
+    #scheduleScroll .tag-pill img,
+    #scheduleScroll .tags-pills img,
+    #scheduleScroll span img,
+    .tags-pills span img {
+      width: 20px;
+      height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
     }
     
     .tag-pill .tag-dummy-circle {
@@ -357,7 +367,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v16.9 -->
+  <!-- v16.10 -->
 </head>
 <body>
   <div class="header">
@@ -565,7 +575,7 @@
     const tbody = document.querySelector('#scheduleScroll tbody');
     if (!tbody) return;
     
-    // Touch + Mouse drag system (replaces HTML5 Drag and Drop)
+    // Touch + Mouse drag system
     let dragState = null;
     
     tbody.querySelectorAll('tr[data-id]').forEach(row => {
@@ -593,6 +603,9 @@
     function startDrag(e) {
       const row = e.currentTarget.closest('tr[data-id]');
       if (!row) return;
+      
+      // Don't allow dragging sub-events independently
+      if (row.dataset.parentId) return;
       
       // Prevent text selection
       if (e.type.startsWith('touch')) {
@@ -639,8 +652,8 @@
         scrollContainer.scrollTop += scrollSpeed;
       }
       
-      // Find closest row and reorder
-      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
+      // Find closest row and reorder - exclude sub-events from candidates
+      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging):not([data-parent-id])'));
       let closest = { offset: -Infinity, element: null };
       
       candidates.forEach(el => {
@@ -656,6 +669,14 @@
       } else {
         tbody.insertBefore(dragState.row, closest.element);
       }
+      
+      // Keep sub-events with their parent
+      const subEvents = tbody.querySelectorAll(`tr[data-parent-id="${dragState.row.dataset.id}"]`);
+      let insertAfter = dragState.row;
+      subEvents.forEach(sub => {
+        insertAfter.after(sub);
+        insertAfter = sub;
+      });
     }
     
     function endDrag() {
@@ -776,7 +797,13 @@
         if (!tbody) return;
         payload.order.forEach(id => {
           const row = tbody.querySelector(`tr[data-id="${id}"]`);
-          if (row) tbody.appendChild(row);
+          // Skip sub-events - they stay with their parent
+          if (row && !row.dataset.parentId) {
+            tbody.appendChild(row);
+            // Move any sub-events immediately after their parent
+            const subEvents = tbody.querySelectorAll(`tr[data-parent-id="${id}"]`);
+            subEvents.forEach(sub => tbody.appendChild(sub));
+          }
         });
         updateAllSharpieLines();
       })
@@ -810,11 +837,9 @@
         const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
         const cell = row?.querySelector(`td[data-key="${payload.columnKey}"]`);
         if (cell) {
-          // Apply formatting via dataset
           Object.entries(payload.formatting).forEach(([key, value]) => {
             if (value !== undefined && value !== null && value !== '') {
               cell.dataset[key] = value;
-              // Also apply as inline styles for immediate visual feedback
               applyFormatting(cell, payload.formatting);
             }
           });
@@ -844,7 +869,13 @@
           const tbody = document.querySelector('#scheduleScroll tbody');
           payload.order.forEach(id => {
             const row = tbody?.querySelector(`tr[data-id="${id}"]`);
-            if (row) tbody.appendChild(row);
+            // Skip sub-events - they stay with their parent
+            if (row && !row.dataset.parentId) {
+              tbody.appendChild(row);
+              // Move any sub-events immediately after their parent
+              const subEvents = tbody.querySelectorAll(`tr[data-parent-id="${id}"]`);
+              subEvents.forEach(sub => tbody.appendChild(sub));
+            }
           });
         }
         updateAllSharpieLines();
@@ -866,7 +897,6 @@
   function applyFormatting(cell, formatting) {
     if (!cell) return;
     
-    // Text color
     if (formatting.cellFg !== undefined) {
       if (formatting.cellFg) {
         cell.style.color = formatting.cellFg;
@@ -882,7 +912,6 @@
       }
     }
     
-    // Background color
     if (formatting.cellBg !== undefined) {
       if (formatting.cellBg) {
         cell.style.backgroundColor = formatting.cellBg;
@@ -898,7 +927,6 @@
       }
     }
     
-    // Alignment
     if (formatting.align !== undefined) {
       if (formatting.align) {
         cell.style.textAlign = formatting.align;
@@ -907,7 +935,6 @@
       }
     }
     
-    // Vertical alignment
     if (formatting.valign !== undefined) {
       if (formatting.valign) {
         cell.style.verticalAlign = formatting.valign;
@@ -916,7 +943,6 @@
       }
     }
     
-    // Font family
     if (formatting.fontFamily !== undefined) {
       if (formatting.fontFamily) {
         cell.style.fontFamily = formatting.fontFamily;
@@ -925,7 +951,6 @@
       }
     }
     
-    // Font size
     if (formatting.fontSize !== undefined) {
       if (formatting.fontSize) {
         cell.style.fontSize = formatting.fontSize;
@@ -934,22 +959,18 @@
       }
     }
     
-    // Bold
     if (formatting.bold !== undefined) {
       cell.style.fontWeight = formatting.bold ? 'bold' : 'normal';
     }
     
-    // Italic
     if (formatting.italic !== undefined) {
       cell.style.fontStyle = formatting.italic ? 'italic' : 'normal';
     }
     
-    // Underline
     if (formatting.underline !== undefined) {
       cell.style.textDecoration = formatting.underline ? 'underline' : 'none';
     }
   }
-  
   
   function broadcastRowOrder() {
     const tbody = document.querySelector('#scheduleScroll tbody');
