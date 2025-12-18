@@ -143,13 +143,9 @@
       width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
       background: #f44336; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      box-sizing: border-box;
-      -webkit-appearance: none;
-      appearance: none;
-      outline: none;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: #3b82f6; }
+    .header-progress-btn.lines-hidden { background: var(--border); }
     .header-progress-btn:not(.lines-hidden) { background: #f44336; }
     
     /* ===== CONTENT ===== */
@@ -157,7 +153,6 @@
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      background: var(--bg);
     }
     
     .loading, .error {
@@ -202,6 +197,8 @@
       border-radius: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      display: inline-block;
+      min-width: 100%;
     }
     
     #schedule-container table {
@@ -212,6 +209,10 @@
     #schedule-container .schedule-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      background: #000;
+    }
+    
+    .content {
       background: #000;
     }
     
@@ -229,6 +230,84 @@
       display: none;
     }
     
+    /* ===== SCHEDULE HEADER IMAGE ===== */
+    .header-image {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    
+    .header-image img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    /* ===== TAG PILLS ===== */
+    .tagsBox {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      pointer-events: none;
+    }
+    
+    .tags-pills {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 4px;
+      position: relative;
+      z-index: 11;
+      pointer-events: none;
+      align-items: center;
+    }
+    
+    .tag-pill {
+      background: var(--panel, #ffffff);
+      color: var(--text, #111827);
+      padding: 2px 6px 2px 2px;
+      border-radius: 999px;
+      border: 1px solid #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      position: relative;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+    
+    .tag-pill.image-tag img {
+      width: 20px;
+      height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .tag-pill .tag-dummy-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      background: transparent;
+    }
+    
+    .tag-pill.minor-tag {
+      border: 2px solid #dc2626;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
+    }
+    
+    .tag-pill .tag-x {
+      display: none;
+    }
+    
     /* ===== FOOTER ===== */
     .updated-at {
       text-align: center;
@@ -242,12 +321,7 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="channel-name" id="channelName">Channel: Loading...</div>
-    </div>
-    
-    <div class="header-center">
       <div class="header-logo">
-        <span>SKEDULER</span>
         <svg viewBox="195 40 100 130">
           <defs>
             <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -282,7 +356,12 @@
             <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
           </g>
         </svg>
+        <span>SKEDULER</span>
       </div>
+    </div>
+    
+    <div class="header-center">
+      <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
     <div class="header-right">
@@ -373,7 +452,7 @@
         
         // Update channel name (centered)
         const channelName = broadcast.title || 'Untitled';
-        document.getElementById('channelName').textContent = 'Channel: ' + channelName;
+        document.getElementById('channelName').textContent = channelName;
         document.title = channelName + ' - SKEDULER';
         
         // Update LIVE badge based on auto_update field
@@ -409,17 +488,6 @@
         document.getElementById('error').style.display = 'none';
         document.getElementById('schedule-container').style.display = 'block';
         document.getElementById('schedule-container').innerHTML = html;
-        
-        // Strip light mode garbage from injected HTML
-        const container = document.getElementById('schedule-container');
-        const table = container.querySelector('table');
-        if (table) {
-          table.style.background = '#000';
-        }
-        const scheduleScroll = container.querySelector('.schedule-scroll');
-        if (scheduleScroll) {
-          scheduleScroll.style.background = '#000';
-        }
         
         // Show last updated
         const updated = new Date(broadcast.updated_at);
