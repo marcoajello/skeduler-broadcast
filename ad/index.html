@@ -323,16 +323,19 @@
       white-space: nowrap;
     }
     
+    /* Tag pill images - let broadcast HTML inline styles control size */
     .tag-pill.image-tag img,
     span[style*="border-radius"] img,
     #scheduleScroll .tag-pill img,
     #scheduleScroll span img {
-      width: 20px !important;
-      height: 20px !important;
-      max-width: 20px !important;
-      max-height: 20px !important;
-      border-radius: 50% !important;
-      object-fit: cover !important;
+      width: 20px;
+      height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
     }
     
     .tag-pill .tag-dummy-circle {
