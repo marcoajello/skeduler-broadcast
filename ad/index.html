@@ -324,10 +324,10 @@
     }
     
     /* Tag pill images - let broadcast HTML inline styles control size */
-    .tag-pill.image-tag img,
-    span[style*="border-radius"] img,
+    /* Tag pill images - force small size in AD viewer */
     #scheduleScroll .tag-pill img,
-    #scheduleScroll span img {
+    #scheduleScroll .tags-pills img,
+    #scheduleScroll span[style*="border-radius"] img {
       width: 20px;
       height: 20px;
       max-width: 20px;
