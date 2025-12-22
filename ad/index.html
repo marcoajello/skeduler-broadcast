@@ -306,6 +306,15 @@
       padding: 0 !important;
       text-align: center !important;
       vertical-align: middle !important;
+    }
+    
+    /* Header row gets panel color */
+    .ad-drag-th, .ad-actions-th {
+      background: var(--panel, #222a35) !important;
+    }
+    
+    /* Body cells inherit from row */
+    .ad-drag-td, .ad-actions-td {
       background: inherit;
     }
     
@@ -317,7 +326,7 @@
       height: 100%;
       min-height: 30px;
       cursor: grab;
-      color: #666;
+      color: #999;
       font-size: 14px;
       user-select: none;
     }
@@ -345,7 +354,6 @@
       padding: 4px !important;
       text-align: center !important;
       vertical-align: middle !important;
-      background: inherit;
     }
     
     .ad-mark-btn {
@@ -401,6 +409,12 @@
     
     #schedule-container tr[data-id] td:first-child {
       position: relative;
+    }
+    
+    /* Subchild rows - don't allow dragging */
+    #schedule-container tr.subchild .ad-drag-handle {
+      opacity: 0.3;
+      cursor: default;
     }
     
     /* ===== DURATION EDIT ===== */
@@ -692,12 +706,18 @@
         thead.appendChild(actionsTh);
       }
       
-      // Add drag and actions cells to each row
-      const rows = table.querySelectorAll('tbody tr[data-id]');
+      // Add drag and actions cells to each row (including subchildren)
+      const rows = table.querySelectorAll('tbody tr');
       
       rows.forEach(row => {
+        // Get row ID - check both data-id and id attributes
         const rowId = row.dataset.id || row.id;
+        
+        // Skip rows without IDs (like separator rows)
         if (!rowId) return;
+        
+        // Check if this is a subchild row
+        const isSubchild = row.classList.contains('subchild');
         
         // Add drag cell at start
         const dragTd = document.createElement('td');
@@ -707,9 +727,13 @@
         const dragHandle = document.createElement('div');
         dragHandle.className = 'ad-drag-handle';
         dragHandle.innerHTML = '⋮⋮';
-        dragHandle.draggable = true;
-        dragHandle.addEventListener('dragstart', (e) => handleDragStart(e, row));
-        dragHandle.addEventListener('dragend', handleDragEnd);
+        
+        // Only make non-subchild rows draggable
+        if (!isSubchild) {
+          dragHandle.draggable = true;
+          dragHandle.addEventListener('dragstart', (e) => handleDragStart(e, row));
+          dragHandle.addEventListener('dragend', handleDragEnd);
+        }
         dragTd.appendChild(dragHandle);
         
         row.insertBefore(dragTd, row.firstChild);
@@ -727,10 +751,12 @@
         
         row.appendChild(actionsTd);
         
-        // Row drag events (for dropping)
-        row.addEventListener('dragover', handleDragOver);
-        row.addEventListener('dragleave', handleDragLeave);
-        row.addEventListener('drop', handleDrop);
+        // Row drag events (for dropping) - only on non-subchild rows
+        if (!isSubchild) {
+          row.addEventListener('dragover', handleDragOver);
+          row.addEventListener('dragleave', handleDragLeave);
+          row.addEventListener('drop', handleDrop);
+        }
         
         // If row is already marked, show line
         if (markedRows.has(rowId)) {
@@ -747,11 +773,6 @@
           });
         }
       });
-      
-      // Also handle rows without data-id but with id attribute
-      table.querySelectorAll('tbody tr[id]:not([data-id])').forEach(row => {
-        row.dataset.id = row.id;
-      });
     }
     
     function getSharpieIcon(isMarked) {
@@ -761,6 +782,12 @@
     
     // ===== DRAG AND DROP =====
     function handleDragStart(e, row) {
+      // Don't allow dragging subchild rows
+      if (row.classList.contains('subchild')) {
+        e.preventDefault();
+        return;
+      }
+      
       draggedRow = row;
       draggedRow.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -777,7 +804,7 @@
     
     function handleDragOver(e) {
       e.preventDefault();
-      const row = e.target.closest('tr[data-id]');
+      const row = e.target.closest('tr[data-id]:not(.subchild)');
       if (row && row !== draggedRow) {
         row.classList.add('drag-over');
       }
@@ -792,21 +819,49 @@
     
     function handleDrop(e) {
       e.preventDefault();
-      const targetRow = e.target.closest('tr[data-id]');
+      const targetRow = e.target.closest('tr[data-id]:not(.subchild)');
       if (!targetRow || !draggedRow || targetRow === draggedRow) return;
+      
+      // Don't drop onto subchild rows
+      if (targetRow.classList.contains('subchild')) return;
       
       targetRow.classList.remove('drag-over');
       
-      // Move the row in DOM
+      // Get the dragged row and its subchildren (if SUB row)
+      const draggedId = draggedRow.dataset.id || draggedRow.id;
       const tbody = targetRow.parentElement;
-      const rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+      
+      // Collect the dragged row and any subchildren
+      const rowsToMove = [draggedRow];
+      if (draggedRow.dataset.type === 'SUB') {
+        const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${draggedId}"]`);
+        subchildren.forEach(child => rowsToMove.push(child));
+      }
+      
+      // Determine target position
+      const rows = Array.from(tbody.querySelectorAll('tr[data-id]:not(.subchild)'));
       const draggedIndex = rows.indexOf(draggedRow);
       const targetIndex = rows.indexOf(targetRow);
       
+      // Move all rows
       if (draggedIndex < targetIndex) {
-        targetRow.after(draggedRow);
+        // Moving down - insert after target (and its subchildren)
+        let insertAfter = targetRow;
+        if (targetRow.dataset.type === 'SUB') {
+          const targetSubchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${targetRow.dataset.id || targetRow.id}"]`);
+          if (targetSubchildren.length > 0) {
+            insertAfter = targetSubchildren[targetSubchildren.length - 1];
+          }
+        }
+        rowsToMove.forEach(row => {
+          insertAfter.after(row);
+          insertAfter = row;
+        });
       } else {
-        targetRow.before(draggedRow);
+        // Moving up - insert before target
+        rowsToMove.reverse().forEach(row => {
+          targetRow.before(row);
+        });
       }
       
       // Broadcast new order
@@ -818,7 +873,8 @@
       const tbody = document.querySelector('#schedule-container tbody');
       if (!tbody) return;
       
-      const order = Array.from(tbody.querySelectorAll('tr[data-id]'))
+      // Only send non-subchild row order - subchildren follow their parents
+      const order = Array.from(tbody.querySelectorAll('tr[data-id]:not(.subchild)'))
         .map(tr => tr.dataset.id || tr.id)
         .filter(id => id);
       
@@ -954,13 +1010,21 @@
       
       const { order, sharpieRows, linesHidden } = data;
       
-      // Reorder rows
+      // Reorder rows - move each row and its subchildren
       if (order && order.length) {
         const tbody = document.querySelector('#schedule-container tbody');
         if (tbody) {
           order.forEach(rowId => {
             const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
-            if (row) tbody.appendChild(row);
+            if (row) {
+              tbody.appendChild(row);
+              
+              // If this is a SUB row, also move its subchildren
+              if (row.dataset.type === 'SUB') {
+                const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${rowId}"]`);
+                subchildren.forEach(child => tbody.appendChild(child));
+              }
+            }
           });
         }
       }
@@ -994,12 +1058,21 @@
       if (!order || !order.length) return;
       
       const tbody = document.querySelector('#schedule-container tbody');
-      if (tbody) {
-        order.forEach(rowId => {
-          const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
-          if (row) tbody.appendChild(row);
-        });
-      }
+      if (!tbody) return;
+      
+      // Reorder rows - move each row and its subchildren
+      order.forEach(rowId => {
+        const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+        if (row) {
+          tbody.appendChild(row);
+          
+          // If this is a SUB row, also move its subchildren
+          if (row.dataset.type === 'SUB') {
+            const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${rowId}"]`);
+            subchildren.forEach(child => tbody.appendChild(child));
+          }
+        }
+      });
       
       showNotification('Rows reordered by producer');
     }
