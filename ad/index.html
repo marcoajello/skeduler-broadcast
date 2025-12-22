@@ -284,10 +284,6 @@
     }
     
     /* ===== DRAGGABLE ROWS ===== */
-    #schedule-container tr[data-id] {
-      position: relative;
-    }
-    
     #schedule-container tr[data-id].dragging {
       opacity: 0.5;
     }
@@ -296,56 +292,74 @@
       border-top: 3px solid var(--accent) !important;
     }
     
-    /* ===== AD CONTROL OVERLAYS ===== */
-    .ad-controls {
-      position: absolute;
-      left: -80px;
-      top: 0;
-      bottom: 0;
-      width: 76px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 0 4px;
-      z-index: 50;
+    /* ===== DRAG COLUMN ===== */
+    .ad-drag-col {
+      width: 36px !important;
+      min-width: 36px !important;
+      max-width: 36px !important;
+    }
+    
+    .ad-drag-th, .ad-drag-td {
+      width: 36px !important;
+      min-width: 36px !important;
+      max-width: 36px !important;
+      padding: 0 !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+      background: inherit;
     }
     
     .ad-drag-handle {
-      width: 28px;
-      height: 28px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      cursor: grab;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      color: var(--muted);
+      width: 100%;
+      height: 100%;
+      min-height: 30px;
+      cursor: grab;
+      color: #666;
       font-size: 14px;
-      flex-shrink: 0;
+      user-select: none;
     }
     
     .ad-drag-handle:hover {
-      background: var(--border);
-      color: var(--text);
+      color: #fff;
+      background: rgba(255,255,255,0.1);
     }
     
     .ad-drag-handle:active {
       cursor: grabbing;
     }
     
+    /* ===== ACTIONS COLUMN ===== */
+    .ad-actions-col {
+      width: 50px !important;
+      min-width: 50px !important;
+      max-width: 50px !important;
+    }
+    
+    .ad-actions-th, .ad-actions-td {
+      width: 50px !important;
+      min-width: 50px !important;
+      max-width: 50px !important;
+      padding: 4px !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+      background: inherit;
+    }
+    
     .ad-mark-btn {
-      width: 28px;
-      height: 28px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 4px;
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid #555;
+      border-radius: 6px;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
       padding: 0;
+      transition: all 0.15s;
     }
     
     .ad-mark-btn:hover {
@@ -359,8 +373,8 @@
     }
     
     .ad-mark-btn svg {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
     }
     
     /* Completed line styling (purple for AD) */
@@ -380,9 +394,13 @@
       display: none !important;
     }
     
-    /* Schedule wrapper needs left margin for controls */
-    #schedule-container .schedule-wrapper {
-      margin-left: 84px;
+    /* Row needs relative positioning for the line */
+    #schedule-container tr[data-id] {
+      position: relative;
+    }
+    
+    #schedule-container tr[data-id] td:first-child {
+      position: relative;
     }
     
     /* ===== DURATION EDIT ===== */
@@ -641,42 +659,73 @@
     
     function setupRowInteractions() {
       const container = document.getElementById('schedule-container');
-      const rows = container.querySelectorAll('tr[data-id]');
+      const table = container.querySelector('table');
+      if (!table) return;
+      
+      // Add drag column to colgroup
+      const colgroup = table.querySelector('colgroup');
+      if (colgroup) {
+        const dragCol = document.createElement('col');
+        dragCol.className = 'ad-drag-col';
+        dragCol.dataset.key = 'drag';
+        colgroup.insertBefore(dragCol, colgroup.firstChild);
+        
+        const actionsCol = document.createElement('col');
+        actionsCol.className = 'ad-actions-col';
+        actionsCol.dataset.key = 'actions';
+        colgroup.appendChild(actionsCol);
+      }
+      
+      // Add drag header
+      const thead = table.querySelector('thead tr');
+      if (thead) {
+        const dragTh = document.createElement('th');
+        dragTh.className = 'ad-drag-th';
+        dragTh.dataset.key = 'drag';
+        dragTh.innerHTML = '';
+        thead.insertBefore(dragTh, thead.firstChild);
+        
+        const actionsTh = document.createElement('th');
+        actionsTh.className = 'ad-actions-th';
+        actionsTh.dataset.key = 'actions';
+        actionsTh.innerHTML = '';
+        thead.appendChild(actionsTh);
+      }
+      
+      // Add drag and actions cells to each row
+      const rows = table.querySelectorAll('tbody tr[data-id]');
       
       rows.forEach(row => {
         const rowId = row.dataset.id || row.id;
         if (!rowId) return;
         
-        // Skip header rows
-        if (row.closest('thead')) return;
+        // Add drag cell at start
+        const dragTd = document.createElement('td');
+        dragTd.className = 'ad-drag-td';
+        dragTd.dataset.key = 'drag';
         
-        // Create controls container
-        const controls = document.createElement('div');
-        controls.className = 'ad-controls';
-        
-        // Drag handle
         const dragHandle = document.createElement('div');
         dragHandle.className = 'ad-drag-handle';
         dragHandle.innerHTML = '⋮⋮';
         dragHandle.draggable = true;
         dragHandle.addEventListener('dragstart', (e) => handleDragStart(e, row));
         dragHandle.addEventListener('dragend', handleDragEnd);
+        dragTd.appendChild(dragHandle);
         
-        // Mark button (sharpie)
+        row.insertBefore(dragTd, row.firstChild);
+        
+        // Add actions cell at end
+        const actionsTd = document.createElement('td');
+        actionsTd.className = 'ad-actions-td';
+        actionsTd.dataset.key = 'actions';
+        
         const markBtn = document.createElement('button');
         markBtn.className = 'ad-mark-btn' + (markedRows.has(rowId) ? ' marked' : '');
-        markBtn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="${markedRows.has(rowId) ? '#fff' : '#9333ea'}" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="${markedRows.has(rowId) ? '#fff' : '#e0e0e0'}" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="${markedRows.has(rowId) ? '#fff' : '#7c3aed'}" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+        markBtn.innerHTML = getSharpieIcon(markedRows.has(rowId));
         markBtn.addEventListener('click', () => toggleRowComplete(rowId, markBtn));
+        actionsTd.appendChild(markBtn);
         
-        controls.appendChild(dragHandle);
-        controls.appendChild(markBtn);
-        
-        // Add controls to first TD
-        const firstTd = row.querySelector('td');
-        if (firstTd) {
-          firstTd.style.position = 'relative';
-          firstTd.appendChild(controls);
-        }
+        row.appendChild(actionsTd);
         
         // Row drag events (for dropping)
         row.addEventListener('dragover', handleDragOver);
@@ -691,12 +740,23 @@
         // Click duration cell to edit
         const durationCell = row.querySelector('td[data-key="duration"]');
         if (durationCell) {
+          durationCell.style.cursor = 'pointer';
           durationCell.addEventListener('click', (e) => {
             e.stopPropagation();
             editDuration(rowId, durationCell);
           });
         }
       });
+      
+      // Also handle rows without data-id but with id attribute
+      table.querySelectorAll('tbody tr[id]:not([data-id])').forEach(row => {
+        row.dataset.id = row.id;
+      });
+    }
+    
+    function getSharpieIcon(isMarked) {
+      const color = isMarked ? '#fff' : '#9333ea';
+      return `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="${color}" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="${isMarked ? '#fff' : '#e0e0e0'}" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="${color}" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
     }
     
     // ===== DRAG AND DROP =====
@@ -780,14 +840,14 @@
         hideCompletedLine(rowId);
         if (btn) {
           btn.classList.remove('marked');
-          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#9333ea" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#7c3aed" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+          btn.innerHTML = getSharpieIcon(false);
         }
       } else {
         markedRows.add(rowId);
         showCompletedLine(rowId);
         if (btn) {
           btn.classList.add('marked');
-          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#fff" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#fff" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#fff" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+          btn.innerHTML = getSharpieIcon(true);
         }
       }
       
@@ -984,14 +1044,14 @@
         showCompletedLine(rowId);
         if (btn) {
           btn.classList.add('marked');
-          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#fff" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#fff" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#fff" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+          btn.innerHTML = getSharpieIcon(true);
         }
       } else {
         markedRows.delete(rowId);
         hideCompletedLine(rowId);
         if (btn) {
           btn.classList.remove('marked');
-          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#9333ea" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#7c3aed" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+          btn.innerHTML = getSharpieIcon(false);
         }
       }
       
