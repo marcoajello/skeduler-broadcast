@@ -160,15 +160,17 @@
       50% { opacity: 0.5; transform: scale(0.9); }
     }
     
-    /* ===== SHARPIE TOGGLE ===== */
+    /* ===== SHARPIE TOGGLE (Purple for AD) ===== */
     .header-progress-btn {
       width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
-      background: #f44336; cursor: pointer;
+      background: #9333ea; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
     .header-progress-btn.lines-hidden { background: var(--border); }
-    .header-progress-btn:not(.lines-hidden) { background: #f44336; }
+    .header-progress-btn:not(.lines-hidden) { background: #9333ea; }
+    .header-progress-btn svg path[fill="#dd2222"],
+    .header-progress-btn svg path[fill="#bb1111"] { fill: #7c3aed; }
     
     /* ===== CONTENT ===== */
     .content {
@@ -283,26 +285,104 @@
     
     /* ===== DRAGGABLE ROWS ===== */
     #schedule-container tr[data-id] {
-      cursor: grab;
+      position: relative;
     }
     
     #schedule-container tr[data-id].dragging {
       opacity: 0.5;
-      cursor: grabbing;
     }
     
     #schedule-container tr[data-id].drag-over {
       border-top: 3px solid var(--accent) !important;
     }
     
-    /* ===== CLICKABLE ROWS FOR SHARPIE ===== */
-    #schedule-container tr[data-id] td:first-child {
-      cursor: pointer;
-      user-select: none;
+    /* ===== AD CONTROL OVERLAYS ===== */
+    .ad-controls {
+      position: absolute;
+      left: -80px;
+      top: 0;
+      bottom: 0;
+      width: 76px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 4px;
+      z-index: 50;
     }
     
-    #schedule-container tr[data-id] td:first-child:hover {
-      background: rgba(244, 67, 54, 0.1) !important;
+    .ad-drag-handle {
+      width: 28px;
+      height: 28px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    
+    .ad-drag-handle:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+    
+    .ad-drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    .ad-mark-btn {
+      width: 28px;
+      height: 28px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    
+    .ad-mark-btn:hover {
+      background: rgba(147, 51, 234, 0.2);
+      border-color: #9333ea;
+    }
+    
+    .ad-mark-btn.marked {
+      background: #9333ea;
+      border-color: #9333ea;
+    }
+    
+    .ad-mark-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    
+    /* Completed line styling (purple for AD) */
+    .ad-completed-line {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 5000px;
+      height: 4px;
+      background: #9333ea;
+      pointer-events: none;
+      transform: translateY(-50%);
+      z-index: 100;
+    }
+    
+    body:not(.show-progress) .ad-completed-line {
+      display: none !important;
+    }
+    
+    /* Schedule wrapper needs left margin for controls */
+    #schedule-container .schedule-wrapper {
+      margin-left: 84px;
     }
     
     /* ===== DURATION EDIT ===== */
@@ -567,21 +647,45 @@
         const rowId = row.dataset.id || row.id;
         if (!rowId) return;
         
-        // Drag and drop
-        row.draggable = true;
-        row.addEventListener('dragstart', handleDragStart);
-        row.addEventListener('dragend', handleDragEnd);
+        // Skip header rows
+        if (row.closest('thead')) return;
+        
+        // Create controls container
+        const controls = document.createElement('div');
+        controls.className = 'ad-controls';
+        
+        // Drag handle
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'ad-drag-handle';
+        dragHandle.innerHTML = '⋮⋮';
+        dragHandle.draggable = true;
+        dragHandle.addEventListener('dragstart', (e) => handleDragStart(e, row));
+        dragHandle.addEventListener('dragend', handleDragEnd);
+        
+        // Mark button (sharpie)
+        const markBtn = document.createElement('button');
+        markBtn.className = 'ad-mark-btn' + (markedRows.has(rowId) ? ' marked' : '');
+        markBtn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="${markedRows.has(rowId) ? '#fff' : '#9333ea'}" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="${markedRows.has(rowId) ? '#fff' : '#e0e0e0'}" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="${markedRows.has(rowId) ? '#fff' : '#7c3aed'}" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+        markBtn.addEventListener('click', () => toggleRowComplete(rowId, markBtn));
+        
+        controls.appendChild(dragHandle);
+        controls.appendChild(markBtn);
+        
+        // Add controls to first TD
+        const firstTd = row.querySelector('td');
+        if (firstTd) {
+          firstTd.style.position = 'relative';
+          firstTd.appendChild(controls);
+        }
+        
+        // Row drag events (for dropping)
         row.addEventListener('dragover', handleDragOver);
         row.addEventListener('dragleave', handleDragLeave);
         row.addEventListener('drop', handleDrop);
         
-        // Click first cell to toggle sharpie
-        const firstCell = row.querySelector('td');
-        if (firstCell) {
-          firstCell.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleRowComplete(rowId);
-          });
+        // If row is already marked, show line
+        if (markedRows.has(rowId)) {
+          showCompletedLine(rowId);
         }
         
         // Click duration cell to edit
@@ -596,10 +700,11 @@
     }
     
     // ===== DRAG AND DROP =====
-    function handleDragStart(e) {
-      draggedRow = e.target.closest('tr');
+    function handleDragStart(e, row) {
+      draggedRow = row;
       draggedRow.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setDragImage(row, 50, 20);
     }
     
     function handleDragEnd(e) {
@@ -667,15 +772,23 @@
     }
     
     // ===== SHARPIE / COMPLETION =====
-    function toggleRowComplete(rowId) {
+    function toggleRowComplete(rowId, btn) {
       const isMarked = markedRows.has(rowId);
       
       if (isMarked) {
         markedRows.delete(rowId);
         hideCompletedLine(rowId);
+        if (btn) {
+          btn.classList.remove('marked');
+          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#9333ea" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#7c3aed" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+        }
       } else {
         markedRows.add(rowId);
         showCompletedLine(rowId);
+        if (btn) {
+          btn.classList.add('marked');
+          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#fff" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#fff" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#fff" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+        }
       }
       
       // Broadcast to producer
@@ -693,21 +806,16 @@
       if (!row) return;
       
       // Check if line already exists
-      let line = row.querySelector('.completed-line');
+      let line = row.querySelector('.ad-completed-line');
       if (!line) {
         // Find first TD and add line
         const firstTd = row.querySelector('td');
         if (firstTd) {
           firstTd.style.position = 'relative';
           line = document.createElement('div');
-          line.className = 'completed-line';
-          line.style.cssText = 'position:absolute;left:0;top:50%;width:5000px;height:4px;background:#ef4444;pointer-events:none;transform:translateY(-50%);z-index:100;';
+          line.className = 'ad-completed-line';
           firstTd.appendChild(line);
         }
-      }
-      
-      if (line && progressVisible) {
-        line.style.display = 'block';
       }
     }
     
@@ -715,7 +823,7 @@
       const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
       if (!row) return;
       
-      const line = row.querySelector('.completed-line');
+      const line = row.querySelector('.ad-completed-line');
       if (line) {
         line.remove();
       }
@@ -867,12 +975,24 @@
       
       const { rowId, marked } = data;
       
+      // Find the mark button for this row
+      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      const btn = row?.querySelector('.ad-mark-btn');
+      
       if (marked) {
         markedRows.add(rowId);
         showCompletedLine(rowId);
+        if (btn) {
+          btn.classList.add('marked');
+          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#fff" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#fff" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#fff" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+        }
       } else {
         markedRows.delete(rowId);
         hideCompletedLine(rowId);
+        if (btn) {
+          btn.classList.remove('marked');
+          btn.innerHTML = `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#9333ea" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#7c3aed" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+        }
       }
       
       showNotification(marked ? 'Row marked by producer' : 'Row unmarked by producer');
