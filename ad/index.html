@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d1117">
-  <title>SKEDULER LIVE</title>
+  <title>SKEDULER AD</title>
   <style>
     * { box-sizing: border-box; }
     
@@ -114,23 +114,45 @@
       animation: pulse 1.5s ease-in-out infinite;
     }
     
-    .live-badge.manual {
+    .live-badge.synced {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--live-green);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+    
+    .live-badge.synced .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live-green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .live-badge.connecting {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+    }
+    
+    .live-badge.connecting .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 0.5s ease-in-out infinite;
+    }
+    
+    .live-badge.offline {
       background: rgba(125, 133, 144, 0.15);
       color: var(--muted);
       border: 1px solid rgba(125, 133, 144, 0.3);
     }
     
-    .live-badge.manual .live-dot {
+    .live-badge.offline .live-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: var(--muted);
-    }
-    
-    .live-badge.offline {
-      background: rgba(248, 81, 73, 0.1);
-      color: var(--live-red);
-      border: 1px solid rgba(248, 81, 73, 0.2);
     }
     
     @keyframes pulse {
@@ -153,6 +175,7 @@
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      background: #000;
     }
     
     .loading, .error {
@@ -212,100 +235,95 @@
       background: #000;
     }
     
-    .content {
-      background: #000;
+    /* ===== COMPLETED ROW LINES ===== */
+    body.show-progress .completed-line {
+      display: block !important;
     }
     
-    /* ===== SHARPIE LINES ===== */
-    .sharpie-line-element {
-      position: absolute;
-      height: 4px;
-      background: #f44336;
-      pointer-events: none;
-      z-index: 500;
-    }
-    
-    body.sharpie-hidden .sharpie-line-element,
-    body.sharpie-hidden .row-complete::after {
-      display: none;
-    }
-    
-    /* ===== SCHEDULE HEADER IMAGE ===== */
-    .header-image {
-      text-align: center;
-      margin-bottom: 12px;
-    }
-    
-    .header-image img {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
+    body:not(.show-progress) .completed-line {
+      display: none !important;
     }
     
     /* ===== TAG PILLS ===== */
-    .tagsBox {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      pointer-events: none;
+    #schedule-container .tags-pills {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      flex-direction: row !important;
+      gap: 4px !important;
+      padding: 4px !important;
+      align-items: flex-start !important;
+      align-content: flex-start !important;
     }
     
-    .tags-pills {
-      flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      padding: 4px;
-      position: relative;
-      z-index: 11;
-      pointer-events: none;
-      align-items: center;
+    #schedule-container .tag-pill {
+      display: inline-flex !important;
+      width: auto !important;
+      max-width: none !important;
+      flex: 0 0 auto !important;
+      align-items: center !important;
+      gap: 4px !important;
+      padding: 2px 8px 2px 3px !important;
+      border-radius: 999px !important;
+      font-size: 10px !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
     }
     
-    .tag-pill {
-      background: var(--panel, #ffffff);
-      color: var(--text, #111827);
-      padding: 2px 6px 2px 2px;
-      border-radius: 999px;
-      border: 1px solid #94a3b8;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-      position: relative;
-      box-sizing: border-box;
-      white-space: nowrap;
+    #schedule-container .tag-pill img {
+      width: 20px !important;
+      height: 20px !important;
+      min-width: 20px !important;
+      min-height: 20px !important;
+      max-width: 20px !important;
+      max-height: 20px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      flex-shrink: 0 !important;
     }
     
-    .tag-pill.image-tag img {
-      width: 20px;
-      height: 20px;
-      max-width: 20px;
-      max-height: 20px;
-      border-radius: 50%;
-      object-fit: cover;
+    /* ===== DRAGGABLE ROWS ===== */
+    #schedule-container tr[data-id] {
+      cursor: grab;
     }
     
-    .tag-pill .tag-dummy-circle {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: inline-block;
-      background: transparent;
+    #schedule-container tr[data-id].dragging {
+      opacity: 0.5;
+      cursor: grabbing;
     }
     
-    .tag-pill.minor-tag {
-      border: 2px solid #dc2626;
-      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
+    #schedule-container tr[data-id].drag-over {
+      border-top: 3px solid var(--accent) !important;
     }
     
-    .tag-pill .tag-x {
-      display: none;
+    /* ===== CLICKABLE ROWS FOR SHARPIE ===== */
+    #schedule-container tr[data-id] td:first-child {
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    #schedule-container tr[data-id] td:first-child:hover {
+      background: rgba(244, 67, 54, 0.1) !important;
+    }
+    
+    /* ===== DURATION EDIT ===== */
+    #schedule-container td[data-key="duration"] {
+      cursor: pointer;
+    }
+    
+    #schedule-container td[data-key="duration"]:hover {
+      background: rgba(88, 166, 255, 0.1) !important;
+    }
+    
+    .duration-edit-input {
+      width: 50px;
+      padding: 2px 4px;
+      font-size: inherit;
+      font-family: inherit;
+      text-align: center;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--text);
     }
     
     /* ===== FOOTER ===== */
@@ -315,10 +333,32 @@
       font-size: 11px;
       color: var(--muted);
     }
+    
+    /* ===== NOTIFICATION ===== */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    
+    .notification.show {
+      opacity: 1;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="show-progress">
   <div class="header">
     <div class="header-left">
       <div class="header-logo">
@@ -356,20 +396,20 @@
             <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
           </g>
         </svg>
-        <span>SKEDULER</span>
+        <span>SKEDULER AD</span>
       </div>
     </div>
     
     <div class="header-center">
-      <div class="channel-name" id="channelName">Loading...</div>
+      <div class="channel-name" id="channelName">Connecting...</div>
     </div>
     
     <div class="header-right">
-      <div class="live-badge manual" id="liveBadge">
-        <span id="liveText">LIVE</span>
+      <div class="live-badge connecting" id="liveBadge">
+        <span id="liveText">CONNECTING</span>
         <span class="live-dot"></span>
       </div>
-      <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress">
+      <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress Lines">
         <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
     </div>
@@ -378,18 +418,20 @@
   <div class="content">
     <div id="loading" class="loading">
       <div class="spinner"></div>
-      <h2>Loading Schedule...</h2>
+      <h2>Connecting to Channel...</h2>
       <p>Please wait</p>
     </div>
     
     <div id="error" class="error" style="display:none;">
-      <h2>Schedule Not Found</h2>
-      <p>This broadcast link may have expired or been removed.</p>
+      <h2>Connection Failed</h2>
+      <p>Could not connect to the AD channel.</p>
     </div>
     
     <div id="schedule-container" style="display:none;"></div>
     <div id="updated-at" class="updated-at"></div>
   </div>
+  
+  <div class="notification" id="notification"></div>
 
   <script>
     const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
@@ -397,68 +439,53 @@
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
-    let broadcastCode = null;
-    let broadcastData = null;
-    let refreshInterval = null;
-    let sharpieVisible = true;
+    let channelCode = null;
+    let channel = null;
+    let progressVisible = true;
+    let isLive = false;
+    let markedRows = new Set();
+    
+    // Drag state
+    let draggedRow = null;
     
     async function init() {
       const params = new URLSearchParams(window.location.search);
-      broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
+      channelCode = params.get('c') || params.get('code') || params.get('channel');
       
-      if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '' || broadcastCode === 'broadcast-viewer-index.html') {
-        showError('No broadcast code provided');
+      if (!channelCode) {
+        showError('No channel code provided. Add ?c=YOURCODE to the URL.');
         return;
       }
       
-      // Setup sharpie toggle
-      const sharpieToggle = document.getElementById('sharpieToggle');
-      sharpieToggle.addEventListener('click', toggleSharpie);
+      channelCode = channelCode.toUpperCase();
+      document.getElementById('channelName').textContent = 'Channel: ' + channelCode;
+      document.title = 'AD - ' + channelCode;
       
-      await loadBroadcast();
+      // Setup progress toggle
+      document.getElementById('sharpieToggle').addEventListener('click', toggleProgress);
       
-      // Auto-refresh every 30 seconds
-      refreshInterval = setInterval(loadBroadcast, 30000);
+      // Load initial HTML from storage
+      await loadInitialHTML();
+      
+      // Connect to realtime channel
+      await connectToChannel();
     }
     
-    function toggleSharpie() {
-      sharpieVisible = !sharpieVisible;
-      const btn = document.getElementById('sharpieToggle');
-      
-      if (sharpieVisible) {
-        document.body.classList.remove('sharpie-hidden');
-        btn.classList.remove('lines-hidden');
-      } else {
-        document.body.classList.add('sharpie-hidden');
-        btn.classList.add('lines-hidden');
-      }
-    }
-    
-    async function loadBroadcast() {
+    async function loadInitialHTML() {
       try {
-        // Look up broadcast by code
-        const { data: broadcast, error: lookupError } = await supabase
+        // Look up broadcast by code to get the HTML path
+        const { data: broadcast, error } = await supabase
           .from('broadcasts')
           .select('*')
-          .eq('code', broadcastCode.toUpperCase())
+          .eq('code', channelCode)
           .single();
         
-        if (lookupError || !broadcast) {
-          showError('Broadcast not found');
+        if (error || !broadcast) {
+          console.log('[AD] No broadcast found, waiting for sync');
           return;
         }
         
-        broadcastData = broadcast;
-        
-        // Update channel name (centered)
-        const channelName = broadcast.title || 'Untitled';
-        document.getElementById('channelName').textContent = channelName;
-        document.title = channelName + ' - SKEDULER';
-        
-        // Update LIVE badge based on auto_update field
-        updateLiveBadge(broadcast.auto_update);
-        
-        // Fetch HTML from storage
+        // Fetch HTML
         let htmlPath;
         if (broadcast.channel_number) {
           htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
@@ -470,47 +497,466 @@
           .from('schedule-files')
           .getPublicUrl(htmlPath);
         
-        const cacheBuster = Date.now();
-        const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
-        
-        console.log('[Broadcast] Fetching:', publicUrl);
-        
-        const response = await fetch(publicUrl);
-        if (!response.ok) {
-          showError('Could not load schedule');
-          return;
+        const response = await fetch(urlData.publicUrl + '?t=' + Date.now());
+        if (response.ok) {
+          const html = await response.text();
+          displaySchedule(html);
         }
-        
-        const html = await response.text();
-        
-        // Display
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('error').style.display = 'none';
-        document.getElementById('schedule-container').style.display = 'block';
-        document.getElementById('schedule-container').innerHTML = html;
-        
-        // Show last updated
-        const updated = new Date(broadcast.updated_at);
-        document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleString();
-        
       } catch (err) {
-        console.error('Load error:', err);
-        showError('Failed to load broadcast');
+        console.error('[AD] Error loading initial HTML:', err);
       }
     }
     
-    function updateLiveBadge(isLive) {
+    async function connectToChannel() {
+      const roomName = 'ad-sync-' + channelCode;
+      console.log('[AD] Connecting to room:', roomName);
+      
+      channel = supabase.channel(roomName, {
+        config: {
+          broadcast: { self: false }
+        }
+      });
+      
+      channel
+        .on('broadcast', { event: 'full-sync' }, handleFullSync)
+        .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
+        .on('broadcast', { event: 'duration-change' }, handleDurationChange)
+        .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
+        .on('broadcast', { event: 'sharpie-visibility' }, handleSharpieVisibility)
+        .on('broadcast', { event: 'sync-status' }, handleSyncStatus)
+        .on('presence', { event: 'sync' }, handlePresence)
+        .subscribe((status) => {
+          console.log('[AD] Subscription status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            // Track presence
+            channel.track({
+              user: 'AD-' + Math.random().toString(36).substr(2, 4),
+              role: 'ad'
+            });
+            
+            // Request current state from producer
+            channel.send({
+              type: 'broadcast',
+              event: 'request-sync',
+              payload: {}
+            });
+            
+            updateStatus('connecting');
+            showNotification('Connected, waiting for producer...');
+          }
+        });
+    }
+    
+    function displaySchedule(html) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('schedule-container').style.display = 'block';
+      document.getElementById('schedule-container').innerHTML = html;
+      document.getElementById('updated-at').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      
+      // Setup interactive features
+      setupRowInteractions();
+    }
+    
+    function setupRowInteractions() {
+      const container = document.getElementById('schedule-container');
+      const rows = container.querySelectorAll('tr[data-id]');
+      
+      rows.forEach(row => {
+        const rowId = row.dataset.id || row.id;
+        if (!rowId) return;
+        
+        // Drag and drop
+        row.draggable = true;
+        row.addEventListener('dragstart', handleDragStart);
+        row.addEventListener('dragend', handleDragEnd);
+        row.addEventListener('dragover', handleDragOver);
+        row.addEventListener('dragleave', handleDragLeave);
+        row.addEventListener('drop', handleDrop);
+        
+        // Click first cell to toggle sharpie
+        const firstCell = row.querySelector('td');
+        if (firstCell) {
+          firstCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleRowComplete(rowId);
+          });
+        }
+        
+        // Click duration cell to edit
+        const durationCell = row.querySelector('td[data-key="duration"]');
+        if (durationCell) {
+          durationCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editDuration(rowId, durationCell);
+          });
+        }
+      });
+    }
+    
+    // ===== DRAG AND DROP =====
+    function handleDragStart(e) {
+      draggedRow = e.target.closest('tr');
+      draggedRow.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+    
+    function handleDragEnd(e) {
+      if (draggedRow) {
+        draggedRow.classList.remove('dragging');
+        draggedRow = null;
+      }
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    }
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+      const row = e.target.closest('tr[data-id]');
+      if (row && row !== draggedRow) {
+        row.classList.add('drag-over');
+      }
+    }
+    
+    function handleDragLeave(e) {
+      const row = e.target.closest('tr[data-id]');
+      if (row) {
+        row.classList.remove('drag-over');
+      }
+    }
+    
+    function handleDrop(e) {
+      e.preventDefault();
+      const targetRow = e.target.closest('tr[data-id]');
+      if (!targetRow || !draggedRow || targetRow === draggedRow) return;
+      
+      targetRow.classList.remove('drag-over');
+      
+      // Move the row in DOM
+      const tbody = targetRow.parentElement;
+      const rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+      const draggedIndex = rows.indexOf(draggedRow);
+      const targetIndex = rows.indexOf(targetRow);
+      
+      if (draggedIndex < targetIndex) {
+        targetRow.after(draggedRow);
+      } else {
+        targetRow.before(draggedRow);
+      }
+      
+      // Broadcast new order
+      broadcastRowReorder();
+      showNotification('Row reordered');
+    }
+    
+    function broadcastRowReorder() {
+      const tbody = document.querySelector('#schedule-container tbody');
+      if (!tbody) return;
+      
+      const order = Array.from(tbody.querySelectorAll('tr[data-id]'))
+        .map(tr => tr.dataset.id || tr.id)
+        .filter(id => id);
+      
+      console.log('[AD] Broadcasting row reorder:', order);
+      
+      channel.send({
+        type: 'broadcast',
+        event: 'row-reorder',
+        payload: { order, source: 'ad' }
+      });
+    }
+    
+    // ===== SHARPIE / COMPLETION =====
+    function toggleRowComplete(rowId) {
+      const isMarked = markedRows.has(rowId);
+      
+      if (isMarked) {
+        markedRows.delete(rowId);
+        hideCompletedLine(rowId);
+      } else {
+        markedRows.add(rowId);
+        showCompletedLine(rowId);
+      }
+      
+      // Broadcast to producer
+      channel.send({
+        type: 'broadcast',
+        event: 'sharpie-toggle',
+        payload: { rowId, marked: !isMarked, source: 'ad' }
+      });
+      
+      showNotification(isMarked ? 'Row unmarked' : 'Row marked complete');
+    }
+    
+    function showCompletedLine(rowId) {
+      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      if (!row) return;
+      
+      // Check if line already exists
+      let line = row.querySelector('.completed-line');
+      if (!line) {
+        // Find first TD and add line
+        const firstTd = row.querySelector('td');
+        if (firstTd) {
+          firstTd.style.position = 'relative';
+          line = document.createElement('div');
+          line.className = 'completed-line';
+          line.style.cssText = 'position:absolute;left:0;top:50%;width:5000px;height:4px;background:#ef4444;pointer-events:none;transform:translateY(-50%);z-index:100;';
+          firstTd.appendChild(line);
+        }
+      }
+      
+      if (line && progressVisible) {
+        line.style.display = 'block';
+      }
+    }
+    
+    function hideCompletedLine(rowId) {
+      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      if (!row) return;
+      
+      const line = row.querySelector('.completed-line');
+      if (line) {
+        line.remove();
+      }
+    }
+    
+    // ===== DURATION EDIT =====
+    function editDuration(rowId, cell) {
+      // Check if already editing
+      if (cell.querySelector('input')) return;
+      
+      const currentValue = cell.textContent.trim();
+      const span = cell.querySelector('span');
+      
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'duration-edit-input';
+      input.value = currentValue;
+      input.min = '0';
+      input.step = '5';
+      
+      const finishEdit = () => {
+        const newValue = input.value || '0';
+        if (span) {
+          span.textContent = newValue;
+          span.style.display = '';
+        } else {
+          cell.textContent = newValue;
+        }
+        input.remove();
+        
+        // Broadcast change
+        channel.send({
+          type: 'broadcast',
+          event: 'duration-change',
+          payload: { rowId, duration: newValue, source: 'ad' }
+        });
+        
+        showNotification('Duration updated to ' + newValue);
+      };
+      
+      input.addEventListener('blur', finishEdit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          finishEdit();
+        } else if (e.key === 'Escape') {
+          input.value = currentValue;
+          finishEdit();
+        }
+      });
+      
+      if (span) {
+        span.style.display = 'none';
+      }
+      cell.textContent = '';
+      cell.appendChild(input);
+      if (span) cell.appendChild(span);
+      input.focus();
+      input.select();
+    }
+    
+    // ===== EVENT HANDLERS FROM PRODUCER =====
+    function handleFullSync(payload) {
+      console.log('[AD] Full sync received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return; // Ignore our own
+      
+      const { order, sharpieRows, linesHidden } = data;
+      
+      // Reorder rows
+      if (order && order.length) {
+        const tbody = document.querySelector('#schedule-container tbody');
+        if (tbody) {
+          order.forEach(rowId => {
+            const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+            if (row) tbody.appendChild(row);
+          });
+        }
+      }
+      
+      // Update sharpie state
+      markedRows.clear();
+      if (sharpieRows) {
+        sharpieRows.forEach(rowId => {
+          markedRows.add(rowId);
+          showCompletedLine(rowId);
+        });
+      }
+      
+      // Update visibility
+      if (linesHidden !== undefined) {
+        progressVisible = !linesHidden;
+        updateProgressUI();
+      }
+      
+      updateStatus('synced');
+      showNotification('Synced with producer');
+    }
+    
+    function handleRowReorder(payload) {
+      console.log('[AD] Row reorder received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      const { order } = data;
+      if (!order || !order.length) return;
+      
+      const tbody = document.querySelector('#schedule-container tbody');
+      if (tbody) {
+        order.forEach(rowId => {
+          const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+          if (row) tbody.appendChild(row);
+        });
+      }
+      
+      showNotification('Rows reordered by producer');
+    }
+    
+    function handleDurationChange(payload) {
+      console.log('[AD] Duration change received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      const { rowId, duration } = data;
+      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      if (!row) return;
+      
+      const durationCell = row.querySelector('td[data-key="duration"]');
+      if (durationCell) {
+        const span = durationCell.querySelector('span');
+        if (span) {
+          span.textContent = duration;
+        } else {
+          durationCell.textContent = duration;
+        }
+      }
+      
+      showNotification('Duration updated by producer');
+    }
+    
+    function handleSharpieToggle(payload) {
+      console.log('[AD] Sharpie toggle received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      const { rowId, marked } = data;
+      
+      if (marked) {
+        markedRows.add(rowId);
+        showCompletedLine(rowId);
+      } else {
+        markedRows.delete(rowId);
+        hideCompletedLine(rowId);
+      }
+      
+      showNotification(marked ? 'Row marked by producer' : 'Row unmarked by producer');
+    }
+    
+    function handleSharpieVisibility(payload) {
+      console.log('[AD] Sharpie visibility received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      progressVisible = !data.hidden;
+      updateProgressUI();
+    }
+    
+    function handleSyncStatus(payload) {
+      console.log('[AD] Sync status received:', payload);
+      const data = payload.payload || payload;
+      
+      isLive = data.live;
+      updateStatus(isLive ? 'synced' : 'offline');
+      
+      if (isLive) {
+        showNotification('Producer is LIVE');
+      } else {
+        showNotification('Producer disconnected');
+      }
+    }
+    
+    function handlePresence() {
+      if (!channel) return;
+      const state = channel.presenceState();
+      const users = Object.values(state).flat();
+      console.log('[AD] Presence:', users);
+    }
+    
+    // ===== UI HELPERS =====
+    function toggleProgress() {
+      progressVisible = !progressVisible;
+      updateProgressUI();
+      
+      // Broadcast to producer
+      channel.send({
+        type: 'broadcast',
+        event: 'sharpie-visibility',
+        payload: { hidden: !progressVisible, source: 'ad' }
+      });
+    }
+    
+    function updateProgressUI() {
+      const btn = document.getElementById('sharpieToggle');
+      
+      if (progressVisible) {
+        document.body.classList.add('show-progress');
+        btn.classList.remove('lines-hidden');
+      } else {
+        document.body.classList.remove('show-progress');
+        btn.classList.add('lines-hidden');
+      }
+    }
+    
+    function updateStatus(status) {
       const badge = document.getElementById('liveBadge');
       const text = document.getElementById('liveText');
       
-      badge.classList.remove('live', 'manual', 'offline');
+      badge.classList.remove('live', 'synced', 'connecting', 'offline');
       
-      if (isLive) {
-        badge.classList.add('live');
-        text.textContent = 'LIVE';
-      } else {
-        badge.classList.add('manual');
-        text.textContent = 'MANUAL';
+      switch (status) {
+        case 'synced':
+          badge.classList.add('synced');
+          text.textContent = 'SYNCED';
+          document.getElementById('loading').style.display = 'none';
+          break;
+        case 'connecting':
+          badge.classList.add('connecting');
+          text.textContent = 'CONNECTING';
+          break;
+        case 'offline':
+          badge.classList.add('offline');
+          text.textContent = 'OFFLINE';
+          break;
+        default:
+          badge.classList.add('offline');
+          text.textContent = 'OFFLINE';
       }
     }
     
@@ -519,12 +965,14 @@
       document.getElementById('schedule-container').style.display = 'none';
       document.getElementById('error').style.display = 'flex';
       document.getElementById('error').querySelector('p').textContent = msg;
-      
-      const badge = document.getElementById('liveBadge');
-      const text = document.getElementById('liveText');
-      badge.classList.remove('live', 'manual');
-      badge.classList.add('offline');
-      text.textContent = 'OFFLINE';
+      updateStatus('offline');
+    }
+    
+    function showNotification(msg) {
+      const el = document.getElementById('notification');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
     }
     
     init();
