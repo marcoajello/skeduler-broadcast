@@ -305,6 +305,9 @@
       text-align: center !important;
       vertical-align: middle !important;
       background: #4b5563 !important;
+      border-left: 2px solid #ffffff;
+      border-top: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
     }
     
     .ad-drag-handle {
@@ -344,6 +347,30 @@
       text-align: center !important;
       vertical-align: middle !important;
       background: #4b5563 !important;
+      border-right: 2px solid #ffffff;
+      border-top: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+    }
+    
+    /* Rounded outer corners */
+    #schedule-container thead tr:first-child .ad-drag-th {
+      border-top-left-radius: 8px;
+      overflow: hidden;
+    }
+    
+    #schedule-container thead tr:first-child .ad-actions-th {
+      border-top-right-radius: 8px;
+      overflow: hidden;
+    }
+    
+    #schedule-container tbody tr:last-child .ad-drag-td {
+      border-bottom-left-radius: 8px;
+      overflow: hidden;
+    }
+    
+    #schedule-container tbody tr:last-child .ad-actions-td {
+      border-bottom-right-radius: 8px;
+      overflow: hidden;
     }
     
     .ad-mark-btn {
