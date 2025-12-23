@@ -305,13 +305,13 @@
       text-align: center !important;
       vertical-align: middle !important;
       background: #4b5563 !important;
-      border-left: 2px solid #ffffff;
-      border-top: 1px solid #ffffff;
-      border-bottom: 1px solid #ffffff;
+      border-left: 2px solid #ffffff !important;
+      border-top: 1px solid #ffffff !important;
+      border-bottom: 1px solid #ffffff !important;
     }
     
     .ad-drag-th {
-      border-top: 2px solid #ffffff;
+      border-top: 2px solid #ffffff !important;
     }
     
     .ad-drag-handle {
@@ -351,41 +351,41 @@
       text-align: center !important;
       vertical-align: middle !important;
       background: #4b5563 !important;
-      border-right: 2px solid #ffffff;
-      border-top: 1px solid #ffffff;
-      border-bottom: 1px solid #ffffff;
+      border-right: 2px solid #ffffff !important;
+      border-top: 1px solid #ffffff !important;
+      border-bottom: 1px solid #ffffff !important;
     }
     
     .ad-actions-th {
-      border-top: 2px solid #ffffff;
+      border-top: 2px solid #ffffff !important;
     }
     
-    /* Rounded outer corners - no border on rounded edge */
+    /* Rounded outer corners - remove outer borders */
     #schedule-container thead tr:first-child .ad-drag-th {
       border-top-left-radius: 8px;
-      border-left: none;
-      border-top: none;
+      border-left: none !important;
+      border-top: none !important;
       overflow: hidden;
     }
     
     #schedule-container thead tr:first-child .ad-actions-th {
       border-top-right-radius: 8px;
-      border-right: none;
-      border-top: none;
+      border-right: none !important;
+      border-top: none !important;
       overflow: hidden;
     }
     
     #schedule-container tbody tr:last-child .ad-drag-td {
       border-bottom-left-radius: 8px;
-      border-left: none;
-      border-bottom: none;
+      border-left: none !important;
+      border-bottom: none !important;
       overflow: hidden;
     }
     
     #schedule-container tbody tr:last-child .ad-actions-td {
       border-bottom-right-radius: 8px;
-      border-right: none;
-      border-bottom: none;
+      border-right: none !important;
+      border-bottom: none !important;
       overflow: hidden;
     }
     
@@ -605,6 +605,26 @@
       channelCode = channelCode.toUpperCase();
       document.getElementById('channelName').textContent = 'Channel: ' + channelCode;
       document.title = 'AD - ' + channelCode;
+      
+      // Fetch channel title from Supabase
+      async function fetchChannelTitle(code) {
+        try {
+          const { data, error } = await supabase
+            .from('broadcasts')
+            .select('title')
+            .ilike('code', code)
+            .single();
+          
+          if (data?.title) {
+            document.getElementById('channelName').textContent = data.title;
+            document.title = 'AD - ' + data.title;
+          }
+        } catch (e) {
+          console.log('[AD] Could not fetch channel title:', e);
+        }
+      }
+      
+      fetchChannelTitle(channelCode);
       
       // Setup progress toggle
       document.getElementById('sharpieToggle').addEventListener('click', toggleProgress);
