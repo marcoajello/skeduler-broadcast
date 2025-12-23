@@ -246,6 +246,16 @@
       margin: 0 auto;
       border-collapse: collapse;
       background: #000;
+      border: none;
+      outline: none;
+    }
+    
+    /* Remove borders from corner cells to prevent artifacts */
+    #schedule-container thead tr:first-child th:first-child,
+    #schedule-container thead tr:first-child th:last-child,
+    #schedule-container tbody tr:last-child td:first-child,
+    #schedule-container tbody tr:last-child td:last-child {
+      border: none;
     }
     
     #schedule-container .schedule-scroll {
@@ -731,6 +741,24 @@
       document.getElementById('schedule-container').style.display = 'block';
       document.getElementById('schedule-container').innerHTML = html;
       document.getElementById('updated-at').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      
+      // Remove injected style tags that may have table styling
+      document.querySelectorAll('#schedule-container style').forEach(s => s.remove());
+      
+      // Remove table border/outline that causes corner artifacts
+      const table = document.querySelector('#schedule-container table');
+      if (table) {
+        table.style.border = 'none';
+        table.style.outline = 'none';
+        table.style.boxShadow = 'none';
+      }
+      
+      // Remove borders from any wrapper divs
+      document.querySelectorAll('#schedule-container > div').forEach(div => {
+        div.style.border = 'none';
+        div.style.outline = 'none';
+        div.style.boxShadow = 'none';
+      });
       
       // Setup interactive features
       setupRowInteractions();
