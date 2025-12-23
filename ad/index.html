@@ -1,704 +1,1421 @@
-/**
- * AD Channel Sync
- * Enables two-way realtime sync between main app and AD viewers
- * 
- * Features:
- * - Row reordering sync
- * - Duration change sync  
- * - Sharpie (completion) sync
- * - Cell formatting sync (colors, fonts, alignment, etc)
- * - Presence tracking
- */
-
-(function() {
-  'use strict';
-  
-  const ADChannelSync = {
-    channel: null,
-    channelCode: null,
-    isActive: false,
-    connectedUsers: [],
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d1117">
+  <title>SKEDULER AD</title>
+  <style>
+    * { box-sizing: border-box; }
     
-    /**
-     * Start AD sync for a channel
-     */
-    async start(channelCode) {
-      if (this.isActive && this.channelCode === channelCode) {
-        console.log('[ADSync] Already active for this channel');
-        return true;
+    :root {
+      --bg: #0d1117;
+      --panel: #222a35;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #7d8590;
+      --accent: #58a6ff;
+      --live-red: #f85149;
+      --live-green: #3fb950;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    
+    /* ===== HEADER ===== */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      min-height: 48px;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-self: start;
+    }
+    
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
+    
+    .header-logo svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .header-center {
+      justify-self: center;
+      text-align: center;
+      flex: 1;
+    }
+    
+    .channel-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 1px;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-self: end;
+    }
+    
+    /* ===== LIVE INDICATOR ===== */
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    
+    .live-badge.live {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--live-red);
+      border: 1px solid rgba(248, 81, 73, 0.3);
+    }
+    
+    .live-badge.live .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live-red);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .live-badge.synced {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--live-green);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+    
+    .live-badge.synced .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--live-green);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .live-badge.connecting {
+      background: rgba(88, 166, 255, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+    }
+    
+    .live-badge.connecting .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 0.5s ease-in-out infinite;
+    }
+    
+    .live-badge.offline {
+      background: rgba(125, 133, 144, 0.15);
+      color: var(--muted);
+      border: 1px solid rgba(125, 133, 144, 0.3);
+    }
+    
+    .live-badge.offline .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+    
+    /* ===== SHARPIE TOGGLE (Purple for AD) ===== */
+    .header-progress-btn {
+      width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
+      background: #9333ea; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-progress-btn:hover { filter: brightness(1.1); }
+    .header-progress-btn.lines-hidden { background: var(--border); }
+    .header-progress-btn:not(.lines-hidden) { background: #9333ea; }
+    .header-progress-btn svg path[fill="#dd2222"],
+    .header-progress-btn svg path[fill="#bb1111"] { fill: #7c3aed; }
+    
+    /* ===== CONTENT ===== */
+    .content {
+      padding: 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #000;
+    }
+    
+    .loading, .error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      text-align: center;
+      padding: 24px;
+    }
+    
+    .loading h2, .error h2 {
+      font-size: 18px;
+      margin: 0 0 8px;
+    }
+    
+    .loading p, .error p {
+      color: var(--muted);
+      margin: 0;
+    }
+    
+    .error h2 { color: var(--live-red); }
+    
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* ===== CONTENT CENTERING ===== */
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    /* ===== SCHEDULE CONTAINER ===== */
+    #schedule-container {
+      background: #000;
+      border-radius: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: auto;
+      max-width: 100%;
+    }
+    
+    /* Center the schedule header over table */
+    #schedule-container .schedule-header,
+    #schedule-container .header-image,
+    #schedule-container > div:first-child:not(table) {
+      text-align: center;
+      width: 100%;
+    }
+    
+    #schedule-container table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: #000;
+      border: none;
+      outline: none;
+    }
+    
+    /* Remove borders from corner cells to prevent artifacts */
+    #schedule-container thead tr:first-child th:first-child,
+    #schedule-container thead tr:first-child th:last-child,
+    #schedule-container tbody tr:last-child td:first-child,
+    #schedule-container tbody tr:last-child td:last-child {
+      border: none;
+    }
+    
+    #schedule-container .schedule-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #000;
+    }
+    
+    /* ===== COMPLETED ROW LINES ===== */
+    body.show-progress .completed-line {
+      display: block;
+    }
+    
+    body:not(.show-progress) .completed-line {
+      display: none;
+    }
+    
+    /* ===== TAG PILLS ===== */
+    #schedule-container .tags-pills {
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: row;
+      gap: 4px;
+      padding: 4px;
+      align-items: flex-start;
+      align-content: flex-start;
+    }
+    
+    #schedule-container .tag-pill {
+      display: inline-flex;
+      width: auto;
+      max-width: none;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px 2px 3px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    
+    #schedule-container .tag-pill img {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    
+    /* ===== DRAGGABLE ROWS ===== */
+    #schedule-container tr[data-id].dragging {
+      opacity: 0.5;
+    }
+    
+    #schedule-container tr[data-id].drag-over {
+      border-top: 3px solid var(--accent);
+    }
+    
+    /* ===== DRAG COLUMN ===== */
+    .ad-drag-col,
+    col[data-key="drag"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+    }
+    
+    #schedule-container th[data-key="drag"],
+    #schedule-container td[data-key="drag"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      padding: 0;
+      text-align: center;
+      vertical-align: middle;
+      background: #4b5563;
+      outline: 2px solid #ffffff;
+      outline-offset: -2px;
+      border: none;
+    }
+    
+    .ad-drag-handle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-height: 30px;
+      cursor: grab;
+      color: #999;
+      font-size: 14px;
+      user-select: none;
+    }
+    
+    .ad-drag-handle:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .ad-drag-handle:active {
+      cursor: grabbing;
+    }
+    
+    /* ===== ACTIONS COLUMN ===== */
+    .ad-actions-col,
+    col[data-key="actions"] {
+      width: 50px;
+      min-width: 50px;
+      max-width: 50px;
+    }
+    
+    #schedule-container th[data-key="actions"],
+    #schedule-container td[data-key="actions"] {
+      width: 50px;
+      min-width: 50px;
+      max-width: 50px;
+      padding: 4px;
+      text-align: center;
+      vertical-align: middle;
+      background: #4b5563;
+      outline: 2px solid #ffffff;
+      outline-offset: -2px;
+      border: none;
+    }
+    
+    /* Rounded outer corners */
+    #schedule-container thead tr:first-child th[data-key="drag"] {
+      border-top-left-radius: 6px;
+      overflow: hidden;
+    }
+    
+    #schedule-container thead tr:first-child th[data-key="actions"] {
+      border-top-right-radius: 6px;
+      overflow: hidden;
+    }
+    
+    #schedule-container tbody tr:last-child td[data-key="drag"] {
+      border-bottom-left-radius: 6px;
+      overflow: hidden;
+    }
+    
+    #schedule-container tbody tr:last-child td[data-key="actions"] {
+      border-bottom-right-radius: 6px;
+      overflow: hidden;
+    }
+    
+    .ad-mark-btn {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid #555;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: all 0.15s;
+    }
+    
+    .ad-mark-btn:hover {
+      background: rgba(147, 51, 234, 0.2);
+      border-color: #9333ea;
+    }
+    
+    .ad-mark-btn.marked {
+      background: #9333ea;
+      border-color: #9333ea;
+    }
+    
+    .ad-mark-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    
+    /* Completed line styling (purple for AD) */
+    .ad-completed-line {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 5000px;
+      height: 4px;
+      background: #9333ea;
+      pointer-events: none;
+      transform: translateY(-50%);
+      z-index: 100;
+    }
+    
+    body:not(.show-progress) .ad-completed-line {
+      display: none;
+    }
+    
+    /* Row needs relative positioning for the line */
+    #schedule-container tr[data-id] {
+      position: relative;
+    }
+    
+    #schedule-container tr[data-id] td:first-child {
+      position: relative;
+    }
+    
+    /* Subchild rows - don't allow dragging */
+    #schedule-container tr.subchild .ad-drag-handle {
+      opacity: 0.3;
+      cursor: default;
+    }
+    
+    /* ===== DURATION EDIT ===== */
+    #schedule-container td[data-key="duration"] {
+      cursor: pointer;
+    }
+    
+    #schedule-container td[data-key="duration"]:hover {
+      background: rgba(88, 166, 255, 0.1);
+    }
+    
+    .duration-edit-input {
+      width: 50px;
+      padding: 2px 4px;
+      font-size: inherit;
+      font-family: inherit;
+      text-align: center;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--text);
+    }
+    
+    /* ===== FOOTER ===== */
+    .updated-at {
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    
+    /* ===== NOTIFICATION ===== */
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text);
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    
+    .notification.show {
+      opacity: 1;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="show-progress">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">
+        <svg viewBox="195 40 100 130">
+          <defs>
+            <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#cc2222"/>
+              <stop offset="40%" stop-color="#ee3333"/>
+              <stop offset="100%" stop-color="#aa1111"/>
+            </linearGradient>
+            <linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#dd2222"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+            <linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d0d0d0"/>
+              <stop offset="30%" stop-color="#eeeeee"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#c8c8c8"/>
+            </linearGradient>
+            <linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#aa1111"/>
+              <stop offset="50%" stop-color="#dd3333"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+          </defs>
+          <g transform="rotate(45 245 96)">
+            <path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+            <path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+            <path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+            <path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+          </g>
+        </svg>
+        <span>SKEDULER AD</span>
+      </div>
+    </div>
+    
+    <div class="header-center">
+      <div class="channel-name" id="channelName">Connecting...</div>
+    </div>
+    
+    <div class="header-right">
+      <div class="live-badge connecting" id="liveBadge">
+        <span id="liveText">CONNECTING</span>
+        <span class="live-dot"></span>
+      </div>
+      <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress Lines">
+        <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
+      </button>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <h2>Connecting to Channel...</h2>
+      <p>Please wait</p>
+    </div>
+    
+    <div id="error" class="error" style="display:none;">
+      <h2>Connection Failed</h2>
+      <p>Could not connect to the AD channel.</p>
+    </div>
+    
+    <div id="schedule-container" style="display:none;"></div>
+    <div id="updated-at" class="updated-at"></div>
+  </div>
+  
+  <div class="notification" id="notification"></div>
+
+  <script>
+  (function() {
+    'use strict';
+    
+    const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+    
+    let supabase = null;
+    let channelCode = null;
+    let channel = null;
+    let progressVisible = true;
+    let isLive = false;
+    let markedRows = new Set();
+    
+    // Drag state
+    let draggedRow = null;
+    
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      channelCode = params.get('c') || params.get('code') || params.get('channel');
+      
+      if (!channelCode) {
+        showError('No channel code provided. Add ?c=YOURCODE to the URL.');
+        return;
       }
       
-      // Stop any existing sync (internal cleanup - don't notify viewers)
-      this.stop(false);
+      channelCode = channelCode.toUpperCase();
+      document.getElementById('channelName').textContent = 'Channel: ' + channelCode;
+      document.title = 'AD - ' + channelCode;
       
-      if (!window.SupabaseAPI?.client) {
-        console.error('[ADSync] Supabase client not available');
-        return false;
+      // Initialize Supabase
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      
+      // Fetch channel title from Supabase
+      async function fetchChannelTitle(code) {
+        try {
+          const { data, error } = await supabase
+            .from('broadcasts')
+            .select('title')
+            .ilike('code', code)
+            .single();
+          
+          if (data?.title) {
+            document.getElementById('channelName').textContent = data.title;
+            document.title = 'AD - ' + data.title;
+          }
+        } catch (e) {
+          console.log('[AD] Could not fetch channel title:', e);
+        }
       }
       
-      this.channelCode = channelCode;
-      const roomName = 'ad-sync-' + channelCode.toUpperCase();
+      fetchChannelTitle(channelCode);
       
-      console.log('[ADSync] Starting sync for room:', roomName);
+      // Setup progress toggle
+      document.getElementById('sharpieToggle').addEventListener('click', toggleProgress);
       
-      const supabase = window.SupabaseAPI.client();
+      // Load initial HTML from storage
+      await loadInitialHTML();
       
-      this.channel = supabase.channel(roomName, {
+      // Connect to realtime channel
+      await connectToChannel();
+    }
+    
+    async function loadInitialHTML() {
+      try {
+        // Look up broadcast by code to get the HTML path
+        const { data: broadcast, error } = await supabase
+          .from('broadcasts')
+          .select('*')
+          .eq('code', channelCode)
+          .single();
+        
+        if (error || !broadcast) {
+          console.log('[AD] No broadcast found, waiting for sync');
+          return;
+        }
+        
+        // Fetch HTML
+        let htmlPath;
+        if (broadcast.channel_number) {
+          htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+        } else {
+          htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+        }
+        
+        const { data: urlData } = supabase.storage
+          .from('schedule-files')
+          .getPublicUrl(htmlPath);
+        
+        const response = await fetch(urlData.publicUrl + '?t=' + Date.now());
+        if (response.ok) {
+          const html = await response.text();
+          displaySchedule(html);
+        }
+      } catch (err) {
+        console.error('[AD] Error loading initial HTML:', err);
+      }
+    }
+    
+    async function connectToChannel() {
+      const roomName = 'ad-sync-' + channelCode;
+      console.log('[AD] Connecting to room:', roomName);
+      
+      channel = supabase.channel(roomName, {
         config: {
           broadcast: { self: false }
         }
       });
       
-      // Listen for events from AD viewers
-      this.channel
-        .on('broadcast', { event: 'row-reorder' }, (payload) => this.handleRowReorder(payload))
-        .on('broadcast', { event: 'duration-change' }, (payload) => this.handleDurationChange(payload))
-        .on('broadcast', { event: 'sharpie-toggle' }, (payload) => this.handleSharpieToggle(payload))
-        .on('broadcast', { event: 'sharpie-visibility' }, (payload) => this.handleSharpieVisibility(payload))
-        .on('broadcast', { event: 'cell-format' }, (payload) => this.handleCellFormatting(payload))
-        .on('broadcast', { event: 'row-format' }, (payload) => this.handleRowFormatting(payload))
-        .on('broadcast', { event: 'request-sync' }, () => {
-          this.broadcastFullSync();
-          // Also send current live status
-          this.channel.send({
-            type: 'broadcast',
-            event: 'sync-status',
-            payload: { live: true }
-          });
-        })
-        .on('presence', { event: 'sync' }, () => this.handlePresenceSync())
+      channel
+        .on('broadcast', { event: 'full-sync' }, handleFullSync)
+        .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
+        .on('broadcast', { event: 'duration-change' }, handleDurationChange)
+        .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
+        .on('broadcast', { event: 'sharpie-visibility' }, handleSharpieVisibility)
+        .on('broadcast', { event: 'sync-status' }, handleSyncStatus)
+        .on('presence', { event: 'sync' }, handlePresence)
         .subscribe((status) => {
-          console.log('[ADSync] Subscription status:', status);
+          console.log('[AD] Subscription status:', status);
           
           if (status === 'SUBSCRIBED') {
-            this.isActive = true;
-            
-            // Persist AD sync state for reconnect after refresh
-            localStorage.setItem('adSyncChannelCode', channelCode);
-            
-            // Add visual indicator to main app
-            document.body.classList.add('ad-sync-active');
-            
-            // Track our presence
-            this.channel.track({
-              user: 'Producer-' + Math.random().toString(36).substr(2, 4),
-              role: 'producer'
+            // Track presence
+            channel.track({
+              user: 'AD-' + Math.random().toString(36).substr(2, 4),
+              role: 'ad'
             });
             
-            // Send current state to any connected AD viewers
-            this.broadcastFullSync();
-            
-            // Notify AD viewer that sync is LIVE
-            this.channel.send({
+            // Request current state from producer
+            channel.send({
               type: 'broadcast',
-              event: 'sync-status',
-              payload: { live: true }
+              event: 'request-sync',
+              payload: {}
             });
             
-            this.notifyStatusChange('connected');
-          } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-            this.isActive = false;
-            document.body.classList.remove('ad-sync-active');
-            this.notifyStatusChange('disconnected');
+            updateStatus('connecting');
+            showNotification('Connected, waiting for producer...');
           }
         });
-      
-      return true;
-    },
+    }
     
-    /**
-     * Stop AD sync
-     * @param {boolean} notifyViewers - Whether to notify AD viewers of status change (default: true)
-     */
-    stop(notifyViewers = true) {
-      if (this.channel) {
-        console.log('[ADSync] Stopping sync');
+    function displaySchedule(html) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('schedule-container').style.display = 'block';
+      document.getElementById('schedule-container').innerHTML = html;
+      document.getElementById('updated-at').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+      
+      // Remove injected style tags that may have table styling
+      document.querySelectorAll('#schedule-container style').forEach(s => s.remove());
+      
+      // Remove table border/outline that causes corner artifacts
+      const table = document.querySelector('#schedule-container table');
+      if (table) {
+        table.style.border = 'none';
+        table.style.outline = 'none';
+        table.style.boxShadow = 'none';
+      }
+      
+      // Remove borders from any wrapper divs
+      document.querySelectorAll('#schedule-container > div').forEach(div => {
+        div.style.border = 'none';
+        div.style.outline = 'none';
+        div.style.boxShadow = 'none';
+      });
+      
+      // Setup interactive features
+      setupRowInteractions();
+    }
+    
+    function setupRowInteractions() {
+      const container = document.getElementById('schedule-container');
+      const table = container.querySelector('table');
+      if (!table) return;
+      
+      // Add drag column to colgroup
+      const colgroup = table.querySelector('colgroup');
+      if (colgroup) {
+        const dragCol = document.createElement('col');
+        dragCol.className = 'ad-drag-col';
+        dragCol.dataset.key = 'drag';
+        colgroup.insertBefore(dragCol, colgroup.firstChild);
         
-        // Only notify AD viewer when explicitly stopping (not internal cleanup)
-        if (notifyViewers) {
-          this.channel.send({
-            type: 'broadcast',
-            event: 'sync-status',
-            payload: { live: false }
+        const actionsCol = document.createElement('col');
+        actionsCol.className = 'ad-actions-col';
+        actionsCol.dataset.key = 'actions';
+        colgroup.appendChild(actionsCol);
+      }
+      
+      // Add drag header
+      const thead = table.querySelector('thead tr');
+      if (thead) {
+        const dragTh = document.createElement('th');
+        dragTh.className = 'ad-drag-th';
+        dragTh.dataset.key = 'drag';
+        dragTh.style.cssText = 'width:36px;min-width:36px;max-width:36px;padding:0;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border-top-left-radius:6px;overflow:hidden;border:none;';
+        dragTh.innerHTML = '';
+        thead.insertBefore(dragTh, thead.firstChild);
+        
+        const actionsTh = document.createElement('th');
+        actionsTh.className = 'ad-actions-th';
+        actionsTh.dataset.key = 'actions';
+        actionsTh.style.cssText = 'width:50px;min-width:50px;max-width:50px;padding:4px;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border-top-right-radius:6px;overflow:hidden;border:none;';
+        actionsTh.innerHTML = '';
+        thead.appendChild(actionsTh);
+      }
+      
+      // Add drag and actions cells to each row (including subchildren)
+      const rows = table.querySelectorAll('tbody tr');
+      const rowsArray = Array.from(rows).filter(row => row.dataset.id || row.id);
+      const lastRowIndex = rowsArray.length - 1;
+      
+      rowsArray.forEach((row, index) => {
+        // Get row ID - check both data-id and id attributes
+        const rowId = row.dataset.id || row.id;
+        
+        // Check if this is a subchild row
+        const isSubchild = row.classList.contains('subchild');
+        const isLastRow = index === lastRowIndex;
+        
+        // Add drag cell at start
+        const dragTd = document.createElement('td');
+        dragTd.className = 'ad-drag-td';
+        dragTd.dataset.key = 'drag';
+        let dragStyle = 'width:36px;min-width:36px;max-width:36px;padding:0;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border:none;';
+        if (isLastRow) dragStyle += 'border-bottom-left-radius:6px;overflow:hidden;';
+        dragTd.style.cssText = dragStyle;
+        
+        const dragHandle = document.createElement('div');
+        dragHandle.className = 'ad-drag-handle';
+        dragHandle.innerHTML = '⋮⋮';
+        
+        // Only make non-subchild rows draggable
+        if (!isSubchild) {
+          dragHandle.draggable = true;
+          dragHandle.addEventListener('dragstart', (e) => handleDragStart(e, row));
+          dragHandle.addEventListener('dragend', handleDragEnd);
+        }
+        dragTd.appendChild(dragHandle);
+        
+        row.insertBefore(dragTd, row.firstChild);
+        
+        // Add actions cell at end
+        const actionsTd = document.createElement('td');
+        actionsTd.className = 'ad-actions-td';
+        actionsTd.dataset.key = 'actions';
+        let actionsStyle = 'width:50px;min-width:50px;max-width:50px;padding:4px;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border:none;';
+        if (isLastRow) actionsStyle += 'border-bottom-right-radius:6px;overflow:hidden;';
+        actionsTd.style.cssText = actionsStyle;
+        
+        const markBtn = document.createElement('button');
+        markBtn.className = 'ad-mark-btn' + (markedRows.has(rowId) ? ' marked' : '');
+        markBtn.innerHTML = getSharpieIcon(markedRows.has(rowId));
+        markBtn.addEventListener('click', () => toggleRowComplete(rowId, markBtn));
+        actionsTd.appendChild(markBtn);
+        
+        row.appendChild(actionsTd);
+        
+        // Row drag events (for dropping) - only on non-subchild rows
+        if (!isSubchild) {
+          row.addEventListener('dragover', handleDragOver);
+          row.addEventListener('dragleave', handleDragLeave);
+          row.addEventListener('drop', handleDrop);
+        }
+        
+        // If row is already marked, show line
+        if (markedRows.has(rowId)) {
+          showCompletedLine(rowId);
+        }
+        
+        // Click duration cell to edit
+        const durationCell = row.querySelector('td[data-key="duration"]');
+        if (durationCell) {
+          durationCell.style.cursor = 'pointer';
+          durationCell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editDuration(rowId, durationCell);
           });
         }
-        
-        this.channel.unsubscribe();
-        this.channel = null;
-      }
-      this.channelCode = null;
-      this.isActive = false;
-      this.connectedUsers = [];
-      
-      // Clear persisted state
-      localStorage.removeItem('adSyncChannelCode');
-      
-      document.body.classList.remove('ad-sync-active');
-      
-      // Explicitly clear table glow
-      const table = document.querySelector('.schedule-scroll table.schedule, .schedule-scroll #scheduleTable, #scheduleTable');
-      if (table) {
-        table.style.boxShadow = '';
-      }
-      
-      this.notifyStatusChange('disconnected');
-    },
+      });
+    }
     
-    /**
-     * Handle row reorder from AD viewer
-     */
-    handleRowReorder(payload) {
-      console.log('[ADSync] handleRowReorder received:', payload);
-      const { order, source } = payload.payload || payload;
-      
-      // Only process if from AD viewer
-      if (source !== 'ad') {
-        console.log('[ADSync] Ignoring row reorder - source is', source);
+    function getSharpieIcon(isMarked) {
+      const color = isMarked ? '#fff' : '#9333ea';
+      return '<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="' + color + '" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="' + (isMarked ? '#fff' : '#e0e0e0') + '" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="' + color + '" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>';
+    }
+    
+    // ===== DRAG AND DROP =====
+    let draggedRow = null;
+    let dragClone = null;
+    let dragStartY = 0;
+    let dragOffsetY = 0;
+    let dropTarget = null;
+    
+    function handleDragStart(e, row) {
+      // Don't allow dragging subchild rows
+      if (row.classList.contains('subchild')) {
+        e.preventDefault();
         return;
       }
       
-      console.log('[ADSync] Processing row reorder from AD:', order);
+      e.preventDefault();
       
-      // Get current day's rows
-      const state = window.readState?.();
-      if (!state) return;
+      draggedRow = row;
+      dragStartY = e.clientY;
       
-      const currentDayId = state.activeDayId;
-      const day = state.days?.find(d => d.id === currentDayId);
-      if (!day || !day.rows) return;
+      // Get row position
+      const rect = row.getBoundingClientRect();
+      dragOffsetY = e.clientY - rect.top;
       
-      // Reorder rows in state to match the new order
-      const rowMap = new Map(day.rows.map(r => [r.id, r]));
-      const newRows = [];
+      // Create floating clone
+      dragClone = row.cloneNode(true);
+      dragClone.style.cssText = `
+        position: fixed;
+        top: ${rect.top}px;
+        left: ${rect.left}px;
+        width: ${rect.width}px;
+        height: ${rect.height}px;
+        z-index: 10000;
+        pointer-events: none;
+        opacity: 0.9;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        background: #4b5563;
+        border-radius: 4px;
+        transition: transform 0.05s ease-out;
+      `;
+      document.body.appendChild(dragClone);
       
-      order.forEach(rowId => {
-        const row = rowMap.get(rowId);
-        if (row) {
-          newRows.push(row);
-          rowMap.delete(rowId);
+      // Dim original row
+      row.style.opacity = '0.3';
+      
+      // Add listeners
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+    }
+    
+    function handleDragMove(e) {
+      if (!dragClone || !draggedRow) return;
+      
+      // Move clone
+      const newY = e.clientY - dragOffsetY;
+      dragClone.style.top = newY + 'px';
+      
+      // Find row under cursor
+      const rows = Array.from(document.querySelectorAll('#schedule-container tbody tr[data-id]:not(.subchild)'));
+      let newTarget = null;
+      
+      rows.forEach(row => {
+        if (row === draggedRow) return;
+        
+        const rect = row.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        
+        // Clear previous indicator
+        row.style.borderTop = '';
+        row.style.borderBottom = '';
+        
+        if (e.clientY > rect.top && e.clientY < rect.bottom) {
+          newTarget = row;
+          // Show indicator above or below based on cursor position
+          if (e.clientY < midY) {
+            row.style.borderTop = '3px solid #9333ea';
+          } else {
+            row.style.borderBottom = '3px solid #9333ea';
+          }
         }
       });
       
-      // Add any rows that weren't in the order (shouldn't happen, but safety)
-      rowMap.forEach(row => newRows.push(row));
-      
-      // Update state
-      day.rows = newRows;
-      window.writeState?.(state);
-      
-      // Move DOM rows directly instead of rebuilding (much faster)
-      const tbody = document.querySelector('.schedule tbody');
-      if (tbody) {
-        order.forEach(rowId => {
-          const tr = document.getElementById(rowId);
-          if (tr) {
-            tbody.appendChild(tr);
-            // If this is a SUB row, also move its subchildren
-            if (tr.dataset.type === 'SUB') {
-              const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${rowId}"]`);
-              subchildren.forEach(child => tbody.appendChild(child));
-            }
-          }
-        });
-      }
-      
-      // Renumber and recalculate
-      if (window.renumber) window.renumber();
-      if (window.recalc) window.recalc();
-      
-      // Update sharpie lines
-      if (typeof SharpieManager !== 'undefined' && SharpieManager.updateAllLinePositions) {
-        SharpieManager.updateAllLinePositions();
-      }
-      
-      // Show notification
-      this.showNotification('Row order updated from AD');
-    },
+      dropTarget = newTarget;
+    }
     
-    /**
-     * Handle duration change from AD viewer
-     */
-    handleDurationChange(payload) {
-      console.log('[ADSync] handleDurationChange received:', payload);
-      // Handle both payload.payload and direct payload
-      const data = payload.payload || payload;
-      const { rowId, duration, source } = data;
+    function handleDragEnd(e) {
+      document.removeEventListener('mousemove', handleDragMove);
+      document.removeEventListener('mouseup', handleDragEnd);
       
-      if (source !== 'ad') {
-        console.log('[ADSync] Ignoring duration change - source is', source);
-        return;
+      // Clear all indicators
+      document.querySelectorAll('#schedule-container tbody tr').forEach(row => {
+        row.style.borderTop = '';
+        row.style.borderBottom = '';
+      });
+      
+      if (draggedRow) {
+        draggedRow.style.opacity = '';
       }
       
-      console.log('[ADSync] Processing duration change from AD:', rowId, duration);
-      
-      const state = window.readState?.();
-      if (!state) return;
-      
-      const currentDayId = state.activeDayId;
-      const day = state.days?.find(d => d.id === currentDayId);
-      if (!day || !day.rows) return;
-      
-      // Find and update the row
-      const row = day.rows.find(r => r.id === rowId);
-      if (row) {
-        row.duration = duration;
-        window.writeState?.(state);
+      // Perform the move if we have a target
+      if (dropTarget && draggedRow && dropTarget !== draggedRow) {
+        const tbody = dropTarget.parentElement;
+        const draggedId = draggedRow.dataset.id || draggedRow.id;
         
-        // Update the DOM
-        const tr = document.getElementById(rowId);
-        if (tr) {
-          const durationCell = tr.querySelector('td[data-key="duration"]');
-          if (durationCell) {
-            // Find the input or just update the cell
-            const input = durationCell.querySelector('input');
-            if (input) {
-              input.value = duration;
-            } else {
-              durationCell.textContent = duration;
-            }
-          }
+        // Collect the dragged row and any subchildren
+        const rowsToMove = [draggedRow];
+        if (draggedRow.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggedId + '"]');
+          subchildren.forEach(child => rowsToMove.push(child));
         }
         
-        // Recalculate times
-        if (window.recalc) {
-          window.recalc();
-        }
+        // Determine if dropping above or below
+        const targetRect = dropTarget.getBoundingClientRect();
+        const dropAbove = e.clientY < targetRect.top + targetRect.height / 2;
         
-        this.showNotification('Duration updated from AD');
-      }
-    },
-    
-    /**
-     * Handle sharpie toggle from AD viewer
-     */
-    handleSharpieToggle(payload) {
-      console.log('[ADSync] handleSharpieToggle received:', payload);
-      const data = payload.payload || payload;
-      const { rowId, marked, source } = data;
-      
-      if (source !== 'ad') {
-        console.log('[ADSync] Ignoring sharpie toggle - source is', source);
-        return;
-      }
-      
-      console.log('[ADSync] Processing sharpie toggle from AD:', rowId, marked);
-      
-      // Update via SharpieManager
-      if (window.SharpieManager) {
-        if (marked) {
-          window.SharpieManager.mark(rowId);
+        if (dropAbove) {
+          // Insert before target
+          rowsToMove.forEach(row => {
+            dropTarget.before(row);
+          });
         } else {
-          window.SharpieManager.unmark(rowId);
-        }
-      }
-      
-      // Also update the row data for persistence
-      const state = window.readState?.();
-      if (state) {
-        const currentDayId = state.activeDayId;
-        const day = state.days?.find(d => d.id === currentDayId);
-        if (day && day.rows) {
-          const row = day.rows.find(r => r.id === rowId);
-          if (row) {
-            row.completed = marked;
-            window.writeState?.(state);
+          // Insert after target (and its subchildren)
+          let insertAfter = dropTarget;
+          if (dropTarget.dataset.type === 'SUB') {
+            const targetSubchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + (dropTarget.dataset.id || dropTarget.id) + '"]');
+            if (targetSubchildren.length > 0) {
+              insertAfter = targetSubchildren[targetSubchildren.length - 1];
+            }
           }
+          rowsToMove.reverse().forEach(row => {
+            insertAfter.after(row);
+            insertAfter = row;
+          });
+          rowsToMove.reverse(); // Restore order for any further use
         }
+        
+        // Broadcast new order
+        broadcastRowReorder();
+        showNotification('Row reordered');
       }
       
-      this.showNotification(marked ? 'Row marked complete from AD' : 'Row unmarked from AD');
-    },
-    
-    /**
-     * Handle sharpie visibility from AD viewer
-     */
-    handleSharpieVisibility(payload) {
-      console.log('[ADSync] handleSharpieVisibility received:', payload);
-      const data = payload.payload || payload;
-      const { hidden, source } = data;
-      
-      if (source !== 'ad') {
-        console.log('[ADSync] Ignoring sharpie visibility - source is', source);
-        return;
+      // Remove clone with animation
+      if (dragClone) {
+        dragClone.style.transition = 'opacity 0.15s, transform 0.15s';
+        dragClone.style.opacity = '0';
+        dragClone.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          if (dragClone && dragClone.parentNode) {
+            dragClone.remove();
+          }
+          dragClone = null;
+        }, 150);
       }
       
-      console.log('[ADSync] Processing sharpie visibility from AD:', hidden);
-      
-      // Toggle sharpie visibility in main app
-      document.body.classList.toggle('sharpie-lines-hidden', hidden);
-      
-      // Update master sharpie button state if exists
-      const masterBtn = document.querySelector('.master-sharpie-toggle');
-      if (masterBtn) {
-        masterBtn.classList.toggle('lines-hidden', hidden);
-      }
-    },
+      draggedRow = null;
+      dropTarget = null;
+    }
     
-    /**
-     * Handle presence sync
-     */
-    handlePresenceSync() {
-      if (!this.channel) return;
-      
-      const state = this.channel.presenceState();
-      this.connectedUsers = Object.values(state).flat();
-      
-      console.log('[ADSync] Connected users:', this.connectedUsers);
-      
-      // Notify UI
-      window.dispatchEvent(new CustomEvent('ad-presence-changed', {
-        detail: { users: this.connectedUsers }
-      }));
-    },
+    function handleDragOver(e) {
+      // Not used in custom implementation
+    }
     
-    /**
-     * Broadcast row reorder to AD viewers
-     */
-    broadcastRowReorder(newOrder) {
-      if (!this.channel || !this.isActive) return;
+    function handleDragLeave(e) {
+      // Not used in custom implementation
+    }
+    
+    function handleDrop(e) {
+      // Not used in custom implementation
+    }
+    
+    function broadcastRowReorder() {
+      const tbody = document.querySelector('#schedule-container tbody');
+      if (!tbody) return;
       
-      console.log('[ADSync] Broadcasting row reorder to AD');
+      // Only send non-subchild row order - subchildren follow their parents
+      const order = Array.from(tbody.querySelectorAll('tr[data-id]:not(.subchild)'))
+        .map(tr => tr.dataset.id || tr.id)
+        .filter(id => id);
       
-      this.channel.send({
+      console.log('[AD] Broadcasting row reorder:', order);
+      
+      channel.send({
         type: 'broadcast',
         event: 'row-reorder',
-        payload: { order: newOrder, source: 'producer' }
+        payload: { order, source: 'ad' }
       });
-    },
+    }
     
-    /**
-     * Broadcast duration change to AD viewers
-     */
-    broadcastDurationChange(rowId, duration) {
-      if (!this.channel || !this.isActive) return;
+    // ===== SHARPIE / COMPLETION =====
+    function toggleRowComplete(rowId, btn) {
+      const isMarked = markedRows.has(rowId);
       
-      console.log('[ADSync] Broadcasting duration change to AD');
+      if (isMarked) {
+        markedRows.delete(rowId);
+        hideCompletedLine(rowId);
+        if (btn) {
+          btn.classList.remove('marked');
+          btn.innerHTML = getSharpieIcon(false);
+        }
+      } else {
+        markedRows.add(rowId);
+        showCompletedLine(rowId);
+        if (btn) {
+          btn.classList.add('marked');
+          btn.innerHTML = getSharpieIcon(true);
+        }
+      }
       
-      this.channel.send({
-        type: 'broadcast',
-        event: 'duration-change',
-        payload: { rowId, duration, source: 'producer' }
-      });
-    },
-    
-    /**
-     * Broadcast sharpie toggle to AD viewers
-     */
-    broadcastSharpieToggle(rowId, marked) {
-      if (!this.channel || !this.isActive) return;
-      
-      console.log('[ADSync] Broadcasting sharpie toggle to AD');
-      
-      this.channel.send({
+      // Broadcast to producer
+      channel.send({
         type: 'broadcast',
         event: 'sharpie-toggle',
-        payload: { rowId, marked, source: 'producer' }
+        payload: { rowId, marked: !isMarked, source: 'ad' }
       });
-    },
+      
+      showNotification(isMarked ? 'Row unmarked' : 'Row marked complete');
+    }
     
-    /**
-     * Broadcast sharpie visibility to AD viewers
-     */
-    broadcastSharpieVisibility(hidden) {
-      if (!this.channel || !this.isActive) return;
+    function showCompletedLine(rowId) {
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
+      if (!row) return;
       
-      console.log('[ADSync] Broadcasting sharpie visibility to AD');
-      
-      this.channel.send({
-        type: 'broadcast',
-        event: 'sharpie-visibility',
-        payload: { hidden, source: 'producer' }
-      });
-    },
-    
-    /**
-     * Capture and broadcast cell formatting changes
-     * Called when user changes color, font, alignment, etc on a cell
-     */
-    broadcastCellFormatting(rowId, columnKey, formatting) {
-      if (!this.channel || !this.isActive) return;
-      
-      console.log('[ADSync] Broadcasting cell formatting:', rowId, columnKey, formatting);
-      
-      this.channel.send({
-        type: 'broadcast',
-        event: 'cell-format',
-        payload: { rowId, columnKey, formatting, source: 'producer' }
-      });
-    },
-    
-    /**
-     * Broadcast entire row formatting (all cells)
-     */
-    broadcastRowFormatting(rowId, rowFormatting) {
-      if (!this.channel || !this.isActive) return;
-      
-      console.log('[ADSync] Broadcasting row formatting:', rowId);
-      
-      this.channel.send({
-        type: 'broadcast',
-        event: 'row-format',
-        payload: { rowId, formatting: rowFormatting, source: 'producer' }
-      });
-    },
-    
-    /**
-     * Handle cell format change from AD viewer
-     */
-    handleCellFormatting(payload) {
-      console.log('[ADSync] handleCellFormatting received:', payload);
-      const data = payload.payload || payload;
-      const { rowId, columnKey, formatting, source } = data;
-      
-      if (source !== 'ad') {
-        console.log('[ADSync] Ignoring cell format - source is', source);
-        return;
-      }
-      
-      console.log('[ADSync] Processing cell formatting from AD:', rowId, columnKey);
-      
-      // Find and update the cell
-      const tr = document.getElementById(rowId);
-      if (tr) {
-        const cell = tr.querySelector(`td[data-key="${columnKey}"]`);
-        if (cell && window.applyFormatting) {
-          window.applyFormatting(cell, formatting);
-          
-          // Save to state
-          const state = window.readState?.();
-          if (state) {
-            const currentDayId = state.activeDayId;
-            const day = state.days?.find(d => d.id === currentDayId);
-            if (day && day.rows) {
-              const row = day.rows.find(r => r.id === rowId);
-              if (row) {
-                if (!row.cellFormatting) row.cellFormatting = {};
-                row.cellFormatting[columnKey] = { ...row.cellFormatting[columnKey], ...formatting };
-                window.writeState?.(state);
-              }
-            }
-          }
-          
-          this.showNotification('Formatting updated from AD');
+      // Check if line already exists
+      let line = row.querySelector('.ad-completed-line');
+      if (!line) {
+        // Find first TD and add line
+        const firstTd = row.querySelector('td');
+        if (firstTd) {
+          firstTd.style.position = 'relative';
+          line = document.createElement('div');
+          line.className = 'ad-completed-line';
+          firstTd.appendChild(line);
         }
       }
-    },
+    }
     
-    /**
-     * Handle row format change from AD viewer
-     */
-    handleRowFormatting(payload) {
-      console.log('[ADSync] handleRowFormatting received:', payload);
-      const data = payload.payload || payload;
-      const { rowId, formatting, source } = data;
+    function hideCompletedLine(rowId) {
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
+      if (!row) return;
       
-      if (source !== 'ad') {
-        console.log('[ADSync] Ignoring row format - source is', source);
-        return;
+      const line = row.querySelector('.ad-completed-line');
+      if (line) {
+        line.remove();
       }
+    }
+    
+    // ===== DURATION EDIT =====
+    function editDuration(rowId, cell) {
+      // Check if already editing
+      if (cell.querySelector('input')) return;
       
-      console.log('[ADSync] Processing row formatting from AD:', rowId);
+      const currentValue = cell.textContent.trim();
+      const span = cell.querySelector('span');
       
-      // Find and update all cells in row
-      const tr = document.getElementById(rowId);
-      if (tr) {
-        const cells = tr.querySelectorAll('td[data-key]:not([data-key="drag"]):not([data-key="actions"])');
-        cells.forEach(cell => {
-          const key = cell.dataset.key;
-          const cellFormat = formatting[key];
-          if (cellFormat && window.applyFormatting) {
-            window.applyFormatting(cell, cellFormat);
-          }
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'duration-edit-input';
+      input.value = currentValue;
+      input.min = '0';
+      input.step = '5';
+      
+      const finishEdit = () => {
+        const newValue = input.value || '0';
+        if (span) {
+          span.textContent = newValue;
+          span.style.display = '';
+        } else {
+          cell.textContent = newValue;
+        }
+        input.remove();
+        
+        // Broadcast change
+        channel.send({
+          type: 'broadcast',
+          event: 'duration-change',
+          payload: { rowId, duration: newValue, source: 'ad' }
         });
         
-        // Save to state
-        const state = window.readState?.();
-        if (state) {
-          const currentDayId = state.activeDayId;
-          const day = state.days?.find(d => d.id === currentDayId);
-          if (day && day.rows) {
-            const row = day.rows.find(r => r.id === rowId);
+        showNotification('Duration updated to ' + newValue);
+      };
+      
+      input.addEventListener('blur', finishEdit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          finishEdit();
+        } else if (e.key === 'Escape') {
+          input.value = currentValue;
+          finishEdit();
+        }
+      });
+      
+      if (span) {
+        span.style.display = 'none';
+      }
+      cell.textContent = '';
+      cell.appendChild(input);
+      if (span) cell.appendChild(span);
+      input.focus();
+      input.select();
+    }
+    
+    // ===== EVENT HANDLERS FROM PRODUCER =====
+    function handleFullSync(payload) {
+      console.log('[AD] Full sync received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return; // Ignore our own
+      
+      const { order, sharpieRows, linesHidden } = data;
+      
+      // Reorder rows - move each row and its subchildren
+      if (order && order.length) {
+        const tbody = document.querySelector('#schedule-container tbody');
+        if (tbody) {
+          order.forEach(rowId => {
+            const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
             if (row) {
-              row.cellFormatting = { ...row.cellFormatting, ...formatting };
-              window.writeState?.(state);
+              tbody.appendChild(row);
+              
+              // If this is a SUB row, also move its subchildren
+              if (row.dataset.type === 'SUB') {
+                const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + rowId + '"]');
+                subchildren.forEach(child => tbody.appendChild(child));
+              }
             }
+          });
+        }
+      }
+      
+      // Update sharpie state
+      markedRows.clear();
+      if (sharpieRows) {
+        sharpieRows.forEach(rowId => {
+          markedRows.add(rowId);
+          showCompletedLine(rowId);
+        });
+      }
+      
+      // Update visibility
+      if (linesHidden !== undefined) {
+        progressVisible = !linesHidden;
+        updateProgressUI();
+      }
+      
+      updateStatus('synced');
+      showNotification('Synced with producer');
+    }
+    
+    function handleRowReorder(payload) {
+      console.log('[AD] Row reorder received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      const { order } = data;
+      if (!order || !order.length) return;
+      
+      const tbody = document.querySelector('#schedule-container tbody');
+      if (!tbody) return;
+      
+      // Reorder rows - move each row and its subchildren
+      order.forEach(rowId => {
+        const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
+        if (row) {
+          tbody.appendChild(row);
+          
+          // If this is a SUB row, also move its subchildren
+          if (row.dataset.type === 'SUB') {
+            const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + rowId + '"]');
+            subchildren.forEach(child => tbody.appendChild(child));
           }
         }
-        
-        this.showNotification('Row formatting updated from AD');
-      }
-    },
-    
-    /**
-     * Broadcast column resize to AD viewers
-     */
-    broadcastColumnResize(key, width) {
-      if (!this.channel || !this.isActive) return;
-      
-      this.channel.send({
-        type: 'broadcast',
-        event: 'column-resize',
-        payload: { key, width, source: 'producer' }
       });
-    },
+      
+      showNotification('Rows reordered by producer');
+    }
     
-    /**
-     * Broadcast row resize to AD viewers
-     */
-    broadcastRowResize(rowId, height) {
-      if (!this.channel || !this.isActive) return;
+    function handleDurationChange(payload) {
+      console.log('[AD] Duration change received:', payload);
+      const data = payload.payload || payload;
       
-      this.channel.send({
-        type: 'broadcast',
-        event: 'row-resize',
-        payload: { rowId, height, source: 'producer' }
-      });
-    },
-    
-    /**
-     * Broadcast full state sync to AD viewers
-     */
-    broadcastFullSync() {
-      if (!this.channel || !this.isActive) return;
+      if (data.source === 'ad') return;
       
-      console.log('[ADSync] Broadcasting full sync to AD');
+      const { rowId, duration } = data;
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
+      if (!row) return;
       
-      const state = window.readState?.();
-      if (!state) return;
-      
-      const currentDayId = state.activeDayId;
-      const day = state.days?.find(d => d.id === currentDayId);
-      if (!day || !day.rows) return;
-      
-      // Get row order
-      const order = day.rows.map(r => r.id);
-      
-      // Get marked rows
-      const sharpieRows = day.rows
-        .filter(r => r.completed)
-        .map(r => r.id);
-      
-      // Get sharpie lines hidden state
-      const linesHidden = document.body.classList.contains('sharpie-lines-hidden');
-      
-      this.channel.send({
-        type: 'broadcast',
-        event: 'full-sync',
-        payload: { 
-          order, 
-          sharpieRows,
-          linesHidden,
-          source: 'producer' 
+      const durationCell = row.querySelector('td[data-key="duration"]');
+      if (durationCell) {
+        const span = durationCell.querySelector('span');
+        if (span) {
+          span.textContent = duration;
+        } else {
+          durationCell.textContent = duration;
         }
-      });
-    },
+      }
+      
+      showNotification('Duration updated by producer');
+    }
     
-    /**
-     * Show a notification
-     */
-    showNotification(message) {
-      // Use alert system if available
-      if (window.AlertSystem?.show) {
-        window.AlertSystem.show(message, 'info', 2000);
+    function handleSharpieToggle(payload) {
+      console.log('[AD] Sharpie toggle received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      const { rowId, marked } = data;
+      
+      // Find the mark button for this row
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
+      const btn = row?.querySelector('.ad-mark-btn');
+      
+      if (marked) {
+        markedRows.add(rowId);
+        showCompletedLine(rowId);
+        if (btn) {
+          btn.classList.add('marked');
+          btn.innerHTML = getSharpieIcon(true);
+        }
       } else {
-        console.log('[ADSync]', message);
-      }
-    },
-    
-    /**
-     * Notify status change
-     */
-    notifyStatusChange(status) {
-      window.dispatchEvent(new CustomEvent('ad-sync-status-changed', {
-        detail: { status, channelCode: this.channelCode }
-      }));
-    },
-    
-    /**
-     * Get current status
-     */
-    getStatus() {
-      return {
-        isActive: this.isActive,
-        channelCode: this.channelCode,
-        connectedUsers: this.connectedUsers
-      };
-    }
-  };
-  
-  // Hook into existing systems to broadcast changes
-  
-  // Hook into row reordering (after drag-drop)
-  const originalDragEnd = window.onRowDragEnd;
-  window.onRowDragEnd = function(...args) {
-    if (originalDragEnd) originalDragEnd.apply(this, args);
-    
-    // Broadcast new order if AD sync is active
-    if (ADChannelSync.isActive) {
-      const state = window.readState?.();
-      if (state) {
-        const day = state.days?.find(d => d.id === state.activeDayId);
-        if (day && day.rows) {
-          ADChannelSync.broadcastRowReorder(day.rows.map(r => r.id));
+        markedRows.delete(rowId);
+        hideCompletedLine(rowId);
+        if (btn) {
+          btn.classList.remove('marked');
+          btn.innerHTML = getSharpieIcon(false);
         }
       }
+      
+      showNotification(marked ? 'Row marked by producer' : 'Row unmarked by producer');
     }
-  };
-  
-  // Hook into duration changes
-  const originalDurationChange = window.onDurationChange;
-  window.onDurationChange = function(rowId, duration, ...args) {
-    if (originalDurationChange) originalDurationChange.apply(this, [rowId, duration, ...args]);
     
-    if (ADChannelSync.isActive) {
-      ADChannelSync.broadcastDurationChange(rowId, duration);
+    function handleSharpieVisibility(payload) {
+      console.log('[AD] Sharpie visibility received:', payload);
+      const data = payload.payload || payload;
+      
+      if (data.source === 'ad') return;
+      
+      progressVisible = !data.hidden;
+      updateProgressUI();
     }
-  };
-  
-  // Hook into SharpieManager
-  if (window.SharpieManager) {
-    const originalMark = window.SharpieManager.mark.bind(window.SharpieManager);
-    const originalUnmark = window.SharpieManager.unmark.bind(window.SharpieManager);
     
-    window.SharpieManager.mark = function(rowId) {
-      originalMark(rowId);
-      if (ADChannelSync.isActive) {
-        ADChannelSync.broadcastSharpieToggle(rowId, true);
+    function handleSyncStatus(payload) {
+      console.log('[AD] Sync status received:', payload);
+      const data = payload.payload || payload;
+      
+      isLive = data.live;
+      updateStatus(isLive ? 'synced' : 'offline');
+      
+      if (isLive) {
+        showNotification('Producer is LIVE');
+      } else {
+        showNotification('Producer disconnected');
       }
-    };
+    }
     
-    window.SharpieManager.unmark = function(rowId) {
-      originalUnmark(rowId);
-      if (ADChannelSync.isActive) {
-        ADChannelSync.broadcastSharpieToggle(rowId, false);
+    function handlePresence() {
+      if (!channel) return;
+      const state = channel.presenceState();
+      const users = Object.values(state).flat();
+      console.log('[AD] Presence:', users);
+    }
+    
+    // ===== UI HELPERS =====
+    function toggleProgress() {
+      progressVisible = !progressVisible;
+      updateProgressUI();
+      
+      // Broadcast to producer
+      channel.send({
+        type: 'broadcast',
+        event: 'sharpie-visibility',
+        payload: { hidden: !progressVisible, source: 'ad' }
+      });
+    }
+    
+    function updateProgressUI() {
+      const btn = document.getElementById('sharpieToggle');
+      
+      if (progressVisible) {
+        document.body.classList.add('show-progress');
+        btn.classList.remove('lines-hidden');
+      } else {
+        document.body.classList.remove('show-progress');
+        btn.classList.add('lines-hidden');
       }
-    };
-  }
-  
-  // Export globally
-  window.ADChannelSync = ADChannelSync;
-  
-  // Auto-reconnect if there was an active AD sync before refresh
-  function tryAutoReconnect() {
-    const savedChannelCode = localStorage.getItem('adSyncChannelCode');
-    if (savedChannelCode && window.SupabaseAPI?.client) {
-      console.log('[ADSync] Auto-reconnecting to:', savedChannelCode);
-      ADChannelSync.start(savedChannelCode);
     }
-  }
-  
-  // Wait for auth to be ready before trying to reconnect
-  window.addEventListener('authStateChanged', () => {
-    // Small delay to ensure Supabase client is fully ready
-    setTimeout(tryAutoReconnect, 500);
-  });
-  
-  // Also try on subscriptionChanged in case auth was already ready
-  window.addEventListener('subscriptionChanged', () => {
-    if (!ADChannelSync.isActive) {
-      tryAutoReconnect();
+    
+    function updateStatus(status) {
+      const badge = document.getElementById('liveBadge');
+      const text = document.getElementById('liveText');
+      
+      badge.classList.remove('live', 'synced', 'connecting', 'offline');
+      
+      switch (status) {
+        case 'synced':
+          badge.classList.add('synced');
+          text.textContent = 'SYNCED';
+          document.getElementById('loading').style.display = 'none';
+          break;
+        case 'connecting':
+          badge.classList.add('connecting');
+          text.textContent = 'CONNECTING';
+          break;
+        case 'offline':
+          badge.classList.add('offline');
+          text.textContent = 'OFFLINE';
+          break;
+        default:
+          badge.classList.add('offline');
+          text.textContent = 'OFFLINE';
+      }
     }
-  });
-  
-  console.log('[ADSync] Module loaded');
-})();
+    
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('schedule-container').style.display = 'none';
+      document.getElementById('error').style.display = 'flex';
+      document.getElementById('error').querySelector('p').textContent = msg;
+      updateStatus('offline');
+    }
+    
+    function showNotification(msg) {
+      const el = document.getElementById('notification');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+    }
+    
+    // Start when DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+  </script>
+</body>
+</html>
