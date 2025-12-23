@@ -466,19 +466,6 @@
     container.querySelectorAll('style').forEach(s => s.remove());
     container.querySelectorAll('.completed-line').forEach(el => el.remove());
     
-    // Strip inline styles from tag pills so CSS can control them
-    container.querySelectorAll('.tag-pill').forEach(pill => {
-      // Keep only background color from inline style
-      const bg = pill.style.background || pill.style.backgroundColor;
-      pill.removeAttribute('style');
-      if (bg) pill.style.background = bg;
-    });
-    
-    // Fix tag pill images - remove inline styles
-    container.querySelectorAll('.tag-pill img').forEach(img => {
-      img.removeAttribute('style');
-    });
-    
     // DO NOT strip row backgrounds - we need them for colors!
     
     setupColumns();
