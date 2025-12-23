@@ -770,17 +770,15 @@
       // Setup interactive features (adds drag/action columns)
       setupRowInteractions();
       
-      // Center header over table AFTER columns are added
-      const headerImg = document.querySelector('#schedule-container .header-image');
-      if (headerImg && table) {
+      // Center header over table
+      const header = document.querySelector('#schedule-container .header-design-container, #schedule-container .header-image');
+      if (header && table) {
         requestAnimationFrame(() => {
-          const tableRect = table.getBoundingClientRect();
-          const headerRect = headerImg.getBoundingClientRect();
-          const tableCenterX = tableRect.left + tableRect.width / 2;
-          const headerCenterX = headerRect.left + headerRect.width / 2;
-          const offset = tableCenterX - headerCenterX;
-          headerImg.style.position = 'relative';
-          headerImg.style.left = offset + 'px';
+          const tableWidth = table.offsetWidth;
+          const headerWidth = header.offsetWidth;
+          const marginLeft = (tableWidth - headerWidth) / 2;
+          header.style.marginLeft = marginLeft + 'px';
+          header.style.marginBottom = '12px';
         });
       }
     }
