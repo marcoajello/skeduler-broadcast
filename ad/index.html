@@ -313,10 +313,11 @@
     /* ===== DRAGGABLE ROWS ===== */
     #schedule-container tr[data-id].dragging {
       opacity: 0.5;
+      background: #4b5563;
     }
     
-    #schedule-container tr[data-id].drag-over {
-      border-top: 3px solid var(--accent);
+    #schedule-container tr[data-id].attached {
+      opacity: 0.5;
     }
     
     /* ===== DRAG COLUMN ===== */
@@ -897,7 +898,6 @@
     
     // ===== DRAG AND DROP =====
     let draggedRow = null;
-    let dragImage = null;
     
     function handleDragStart(e, row) {
       // Don't allow dragging subchild rows
@@ -907,127 +907,90 @@
       }
       
       draggedRow = row;
-      row.style.opacity = '0.4';
+      row.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', row.dataset.id || row.id);
       
-      // Create a visible drag image from the row
-      dragImage = row.cloneNode(true);
-      dragImage.style.cssText = `
-        position: absolute;
-        top: -1000px;
-        left: -1000px;
-        width: ${row.offsetWidth}px;
-        background: #1c1f24;
-        opacity: 0.9;
-        border: 2px solid #9333ea;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        pointer-events: none;
-        z-index: 10000;
-      `;
-      document.body.appendChild(dragImage);
-      e.dataTransfer.setDragImage(dragImage, 50, 20);
-      
-      // Add dragging class to prevent text selection
-      document.getElementById('schedule-container').classList.add('dragging');
+      // Collect children if SUB row
+      if (row.dataset.type === 'SUB') {
+        const tbody = row.parentElement;
+        row._dragKids = Array.from(tbody.querySelectorAll('tr.subchild[data-parent="' + (row.dataset.id || row.id) + '"]'));
+        row._dragKids.forEach(k => k.classList.add('attached'));
+      }
     }
     
     function handleDragEnd(e) {
-      // Remove dragging class
-      document.getElementById('schedule-container').classList.remove('dragging');
-      
-      // Remove drag image
-      if (dragImage) {
-        dragImage.remove();
-        dragImage = null;
-      }
-      
       if (draggedRow) {
-        draggedRow.style.opacity = '';
+        draggedRow.classList.remove('dragging');
+        
+        // Re-attach children after SUB row
+        if (draggedRow.dataset.type === 'SUB' && Array.isArray(draggedRow._dragKids)) {
+          let ref = draggedRow;
+          draggedRow._dragKids.forEach(k => {
+            ref.after(k);
+            k.classList.remove('attached');
+            ref = k;
+          });
+          draggedRow._dragKids = null;
+        }
+        
         draggedRow = null;
       }
-      // Clear all indicators
-      document.querySelectorAll('#schedule-container tbody tr').forEach(row => {
-        row.style.borderTop = '';
-        row.style.borderBottom = '';
-      });
-    }
-    
-    function handleDragOver(e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      
-      const row = e.target.closest('tr[data-id]:not(.subchild)');
-      if (!row || row === draggedRow) return;
-      
-      // Clear previous indicators
-      document.querySelectorAll('#schedule-container tbody tr').forEach(r => {
-        r.style.borderTop = '';
-        r.style.borderBottom = '';
-      });
-      
-      // Show indicator based on cursor position
-      const rect = row.getBoundingClientRect();
-      const midY = rect.top + rect.height / 2;
-      
-      if (e.clientY < midY) {
-        row.style.borderTop = '3px solid #9333ea';
-      } else {
-        row.style.borderBottom = '3px solid #9333ea';
-      }
-    }
-    
-    function handleDragLeave(e) {
-      const row = e.target.closest('tr[data-id]');
-      if (row && !row.contains(e.relatedTarget)) {
-        row.style.borderTop = '';
-        row.style.borderBottom = '';
-      }
-    }
-    
-    function handleDrop(e) {
-      e.preventDefault();
-      
-      const targetRow = e.target.closest('tr[data-id]:not(.subchild)');
-      if (!targetRow || !draggedRow || targetRow === draggedRow) return;
-      
-      const tbody = targetRow.parentElement;
-      const draggedId = draggedRow.dataset.id || draggedRow.id;
-      
-      // Collect the dragged row and any subchildren
-      const rowsToMove = [draggedRow];
-      if (draggedRow.dataset.type === 'SUB') {
-        const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggedId + '"]');
-        subchildren.forEach(child => rowsToMove.push(child));
-      }
-      
-      // Determine if dropping above or below based on indicator
-      const dropAbove = targetRow.style.borderTop !== '';
-      
-      if (dropAbove) {
-        rowsToMove.forEach(row => targetRow.before(row));
-      } else {
-        // Insert after target (and its subchildren)
-        let insertAfter = targetRow;
-        if (targetRow.dataset.type === 'SUB') {
-          const targetSubchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + (targetRow.dataset.id || targetRow.id) + '"]');
-          if (targetSubchildren.length > 0) {
-            insertAfter = targetSubchildren[targetSubchildren.length - 1];
-          }
-        }
-        rowsToMove.reverse().forEach(row => {
-          insertAfter.after(row);
-        });
-      }
-      
-      // Clear indicators
-      targetRow.style.borderTop = '';
-      targetRow.style.borderBottom = '';
       
       // Broadcast new order
       broadcastRowReorder();
       showNotification('Row reordered');
+    }
+    
+    function handleDragOver(e) {
+      e.preventDefault();
+      
+      const tbody = document.querySelector('#schedule-container tbody');
+      const dragging = tbody?.querySelector('tr.dragging');
+      if (!dragging) return;
+      
+      // Get all non-dragging, non-subchild rows as candidates
+      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging):not(.subchild)'));
+      
+      // Find where to insert based on mouse Y
+      const afterEl = calcAfter(candidates, e.clientY);
+      
+      // Move the row in real-time
+      if (afterEl === null) {
+        tbody.appendChild(dragging);
+      } else {
+        tbody.insertBefore(dragging, afterEl);
+      }
+      
+      // Keep children attached to SUB row
+      if (dragging.dataset.type === 'SUB' && Array.isArray(dragging._dragKids)) {
+        let ref = dragging;
+        dragging._dragKids.forEach(k => {
+          ref.after(k);
+          ref = k;
+        });
+      }
+    }
+    
+    function calcAfter(list, y) {
+      let closest = { offset: -Infinity, element: null };
+      list.forEach(el => {
+        const box = el.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          closest = { offset, element: el };
+        }
+      });
+      return closest.element;
+    }
+    
+    function handleDragLeave(e) {
+      // Not needed for real-time move
+    }
+    
+    function handleDrop(e) {
+      e.preventDefault();
+      // Movement already happened in dragover, just clean up in dragend
     }
     
     function broadcastRowReorder() {
