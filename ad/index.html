@@ -2,38 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0d1117">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SKEDULER AD</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; }
-    
     :root {
-      --bg: #0d1117;
-      --panel: #222a35;
-      --border: #30363d;
-      --text: #e6edf3;
-      --muted: #7d8590;
-      --accent: #58a6ff;
-      --live-red: #f85149;
-      --live-green: #3fb950;
+      --bg: #0a0e13;
+      --panel: #161b22;
+      --muted: #9ca3af;
+      --text: #f9fafb;
+      --accent: #3b82f6;
+      --row: #0d1117;
+      --rowAlt: #1a2129;
+      --border: #374151;
+      --ad-purple: #a371f7;
     }
     
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Avenir', sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     
     /* ===== HEADER ===== */
     .header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
       display: grid;
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
@@ -41,1328 +38,955 @@
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       min-height: 48px;
-    }
-    
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      justify-self: start;
-    }
-    
-    .header-logo {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      color: var(--text);
-    }
-    
-    .header-logo svg {
-      width: 20px;
-      height: 20px;
-    }
-    
-    .header-center {
-      justify-self: center;
-      text-align: center;
-      flex: 1;
-    }
-    
-    .channel-name {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: 1px;
-    }
-    
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      justify-self: end;
-    }
-    
-    /* ===== LIVE INDICATOR ===== */
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-    
-    .live-badge.live {
-      background: rgba(248, 81, 73, 0.15);
-      color: var(--live-red);
-      border: 1px solid rgba(248, 81, 73, 0.3);
-    }
-    
-    .live-badge.live .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--live-red);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    
-    .live-badge.synced {
-      background: rgba(63, 185, 80, 0.15);
-      color: var(--live-green);
-      border: 1px solid rgba(63, 185, 80, 0.3);
-    }
-    
-    .live-badge.synced .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--live-green);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    
-    .live-badge.connecting {
-      background: rgba(88, 166, 255, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(88, 166, 255, 0.3);
-    }
-    
-    .live-badge.connecting .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 0.5s ease-in-out infinite;
-    }
-    
-    .live-badge.offline {
-      background: rgba(125, 133, 144, 0.15);
-      color: var(--muted);
-      border: 1px solid rgba(125, 133, 144, 0.3);
-    }
-    
-    .live-badge.offline .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.9); }
-    }
-    
-    /* ===== SHARPIE TOGGLE (Purple for AD) ===== */
-    .header-progress-btn {
-      width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
-      background: #9333ea; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: var(--border); }
-    .header-progress-btn:not(.lines-hidden) { background: #9333ea; }
-    .header-progress-btn svg path[fill="#dd2222"],
-    .header-progress-btn svg path[fill="#bb1111"] { fill: #7c3aed; }
-    
-    /* ===== CONTENT ===== */
-    .content {
-      padding: 16px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      background: #000;
-    }
-    
-    .loading, .error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60vh;
-      text-align: center;
-      padding: 24px;
-    }
-    
-    .loading h2, .error h2 {
-      font-size: 18px;
-      margin: 0 0 8px;
-    }
-    
-    .loading p, .error p {
-      color: var(--muted);
-      margin: 0;
-    }
-    
-    .error h2 { color: var(--live-red); }
-    
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    /* ===== CONTENT CENTERING ===== */
-    .content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    /* ===== SCHEDULE CONTAINER ===== */
-    #schedule-container {
-      background: #000;
-      border-radius: 8px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: auto;
-      max-width: 100%;
-    }
-    
-    /* Center the schedule header over table */
-    #schedule-container .schedule-header,
-    #schedule-container .header-image,
-    #schedule-container > div:first-child:not(table) {
-      text-align: center;
-      width: 100%;
-    }
-    
-    #schedule-container table {
-      margin: 0 auto;
-      border-collapse: collapse;
-      background: #000;
-      border: none;
-      outline: none;
-    }
-    
-    /* Remove borders from corner cells to prevent artifacts */
-    #schedule-container thead tr:first-child th:first-child,
-    #schedule-container thead tr:first-child th:last-child,
-    #schedule-container tbody tr:last-child td:first-child,
-    #schedule-container tbody tr:last-child td:last-child {
-      border: none;
-    }
-    
-    #schedule-container .schedule-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      background: #000;
-    }
-    
-    /* ===== COMPLETED ROW LINES ===== */
-    body.show-progress .completed-line {
-      display: block;
-    }
-    
-    body:not(.show-progress) .completed-line {
-      display: none;
-    }
-    
-    /* ===== TAG PILLS ===== */
-    #schedule-container .tags-pills {
-      display: flex;
-      flex-wrap: wrap;
-      flex-direction: row;
-      gap: 4px;
-      padding: 4px;
-      align-items: flex-start;
-      align-content: flex-start;
-    }
-    
-    #schedule-container .tag-pill {
-      display: inline-flex;
-      width: auto;
-      max-width: none;
-      flex: 0 0 auto;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px 2px 3px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    
-    #schedule-container .tag-pill img {
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      min-height: 20px;
-      max-width: 20px;
-      max-height: 20px;
-      border-radius: 50%;
-      object-fit: cover;
       flex-shrink: 0;
     }
     
-    /* ===== DRAGGABLE ROWS ===== */
-    #schedule-container tr[data-id].dragging {
-      opacity: 0.5;
+    .header-left { display: flex; align-items: center; gap: 8px; justify-self: start; }
+    .channel-label { font-size: 14px; color: var(--text); }
+    .channel-label span { color: var(--muted); }
+    .header-center { justify-self: center; display: flex; align-items: center; gap: 6px; }
+    .header-right { display: flex; align-items: center; gap: 12px; justify-self: end; }
+    
+    .live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; height: 28px; }
+    .live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
+    .live-badge.live .live-dot { background: var(--ad-purple); animation: pulse 1.5s ease-in-out infinite; }
+    .live-badge.live .live-text { color: var(--ad-purple); text-transform: uppercase; }
+    .live-badge.manual .live-dot { background: var(--muted); }
+    .live-badge.manual .live-text { display: none; }
+    
+    .header-progress-btn {
+      width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
+      background: var(--ad-purple); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-progress-btn:hover { filter: brightness(1.1); }
+    .header-progress-btn.lines-hidden { background: var(--ad-purple); }
+    .header-progress-btn:not(.lines-hidden) { background: #f44336; }
+    
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.9); } }
+    
+    .header-logo { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
+    .ad-badge { background: var(--ad-purple); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px; }
+    .header-logo svg { width: 20px; height: 20px; }
+    
+    /* ===== MAIN CONTENT ===== */
+    .main-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    #schedule-container { flex: 1; overflow: hidden; position: relative; }
+    .schedule-scroll { position: relative; width: 100%; height: 100%; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+    
+    /* Wrapper to keep header and table together */
+    .schedule-scroll > * {
+      flex-shrink: 0;
+    }
+    
+    /* ===== TABLE - Purple border glow ===== */
+    #scheduleScroll table,
+    table.schedule {
+      border-collapse: collapse;
+      width: auto;
+      table-layout: fixed;
+      border-radius: 8px;
+      box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
+    }
+    
+    /* Round corners on corner cells - with white borders */
+    #scheduleScroll table thead tr:first-child th:first-child {
+      border-top-left-radius: 8px;
+      overflow: hidden;
       background: #4b5563;
     }
-    
-    #schedule-container tr[data-id].attached {
-      opacity: 0.5;
-    }
-    
-    /* ===== DRAG COLUMN ===== */
-    .ad-drag-col,
-    col[data-key="drag"] {
-      width: 36px;
-      min-width: 36px;
-      max-width: 36px;
-    }
-    
-    #schedule-container th[data-key="drag"],
-    #schedule-container td[data-key="drag"] {
-      width: 36px;
-      min-width: 36px;
-      max-width: 36px;
-      padding: 0;
-      text-align: center;
-      vertical-align: middle;
+    #scheduleScroll table thead tr:first-child th:last-child {
+      border-top-right-radius: 8px;
+      overflow: hidden;
       background: #4b5563;
-      outline: 2px solid #ffffff;
-      outline-offset: -2px;
-      border: none;
     }
-    
-    .ad-drag-handle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      height: 100%;
-      min-height: 30px;
-      cursor: grab;
-      color: #999;
-      font-size: 14px;
-      user-select: none;
-      -webkit-user-select: none;
+    #scheduleScroll table tbody tr:last-child td:first-child {
+      border-bottom-left-radius: 8px;
+      overflow: hidden;
     }
-    
-    .ad-drag-handle:hover {
-      color: #fff;
-      background: rgba(255,255,255,0.1);
-    }
-    
-    .ad-drag-handle:active {
-      cursor: grabbing;
-    }
-    
-    /* Prevent selection during drag */
-    #schedule-container.dragging,
-    #schedule-container.dragging * {
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    
-    /* ===== ACTIONS COLUMN ===== */
-    .ad-actions-col,
-    col[data-key="actions"] {
-      width: 50px;
-      min-width: 50px;
-      max-width: 50px;
-    }
-    
-    #schedule-container th[data-key="actions"],
-    #schedule-container td[data-key="actions"] {
-      width: 50px;
-      min-width: 50px;
-      max-width: 50px;
-      padding: 4px;
-      text-align: center;
-      vertical-align: middle;
-      background: #4b5563;
-      outline: 2px solid #ffffff;
-      outline-offset: -2px;
-      border: none;
-    }
-    
-    /* Rounded outer corners */
-    #schedule-container thead tr:first-child th[data-key="drag"] {
-      border-top-left-radius: 6px;
+    #scheduleScroll table tbody tr:last-child td:last-child {
+      border-bottom-right-radius: 8px;
       overflow: hidden;
     }
     
-    #schedule-container thead tr:first-child th[data-key="actions"] {
-      border-top-right-radius: 6px;
-      overflow: hidden;
-    }
-    
-    #schedule-container tbody tr:last-child td[data-key="drag"] {
+    /* Bottom corner cells need the cell-bg to also have rounded corners */
+    #scheduleScroll table tbody tr:last-child td:first-child .cell-bg {
       border-bottom-left-radius: 6px;
-      overflow: hidden;
     }
-    
-    #schedule-container tbody tr:last-child td[data-key="actions"] {
+    #scheduleScroll table tbody tr:last-child td:last-child .cell-bg {
       border-bottom-right-radius: 6px;
-      overflow: hidden;
     }
     
-    .ad-mark-btn {
-      width: 32px;
-      height: 32px;
-      background: transparent;
-      border: 1px solid #555;
-      border-radius: 6px;
-      cursor: pointer;
-      display: inline-flex;
+    #scheduleScroll table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #141920;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    /* Override for drag/action header cells */
+    #scheduleScroll table thead th[data-key="drag"],
+    #scheduleScroll table thead th[data-key="actions"] {
+      background: #4b5563;
+      border: 2px solid #ffffff;
+    }
+    
+    /* ===== DRAG & ACTION COLUMNS ===== */
+    td[data-key="drag"],
+    td[data-key="actions"] {
+      position: relative;
+      padding: 0 !important;
+      width: 60px;
+      min-width: 60px;
+      max-width: 60px;
+    }
+    
+    th[data-key="drag"],
+    th[data-key="actions"] {
+      width: 60px;
+      min-width: 60px;
+      max-width: 60px;
+      background: #4b5563;
+    }
+    
+    /* White borders on drag/action columns - specific sides to avoid doubling */
+    th[data-key="drag"],
+    td[data-key="drag"] {
+      border-left: 2px solid #ffffff;
+      border-top: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      border-right: 2px solid #ffffff;
+    }
+    
+    th[data-key="actions"],
+    td[data-key="actions"] {
+      border-left: 2px solid #ffffff;
+      border-top: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      border-right: 2px solid #ffffff;
+    }
+    
+    /* Remove internal horizontal borders to prevent doubling */
+    tbody td[data-key="drag"],
+    tbody td[data-key="actions"] {
+      border-top: none;
+    }
+    
+    /* Absolute div covers row background */
+    .cell-bg {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: #4b5563;
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0;
-      transition: all 0.15s;
     }
     
-    .ad-mark-btn:hover {
-      background: rgba(147, 51, 234, 0.2);
-      border-color: #9333ea;
+    td[data-key="drag"] { cursor: grab; }
+    td[data-key="drag"]:active { cursor: grabbing; }
+    
+    .drag-dots {
+      display: inline-block;
+      width: 12px; height: 12px;
+      background-image: 
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px),
+        radial-gradient(circle, #9ca3af 1px, transparent 1px);
+      background-size: 2px 2px;
+      background-position: 0 0, 5px 0, 10px 0, 0 5px, 5px 5px, 10px 5px, 0 10px, 5px 10px, 10px 10px;
+      background-repeat: no-repeat;
     }
     
-    .ad-mark-btn.marked {
-      background: #9333ea;
-      border-color: #9333ea;
+    button.sharpie {
+      margin: 0; padding: 0;
+      width: 22px; height: 22px;
+      min-width: 22px; min-height: 22px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: white; color: var(--accent);
+      border: 1px solid #e0e0e0; border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    button.sharpie svg { width: 14px; height: 14px; }
+    button.sharpie.active { background: #f44336; color: white; border-color: #d32f2f; }
     
-    .ad-mark-btn svg {
-      width: 18px;
-      height: 18px;
-    }
+    /* ===== DRAGGING ===== */
+    tr.dragging { opacity: 0.6; outline: 2px dashed var(--accent); }
     
-    /* Completed line styling (purple for AD) */
-    .ad-completed-line {
+    /* ===== SHARPIE LINES ===== */
+    .sharpie-line-element {
       position: absolute;
-      left: 0;
-      top: 50%;
-      width: 5000px;
       height: 4px;
-      background: #9333ea;
+      background: #f44336;
       pointer-events: none;
-      transform: translateY(-50%);
-      z-index: 100;
+      z-index: 500;
+    }
+    body.sharpie-lines-hidden .sharpie-line-element { display: none; }
+    
+    /* ===== DURATION POPUP ===== */
+    .duration-popup {
+      position: fixed;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      display: none;
+    }
+    .duration-popup.show { display: block; }
+    .duration-popup input {
+      width: 80px; padding: 6px 8px;
+      border: 1px solid var(--border); border-radius: 4px;
+      background: var(--bg); color: var(--text);
+      font-size: 14px; text-align: center;
     }
     
-    body:not(.show-progress) .ad-completed-line {
+    /* ===== SCHEDULE HEADER IMAGE ===== */
+    .header-image {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    
+    .header-image img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    /* Header design container - match table width */
+    .header-design-container {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .header-design-container > div {
+      margin: 0 auto;
+    }
+    
+    /* ===== TAG PILLS ===== */
+    .tagsBox {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      pointer-events: none;
+    }
+    
+    .tags-pills {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 4px;
+      position: relative;
+      z-index: 11;
+      pointer-events: none;
+      align-items: center;
+    }
+    
+    /* Force pill styling - override any inline styles */
+    .tag-pill,
+    span[style*="border-radius: 999pt"],
+    #scheduleScroll .tag-pill {
+      border-radius: 999px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+    
+    .tag-pill {
+      background: var(--panel, #161b22);
+      color: var(--text, #f9fafb);
+      padding: 2px 6px 2px 2px;
+      border: 1px solid #94a3b8;
+      gap: 3px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      position: relative;
+      box-sizing: border-box;
+      white-space: nowrap;
+    }
+    
+    .tag-pill.image-tag img,
+    span[style*="border-radius"] img {
+      width: 20px !important;
+      height: 20px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+    }
+    
+    .tag-pill .tag-dummy-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      background: transparent;
+    }
+    
+    .tag-pill.minor-tag {
+      border: 2px solid #dc2626;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
+    }
+    
+    /* Hide tag delete buttons in AD viewer */
+    .tag-pill .tag-x {
       display: none;
     }
     
-    /* Row needs relative positioning for the line */
-    #schedule-container tr[data-id] {
-      position: relative;
-    }
-    
-    #schedule-container tr[data-id] td:first-child {
-      position: relative;
-    }
-    
-    /* Subchild rows - don't allow dragging */
-    #schedule-container tr.subchild .ad-drag-handle {
-      opacity: 0.3;
-      cursor: default;
-    }
-    
-    /* ===== DURATION EDIT ===== */
-    #schedule-container td[data-key="duration"] {
-      cursor: pointer;
-    }
-    
-    #schedule-container td[data-key="duration"]:hover {
-      background: rgba(88, 166, 255, 0.1);
-    }
-    
-    .duration-edit-input {
-      width: 50px;
-      padding: 2px 4px;
-      font-size: inherit;
-      font-family: inherit;
-      text-align: center;
-      border: 1px solid var(--accent);
-      border-radius: 4px;
-      background: var(--panel);
-      color: var(--text);
-    }
-    
     /* ===== FOOTER ===== */
-    .updated-at {
-      text-align: center;
-      padding: 12px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    
-    /* ===== NOTIFICATION ===== */
-    .notification {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px;
+    .footer {
+      text-align: center; padding: 8px;
+      font-size: 11px; color: var(--muted);
       background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 12px;
-      color: var(--text);
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    }
-    
-    .notification.show {
-      opacity: 1;
+      border-top: 1px solid var(--border);
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- v16.4 -->
 </head>
-<body class="show-progress">
+<body>
   <div class="header">
     <div class="header-left">
-      <div class="header-logo">
-        <svg viewBox="195 40 100 130">
-          <defs>
-            <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#cc2222"/>
-              <stop offset="40%" stop-color="#ee3333"/>
-              <stop offset="100%" stop-color="#aa1111"/>
-            </linearGradient>
-            <linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#dd2222"/>
-              <stop offset="100%" stop-color="#991111"/>
-            </linearGradient>
-            <linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#d0d0d0"/>
-              <stop offset="30%" stop-color="#eeeeee"/>
-              <stop offset="70%" stop-color="#e0e0e0"/>
-              <stop offset="100%" stop-color="#c8c8c8"/>
-            </linearGradient>
-            <linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#aa1111"/>
-              <stop offset="50%" stop-color="#dd3333"/>
-              <stop offset="100%" stop-color="#991111"/>
-            </linearGradient>
-          </defs>
-          <g transform="rotate(45 245 96)">
-            <path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
-            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
-            <path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
-            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
-            <path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
-            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
-            <path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
-            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
-          </g>
-        </svg>
-        <span>SKEDULER AD</span>
+      <div class="channel-label">
+        <span>Channel:</span> <strong id="channelName">Loading...</strong>
       </div>
     </div>
-    
     <div class="header-center">
-      <div class="channel-name" id="channelName">Connecting...</div>
+      <div class="header-logo">
+        <span>SKEDULER</span>
+        <span class="ad-badge">AD</span>
+        <svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
+      </div>
     </div>
-    
     <div class="header-right">
-      <div class="live-badge connecting" id="liveBadge">
-        <span id="liveText">CONNECTING</span>
+      <div class="live-badge manual" id="liveBadge">
+        <span class="live-text" id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
-      <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress Lines">
+      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');localStorage.setItem('ad-sharpie-hidden', document.body.classList.contains('sharpie-lines-hidden'));">
         <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
     </div>
   </div>
   
-  <div class="content">
-    <div id="loading" class="loading">
-      <div class="spinner"></div>
-      <h2>Connecting to Channel...</h2>
-      <p>Please wait</p>
+  <div class="main-content">
+    <div id="schedule-container">
+      <div class="schedule-scroll" id="scheduleScroll"></div>
     </div>
-    
-    <div id="error" class="error" style="display:none;">
-      <h2>Connection Failed</h2>
-      <p>Could not connect to the AD channel.</p>
-    </div>
-    
-    <div id="schedule-container" style="display:none;"></div>
-    <div id="updated-at" class="updated-at"></div>
   </div>
   
-  <div class="notification" id="notification"></div>
+  <div class="footer" id="footer">Waiting for connection...</div>
+  
+  <div class="duration-popup" id="durationPopup">
+    <input type="text" id="durationInput" placeholder="0:30">
+  </div>
 
-  <script>
-  (function() {
-    'use strict';
-    
-    const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
-    
-    let supabase = null;
-    let channelCode = null;
-    let channel = null;
-    let progressVisible = true;
-    let isLive = false;
-    let markedRows = new Set();
-    
-    async function init() {
-      const params = new URLSearchParams(window.location.search);
-      channelCode = params.get('c') || params.get('code') || params.get('channel');
-      
-      if (!channelCode) {
-        showError('No channel code provided. Add ?c=YOURCODE to the URL.');
-        return;
-      }
-      
-      channelCode = channelCode.toUpperCase();
-      document.getElementById('channelName').textContent = 'Channel: ' + channelCode;
-      document.title = 'AD - ' + channelCode;
-      
-      // Initialize Supabase
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      
-      // Fetch channel title from Supabase
-      async function fetchChannelTitle(code) {
-        try {
-          const { data, error } = await supabase
-            .from('broadcasts')
-            .select('title')
-            .ilike('code', code)
-            .single();
-          
-          if (data?.title) {
-            document.getElementById('channelName').textContent = data.title;
-            document.title = 'AD - ' + data.title;
-          }
-        } catch (e) {
-          console.log('[AD] Could not fetch channel title:', e);
-        }
-      }
-      
-      fetchChannelTitle(channelCode);
-      
-      // Setup progress toggle
-      document.getElementById('sharpieToggle').addEventListener('click', toggleProgress);
-      
-      // Load initial HTML from storage
-      await loadInitialHTML();
-      
-      // Connect to realtime channel
-      await connectToChannel();
+<script>
+(function() {
+  'use strict';
+  
+  const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+  
+  let supabase = null;
+  let channel = null;
+  let channelCode = null;
+  let draggingRow = null;
+  let markedRows = new Set();
+  let linesHidden = false;
+  let isLiveMode = false;
+  
+  async function init() {
+    // Restore sharpie visibility state
+    if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
+      document.body.classList.add('sharpie-lines-hidden');
+      document.getElementById('progressBtn')?.classList.add('lines-hidden');
     }
     
-    async function loadInitialHTML() {
-      try {
-        // Look up broadcast by code to get the HTML path
-        const { data: broadcast, error } = await supabase
-          .from('broadcasts')
-          .select('*')
-          .eq('code', channelCode)
-          .single();
-        
-        if (error || !broadcast) {
-          console.log('[AD] No broadcast found, waiting for sync');
-          return;
-        }
-        
-        // Fetch HTML
-        let htmlPath;
-        if (broadcast.channel_number) {
-          htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
-        } else {
-          htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
-        }
-        
-        const { data: urlData } = supabase.storage
-          .from('schedule-files')
-          .getPublicUrl(htmlPath);
-        
-        const response = await fetch(urlData.publicUrl + '?t=' + Date.now());
-        if (response.ok) {
-          const html = await response.text();
-          displaySchedule(html);
-        }
-      } catch (err) {
-        console.error('[AD] Error loading initial HTML:', err);
+    const params = new URLSearchParams(window.location.search);
+    channelCode = params.get('c');
+    
+    if (!channelCode) {
+      document.getElementById('channelName').textContent = 'No channel code';
+      document.getElementById('footer').textContent = 'Add ?c=CODE to URL';
+      return;
+    }
+    
+    document.getElementById('channelName').textContent = 'Loading...';
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    await loadScheduleFromBucket();
+    subscribeToChannel();
+  }
+  
+  async function loadScheduleFromBucket() {
+    try {
+      const { data: broadcast, error: lookupError } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .eq('code', channelCode.toUpperCase())
+        .single();
+      
+      if (lookupError || !broadcast) throw new Error('Broadcast not found');
+      
+      isLiveMode = broadcast.auto_update === true;
+      updateLiveStatus();
+      
+      document.getElementById('channelName').textContent = broadcast.title || `Channel ${channelCode}`;
+      
+      let htmlPath = broadcast.channel_number 
+        ? `${broadcast.user_id}/ch${broadcast.channel_number}_${broadcast.file_name}.html`
+        : `${broadcast.user_id}/${broadcast.file_name}.html`;
+      
+      const { data: urlData } = supabase.storage.from('schedule-files').getPublicUrl(htmlPath);
+      const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+      
+      const response = await fetch(publicUrl);
+      if (!response.ok) throw new Error('Could not load schedule');
+      
+      const html = await response.text();
+      injectSchedule(html);
+      updateFooter('Loaded');
+    } catch (err) {
+      console.error('Load error:', err);
+      document.getElementById('scheduleScroll').innerHTML = 
+        `<div style="padding:40px;text-align:center;color:var(--muted);">No schedule found for channel ${channelCode}</div>`;
+      updateFooter('No schedule');
+    }
+  }
+  
+  function injectSchedule(html) {
+    const container = document.getElementById('scheduleScroll');
+    container.innerHTML = html;
+    
+    // Remove buttons and style tags from loaded HTML
+    container.querySelectorAll('button').forEach(btn => btn.remove());
+    container.querySelectorAll('style').forEach(s => s.remove());
+    container.querySelectorAll('.completed-line').forEach(el => el.remove());
+    
+    // DO NOT strip row backgrounds - we need them for colors!
+    
+    setupColumns();
+    setupRowInteractions();
+    initCompletedState();
+  }
+  
+  function initCompletedState() {
+    document.querySelectorAll('#scheduleScroll tr[data-completed="true"], #scheduleScroll tr.row-complete').forEach(row => {
+      const rowId = row.dataset.id;
+      if (rowId && !markedRows.has(rowId)) {
+        markedRows.add(rowId);
+        const btn = row.querySelector('button.sharpie');
+        if (btn) btn.classList.add('active');
+        addSharpieLineElement(row);
+      }
+    });
+  }
+  
+  function setupColumns() {
+    const table = document.querySelector('#scheduleScroll table');
+    if (!table) return;
+    
+    const headerRow = table.querySelector('thead tr');
+    
+    // Add drag header
+    if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
+      const th = document.createElement('th');
+      th.setAttribute('data-key', 'drag');
+      headerRow.insertBefore(th, headerRow.firstChild);
+    }
+    
+    // Add action header
+    if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
+      const th = document.createElement('th');
+      th.setAttribute('data-key', 'actions');
+      headerRow.appendChild(th);
+    }
+    
+    // Add colgroup entries
+    const colgroup = table.querySelector('colgroup');
+    if (colgroup) {
+      if (!colgroup.querySelector('col[data-key="drag"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'drag');
+        col.style.width = '60px';
+        colgroup.insertBefore(col, colgroup.firstChild);
+      }
+      if (!colgroup.querySelector('col[data-key="actions"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'actions');
+        col.style.width = '60px';
+        colgroup.appendChild(col);
       }
     }
     
-    async function connectToChannel() {
-      const roomName = 'ad-sync-' + channelCode;
-      console.log('[AD] Connecting to room:', roomName);
-      
-      channel = supabase.channel(roomName, {
-        config: {
-          broadcast: { self: false }
-        }
-      });
-      
-      channel
-        .on('broadcast', { event: 'full-sync' }, handleFullSync)
-        .on('broadcast', { event: 'row-reorder' }, handleRowReorder)
-        .on('broadcast', { event: 'duration-change' }, handleDurationChange)
-        .on('broadcast', { event: 'sharpie-toggle' }, handleSharpieToggle)
-        .on('broadcast', { event: 'sharpie-visibility' }, handleSharpieVisibility)
-        .on('broadcast', { event: 'sync-status' }, handleSyncStatus)
-        .on('presence', { event: 'sync' }, handlePresence)
-        .subscribe((status) => {
-          console.log('[AD] Subscription status:', status);
-          
-          if (status === 'SUBSCRIBED') {
-            // Track presence
-            channel.track({
-              user: 'AD-' + Math.random().toString(36).substr(2, 4),
-              role: 'ad'
-            });
-            
-            // Request current state from producer
-            channel.send({
-              type: 'broadcast',
-              event: 'request-sync',
-              payload: {}
-            });
-            
-            updateStatus('connecting');
-            showNotification('Connected, waiting for producer...');
-          }
-        });
-    }
-    
-    function displaySchedule(html) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('error').style.display = 'none';
-      const container = document.getElementById('schedule-container');
-      container.style.display = 'block';
-      container.innerHTML = html;
-      document.getElementById('updated-at').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-      
-      // Remove injected style tags that may have table styling
-      document.querySelectorAll('#schedule-container style').forEach(s => s.remove());
-      
-      // Remove table border/outline that causes corner artifacts
-      const table = document.querySelector('#schedule-container table');
-      if (table) {
-        table.style.border = 'none';
-        table.style.outline = 'none';
-        table.style.boxShadow = 'none';
+    // Add cells to each row
+    table.querySelectorAll('tbody tr[data-id]').forEach(row => {
+      // Drag cell
+      if (!row.querySelector('td[data-key="drag"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'drag');
+        td.style.background = 'transparent';
+        td.innerHTML = '<div class="cell-bg"><span class="drag-dots"></span></div>';
+        row.insertBefore(td, row.firstChild);
       }
       
-      // Remove borders from any wrapper divs
-      document.querySelectorAll('#schedule-container > div').forEach(div => {
-        div.style.border = 'none';
-        div.style.outline = 'none';
-        div.style.boxShadow = 'none';
-      });
-      
-      // Setup interactive features (adds drag/action columns)
-      setupRowInteractions();
-      
-      // Center header over table
-      const header = document.querySelector('#schedule-container .header-design-container, #schedule-container .header-image');
+      // Action cell
+      if (!row.querySelector('td[data-key="actions"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'actions');
+        td.style.background = 'transparent';
+        td.innerHTML = `<div class="cell-bg"><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
+        row.appendChild(td);
+      }
+    });
+    
+    // Center header over table (after columns added)
+    requestAnimationFrame(() => {
+      const header = document.querySelector('#scheduleScroll .header-design-container, #scheduleScroll .header-image');
       if (header && table) {
-        requestAnimationFrame(() => {
-          const tableWidth = table.offsetWidth;
-          const headerWidth = header.offsetWidth;
-          const marginLeft = (tableWidth - headerWidth) / 2;
-          header.style.marginLeft = marginLeft + 'px';
-          header.style.marginBottom = '12px';
-        });
+        const tableWidth = table.offsetWidth;
+        header.style.width = tableWidth + 'px';
+        header.style.marginBottom = '12px';
       }
-    }
+    });
+  }
+  
+  function getSharpieIconSVG() {
+    return `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+  }
+  
+  function setupRowInteractions() {
+    const tbody = document.querySelector('#scheduleScroll tbody');
+    if (!tbody) return;
     
-    function setupRowInteractions() {
-      const container = document.getElementById('schedule-container');
-      const table = container.querySelector('table');
-      if (!table) return;
-      
-      // Add drag column to colgroup
-      const colgroup = table.querySelector('colgroup');
-      if (colgroup) {
-        const dragCol = document.createElement('col');
-        dragCol.className = 'ad-drag-col';
-        dragCol.dataset.key = 'drag';
-        colgroup.insertBefore(dragCol, colgroup.firstChild);
-        
-        const actionsCol = document.createElement('col');
-        actionsCol.className = 'ad-actions-col';
-        actionsCol.dataset.key = 'actions';
-        colgroup.appendChild(actionsCol);
+    // Touch + Mouse drag system (replaces HTML5 Drag and Drop)
+    let dragState = null;
+    
+    tbody.querySelectorAll('tr[data-id]').forEach(row => {
+      // Drag handle (grab column) - mouse + touch
+      const dragHandle = row.querySelector('td[data-key="drag"]');
+      if (dragHandle) {
+        dragHandle.addEventListener('mousedown', startDrag);
+        dragHandle.addEventListener('touchstart', startDrag, { passive: false });
       }
       
-      // Add drag header
-      const thead = table.querySelector('thead tr');
-      if (thead) {
-        const dragTh = document.createElement('th');
-        dragTh.className = 'ad-drag-th';
-        dragTh.dataset.key = 'drag';
-        dragTh.style.cssText = 'width:36px;min-width:36px;max-width:36px;padding:0;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border-top-left-radius:6px;overflow:hidden;border:none;';
-        dragTh.innerHTML = '';
-        thead.insertBefore(dragTh, thead.firstChild);
-        
-        const actionsTh = document.createElement('th');
-        actionsTh.className = 'ad-actions-th';
-        actionsTh.dataset.key = 'actions';
-        actionsTh.style.cssText = 'width:50px;min-width:50px;max-width:50px;padding:4px;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border-top-right-radius:6px;overflow:hidden;border:none;';
-        actionsTh.innerHTML = '';
-        thead.appendChild(actionsTh);
+      // Duration cell click
+      const durCell = row.querySelector('td[data-key="duration"]');
+      if (durCell) {
+        durCell.style.cursor = 'pointer';
+        durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
       
-      // Add drag and actions cells to each row (including subchildren)
-      const rows = table.querySelectorAll('tbody tr');
-      const rowsArray = Array.from(rows).filter(row => row.dataset.id || row.id);
-      const lastRowIndex = rowsArray.length - 1;
+      // Sharpie button
+      const sharpieBtn = row.querySelector('button.sharpie');
+      if (sharpieBtn) {
+        sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
+      }
+    });
+    
+    function startDrag(e) {
+      const row = e.currentTarget.closest('tr[data-id]');
+      if (!row) return;
       
-      rowsArray.forEach((row, index) => {
-        // Get row ID - check both data-id and id attributes
-        const rowId = row.dataset.id || row.id;
-        
-        // Check if this is a subchild row
-        const isSubchild = row.classList.contains('subchild');
-        const isLastRow = index === lastRowIndex;
-        
-        // Add drag cell at start
-        const dragTd = document.createElement('td');
-        dragTd.className = 'ad-drag-td';
-        dragTd.dataset.key = 'drag';
-        let dragStyle = 'width:36px;min-width:36px;max-width:36px;padding:0;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border:none;';
-        if (isLastRow) dragStyle += 'border-bottom-left-radius:6px;overflow:hidden;';
-        dragTd.style.cssText = dragStyle;
-        
-        const dragHandle = document.createElement('div');
-        dragHandle.className = 'ad-drag-handle';
-        dragHandle.innerHTML = '⋮⋮';
-        
-        // Only make non-subchild rows draggable
-        if (!isSubchild) {
-          dragHandle.draggable = true;
-          dragHandle.addEventListener('dragstart', (e) => handleDragStart(e, row));
-          dragHandle.addEventListener('dragend', handleDragEnd);
-        }
-        dragTd.appendChild(dragHandle);
-        
-        row.insertBefore(dragTd, row.firstChild);
-        
-        // Add actions cell at end
-        const actionsTd = document.createElement('td');
-        actionsTd.className = 'ad-actions-td';
-        actionsTd.dataset.key = 'actions';
-        let actionsStyle = 'width:50px;min-width:50px;max-width:50px;padding:4px;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border:none;';
-        if (isLastRow) actionsStyle += 'border-bottom-right-radius:6px;overflow:hidden;';
-        actionsTd.style.cssText = actionsStyle;
-        
-        const markBtn = document.createElement('button');
-        markBtn.className = 'ad-mark-btn' + (markedRows.has(rowId) ? ' marked' : '');
-        markBtn.innerHTML = getSharpieIcon(markedRows.has(rowId));
-        markBtn.addEventListener('click', () => toggleRowComplete(rowId, markBtn));
-        actionsTd.appendChild(markBtn);
-        
-        row.appendChild(actionsTd);
-        
-        // Row drag events (for dropping) - only on non-subchild rows
-        if (!isSubchild) {
-          row.addEventListener('dragover', handleDragOver);
-          row.addEventListener('dragleave', handleDragLeave);
-          row.addEventListener('drop', handleDrop);
-        }
-        
-        // If row is already marked, show line
-        if (markedRows.has(rowId)) {
-          showCompletedLine(rowId);
-        }
-        
-        // Click duration cell to edit
-        const durationCell = row.querySelector('td[data-key="duration"]');
-        if (durationCell) {
-          durationCell.style.cursor = 'pointer';
-          durationCell.addEventListener('click', (e) => {
-            e.stopPropagation();
-            editDuration(rowId, durationCell);
-          });
-        }
-      });
-    }
-    
-    function getSharpieIcon(isMarked) {
-      const color = isMarked ? '#fff' : '#9333ea';
-      return '<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="' + color + '" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="' + (isMarked ? '#fff' : '#e0e0e0') + '" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="' + color + '" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>';
-    }
-    
-    // ===== DRAG AND DROP =====
-    let draggedRow = null;
-    
-    function handleDragStart(e, row) {
-      // Don't allow dragging subchild rows
-      if (row.classList.contains('subchild')) {
+      // Prevent text selection
+      if (e.type.startsWith('touch')) {
         e.preventDefault();
-        return;
       }
       
-      draggedRow = row;
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+      
+      dragState = {
+        row: row,
+        startY: clientY,
+        currentY: clientY,
+        scrollContainer: document.querySelector('.schedule-scroll')
+      };
+      
       row.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', row.dataset.id || row.id);
+      draggingRow = row;
       
-      // Collect children if SUB row
-      if (row.dataset.type === 'SUB') {
-        const tbody = row.parentElement;
-        row._dragKids = Array.from(tbody.querySelectorAll('tr.subchild[data-parent="' + (row.dataset.id || row.id) + '"]'));
-        row._dragKids.forEach(k => k.classList.add('attached'));
-      }
+      document.addEventListener('mousemove', moveDrag);
+      document.addEventListener('touchmove', moveDrag, { passive: false });
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchend', endDrag);
     }
     
-    function handleDragEnd(e) {
-      if (draggedRow) {
-        draggedRow.classList.remove('dragging');
-        
-        // Re-attach children after SUB row
-        if (draggedRow.dataset.type === 'SUB' && Array.isArray(draggedRow._dragKids)) {
-          let ref = draggedRow;
-          draggedRow._dragKids.forEach(k => {
-            ref.after(k);
-            k.classList.remove('attached');
-            ref = k;
-          });
-          draggedRow._dragKids = null;
-        }
-        
-        draggedRow = null;
+    function moveDrag(e) {
+      if (!dragState) return;
+      
+      if (e.type.startsWith('touch')) {
+        e.preventDefault();
       }
       
-      // Broadcast new order
-      broadcastRowReorder();
-      showNotification('Row reordered');
-    }
-    
-    function handleDragOver(e) {
-      e.preventDefault();
+      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+      dragState.currentY = clientY;
       
-      const tbody = document.querySelector('#schedule-container tbody');
-      const dragging = tbody?.querySelector('tr.dragging');
-      if (!dragging) return;
+      // Auto-scroll if dragging near edges
+      const scrollContainer = dragState.scrollContainer;
+      const rect = scrollContainer.getBoundingClientRect();
+      const scrollThreshold = 60;
+      const scrollSpeed = 5;
       
-      // Get all non-dragging, non-subchild rows as candidates
-      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging):not(.subchild)'));
-      
-      // Find where to insert based on mouse Y
-      const afterEl = calcAfter(candidates, e.clientY);
-      
-      // Move the row in real-time
-      if (afterEl === null) {
-        tbody.appendChild(dragging);
-      } else {
-        tbody.insertBefore(dragging, afterEl);
+      if (clientY - rect.top < scrollThreshold) {
+        scrollContainer.scrollTop -= scrollSpeed;
+      } else if (rect.bottom - clientY < scrollThreshold) {
+        scrollContainer.scrollTop += scrollSpeed;
       }
       
-      // Keep children attached to SUB row
-      if (dragging.dataset.type === 'SUB' && Array.isArray(dragging._dragKids)) {
-        let ref = dragging;
-        dragging._dragKids.forEach(k => {
-          ref.after(k);
-          ref = k;
-        });
-      }
-    }
-    
-    function calcAfter(list, y) {
+      // Find closest row and reorder
+      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
       let closest = { offset: -Infinity, element: null };
-      list.forEach(el => {
+      
+      candidates.forEach(el => {
         const box = el.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
+        const offset = clientY - box.top - box.height / 2;
         if (offset < 0 && offset > closest.offset) {
           closest = { offset, element: el };
         }
       });
-      return closest.element;
-    }
-    
-    function handleDragLeave(e) {
-      // Not needed for real-time move
-    }
-    
-    function handleDrop(e) {
-      e.preventDefault();
-      // Movement already happened in dragover, just clean up in dragend
-    }
-    
-    function broadcastRowReorder() {
-      const tbody = document.querySelector('#schedule-container tbody');
-      if (!tbody) return;
       
-      // Only send non-subchild row order - subchildren follow their parents
-      const order = Array.from(tbody.querySelectorAll('tr[data-id]:not(.subchild)'))
-        .map(tr => tr.dataset.id || tr.id)
-        .filter(id => id);
-      
-      console.log('[AD] Broadcasting row reorder:', order);
-      
-      channel.send({
-        type: 'broadcast',
-        event: 'row-reorder',
-        payload: { order, source: 'ad' }
-      });
-    }
-    
-    // ===== SHARPIE / COMPLETION =====
-    function toggleRowComplete(rowId, btn) {
-      const isMarked = markedRows.has(rowId);
-      
-      if (isMarked) {
-        markedRows.delete(rowId);
-        hideCompletedLine(rowId);
-        if (btn) {
-          btn.classList.remove('marked');
-          btn.innerHTML = getSharpieIcon(false);
-        }
+      if (closest.element === null) {
+        tbody.appendChild(dragState.row);
       } else {
-        markedRows.add(rowId);
-        showCompletedLine(rowId);
-        if (btn) {
-          btn.classList.add('marked');
-          btn.innerHTML = getSharpieIcon(true);
-        }
-      }
-      
-      // Broadcast to producer
-      channel.send({
-        type: 'broadcast',
-        event: 'sharpie-toggle',
-        payload: { rowId, marked: !isMarked, source: 'ad' }
-      });
-      
-      showNotification(isMarked ? 'Row unmarked' : 'Row marked complete');
-    }
-    
-    function showCompletedLine(rowId) {
-      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
-      if (!row) return;
-      
-      // Check if line already exists
-      let line = row.querySelector('.ad-completed-line');
-      if (!line) {
-        // Find first TD and add line
-        const firstTd = row.querySelector('td');
-        if (firstTd) {
-          firstTd.style.position = 'relative';
-          line = document.createElement('div');
-          line.className = 'ad-completed-line';
-          firstTd.appendChild(line);
-        }
+        tbody.insertBefore(dragState.row, closest.element);
       }
     }
     
-    function hideCompletedLine(rowId) {
-      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
-      if (!row) return;
+    function endDrag() {
+      if (!dragState) return;
       
-      const line = row.querySelector('.ad-completed-line');
-      if (line) {
-        line.remove();
-      }
+      dragState.row.classList.remove('dragging');
+      draggingRow = null;
+      dragState = null;
+      
+      document.removeEventListener('mousemove', moveDrag);
+      document.removeEventListener('touchmove', moveDrag);
+      document.removeEventListener('mouseup', endDrag);
+      document.removeEventListener('touchend', endDrag);
+      
+      broadcastRowOrder();
+      updateAllSharpieLines();
     }
+  }
+  
+  function toggleRowSharpie(row) {
+    const rowId = row.dataset.id;
+    const btn = row.querySelector('button.sharpie');
+    const container = document.getElementById('scheduleScroll');
     
-    // ===== DURATION EDIT =====
-    function editDuration(rowId, cell) {
-      // Check if already editing
-      if (cell.querySelector('input')) return;
-      
-      const currentValue = cell.textContent.trim();
-      const span = cell.querySelector('span');
-      
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'duration-edit-input';
-      input.value = currentValue;
-      input.min = '0';
-      input.step = '5';
-      
-      const finishEdit = () => {
-        const newValue = input.value || '0';
-        if (span) {
-          span.textContent = newValue;
-          span.style.display = '';
-        } else {
-          cell.textContent = newValue;
-        }
-        input.remove();
-        
-        // Broadcast change
-        channel.send({
-          type: 'broadcast',
-          event: 'duration-change',
-          payload: { rowId, duration: newValue, source: 'ad' }
+    if (markedRows.has(rowId)) {
+      markedRows.delete(rowId);
+      btn?.classList.remove('active');
+      container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`)?.remove();
+      broadcastEvent('sharpie-toggle', { rowId, marked: false, source: 'ad' });
+    } else {
+      markedRows.add(rowId);
+      btn?.classList.add('active');
+      addSharpieLineElement(row);
+      broadcastEvent('sharpie-toggle', { rowId, marked: true, source: 'ad' });
+    }
+  }
+  
+  function addSharpieLineElement(row) {
+    const container = document.getElementById('scheduleScroll');
+    const table = container.querySelector('table');
+    if (!container || !table) return;
+    
+    container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
+    
+    const line = document.createElement('div');
+    line.className = 'sharpie-line-element';
+    line.dataset.rowId = row.dataset.id;
+    line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    line.style.left = (table.offsetLeft + 36) + 'px';
+    line.style.width = (table.offsetWidth - 72) + 'px';
+    container.appendChild(line);
+  }
+  
+  function updateAllSharpieLines() {
+    const container = document.getElementById('scheduleScroll');
+    const table = container?.querySelector('table');
+    if (!table) return;
+    
+    markedRows.forEach(rowId => {
+      const row = document.querySelector(`tr[data-id="${rowId}"]`);
+      const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
+      if (row && line) {
+        line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+        line.style.left = (table.offsetLeft + 36) + 'px';
+        line.style.width = (table.offsetWidth - 72) + 'px';
+      }
+    });
+  }
+  
+  function openDurationEditor(row, cell) {
+    const popup = document.getElementById('durationPopup');
+    const input = document.getElementById('durationInput');
+    const rect = cell.getBoundingClientRect();
+    
+    popup.style.left = rect.left + 'px';
+    popup.style.top = (rect.bottom + 4) + 'px';
+    popup.classList.add('show');
+    input.value = cell.textContent.trim();
+    input.focus();
+    input.select();
+    
+    const close = () => {
+      popup.classList.remove('show');
+      document.removeEventListener('click', outsideClick);
+      input.removeEventListener('keydown', keyHandler);
+    };
+    
+    const save = () => {
+      const newValue = input.value.trim();
+      if (newValue !== cell.textContent.trim()) {
+        cell.textContent = newValue;
+        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue, source: 'ad' });
+      }
+      close();
+    };
+    
+    const outsideClick = (e) => { if (!popup.contains(e.target) && e.target !== cell) save(); };
+    const keyHandler = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      else if (e.key === 'Escape') close();
+    };
+    
+    setTimeout(() => {
+      document.addEventListener('click', outsideClick);
+      input.addEventListener('keydown', keyHandler);
+    }, 10);
+  }
+  
+  function subscribeToChannel() {
+    channel = supabase.channel(`ad-sync-${channelCode.toUpperCase()}`, {
+      config: { broadcast: { self: false } }
+    });
+    
+    channel
+      .on('broadcast', { event: 'row-reorder' }, ({ payload }) => {
+        if (!payload?.order) return;
+        const tbody = document.querySelector('#scheduleScroll tbody');
+        if (!tbody) return;
+        payload.order.forEach(id => {
+          const row = tbody.querySelector(`tr[data-id="${id}"]`);
+          if (row) tbody.appendChild(row);
         });
-        
-        showNotification('Duration updated to ' + newValue);
-      };
-      
-      input.addEventListener('blur', finishEdit);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          finishEdit();
-        } else if (e.key === 'Escape') {
-          input.value = currentValue;
-          finishEdit();
+        updateAllSharpieLines();
+      })
+      .on('broadcast', { event: 'duration-change' }, ({ payload }) => {
+        if (!payload?.rowId) return;
+        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+        const cell = row?.querySelector('td[data-key="duration"]');
+        if (cell) cell.textContent = payload.duration;
+      })
+      .on('broadcast', { event: 'sharpie-toggle' }, ({ payload }) => {
+        if (!payload?.rowId) return;
+        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+        if (!row) return;
+        const btn = row.querySelector('button.sharpie');
+        if (payload.marked) {
+          markedRows.add(payload.rowId);
+          btn?.classList.add('active');
+          addSharpieLineElement(row);
+        } else {
+          markedRows.delete(payload.rowId);
+          btn?.classList.remove('active');
+          document.getElementById('scheduleScroll').querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`)?.remove();
         }
-      });
-      
-      if (span) {
-        span.style.display = 'none';
-      }
-      cell.textContent = '';
-      cell.appendChild(input);
-      if (span) cell.appendChild(span);
-      input.focus();
-      input.select();
-    }
-    
-    // ===== EVENT HANDLERS FROM PRODUCER =====
-    function handleFullSync(payload) {
-      console.log('[AD] Full sync received:', payload);
-      const data = payload.payload || payload;
-      
-      if (data.source === 'ad') return; // Ignore our own
-      
-      const { order, sharpieRows, linesHidden } = data;
-      
-      // Reorder rows - move each row and its subchildren
-      if (order && order.length) {
-        const tbody = document.querySelector('#schedule-container tbody');
-        if (tbody) {
-          order.forEach(rowId => {
-            const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
-            if (row) {
-              tbody.appendChild(row);
-              
-              // If this is a SUB row, also move its subchildren
-              if (row.dataset.type === 'SUB') {
-                const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + rowId + '"]');
-                subchildren.forEach(child => tbody.appendChild(child));
-              }
+      })
+      .on('broadcast', { event: 'sharpie-visibility' }, ({ payload }) => {
+        linesHidden = payload.hidden;
+        document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+      })
+      .on('broadcast', { event: 'cell-format' }, ({ payload }) => {
+        if (!payload?.rowId || !payload?.columnKey || !payload?.formatting) return;
+        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+        const cell = row?.querySelector(`td[data-key="${payload.columnKey}"]`);
+        if (cell) {
+          // Apply formatting via dataset
+          Object.entries(payload.formatting).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+              cell.dataset[key] = value;
+              // Also apply as inline styles for immediate visual feedback
+              applyFormatting(cell, payload.formatting);
             }
           });
         }
-      }
-      
-      // Update sharpie state
-      markedRows.clear();
-      if (sharpieRows) {
-        sharpieRows.forEach(rowId => {
-          markedRows.add(rowId);
-          showCompletedLine(rowId);
-        });
-      }
-      
-      // Update visibility
-      if (linesHidden !== undefined) {
-        progressVisible = !linesHidden;
-        updateProgressUI();
-      }
-      
-      updateStatus('synced');
-      showNotification('Synced with producer');
-    }
-    
-    function handleRowReorder(payload) {
-      console.log('[AD] Row reorder received:', payload);
-      const data = payload.payload || payload;
-      
-      if (data.source === 'ad') return;
-      
-      const { order } = data;
-      if (!order || !order.length) return;
-      
-      const tbody = document.querySelector('#schedule-container tbody');
-      if (!tbody) return;
-      
-      // Reorder rows - move each row and its subchildren
-      order.forEach(rowId => {
-        const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
-        if (row) {
-          tbody.appendChild(row);
-          
-          // If this is a SUB row, also move its subchildren
-          if (row.dataset.type === 'SUB') {
-            const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + rowId + '"]');
-            subchildren.forEach(child => tbody.appendChild(child));
+      })
+      .on('broadcast', { event: 'row-format' }, ({ payload }) => {
+        if (!payload?.rowId || !payload?.formatting) return;
+        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+        if (!row) return;
+        const cells = row.querySelectorAll('td[data-key]:not([data-key="drag"]):not([data-key="actions"])');
+        cells.forEach(cell => {
+          const key = cell.dataset.key;
+          const cellFormat = payload.formatting[key];
+          if (cellFormat) {
+            Object.entries(cellFormat).forEach(([fmtKey, fmtValue]) => {
+              if (fmtValue !== undefined && fmtValue !== null && fmtValue !== '') {
+                cell.dataset[fmtKey] = fmtValue;
+              }
+            });
+            applyFormatting(cell, cellFormat);
           }
+        });
+      })
+      .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
+        if (payload?.html) injectSchedule(payload.html);
+        if (payload?.order) {
+          const tbody = document.querySelector('#scheduleScroll tbody');
+          payload.order.forEach(id => {
+            const row = tbody?.querySelector(`tr[data-id="${id}"]`);
+            if (row) tbody.appendChild(row);
+          });
         }
-      });
-      
-      showNotification('Rows reordered by producer');
-    }
-    
-    function handleDurationChange(payload) {
-      console.log('[AD] Duration change received:', payload);
-      const data = payload.payload || payload;
-      
-      if (data.source === 'ad') return;
-      
-      const { rowId, duration } = data;
-      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
-      if (!row) return;
-      
-      const durationCell = row.querySelector('td[data-key="duration"]');
-      if (durationCell) {
-        const span = durationCell.querySelector('span');
-        if (span) {
-          span.textContent = duration;
+        updateAllSharpieLines();
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          updateFooter('Connected');
+          broadcastEvent('request-sync', {});
         } else {
-          durationCell.textContent = duration;
+          updateFooter('Disconnected');
         }
-      }
-      
-      showNotification('Duration updated by producer');
-    }
-    
-    function handleSharpieToggle(payload) {
-      console.log('[AD] Sharpie toggle received:', payload);
-      const data = payload.payload || payload;
-      
-      if (data.source === 'ad') return;
-      
-      const { rowId, marked } = data;
-      
-      // Find the mark button for this row
-      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
-      const btn = row?.querySelector('.ad-mark-btn');
-      
-      if (marked) {
-        markedRows.add(rowId);
-        showCompletedLine(rowId);
-        if (btn) {
-          btn.classList.add('marked');
-          btn.innerHTML = getSharpieIcon(true);
-        }
-      } else {
-        markedRows.delete(rowId);
-        hideCompletedLine(rowId);
-        if (btn) {
-          btn.classList.remove('marked');
-          btn.innerHTML = getSharpieIcon(false);
-        }
-      }
-      
-      showNotification(marked ? 'Row marked by producer' : 'Row unmarked by producer');
-    }
-    
-    function handleSharpieVisibility(payload) {
-      console.log('[AD] Sharpie visibility received:', payload);
-      const data = payload.payload || payload;
-      
-      if (data.source === 'ad') return;
-      
-      progressVisible = !data.hidden;
-      updateProgressUI();
-    }
-    
-    function handleSyncStatus(payload) {
-      console.log('[AD] Sync status received:', payload);
-      const data = payload.payload || payload;
-      
-      isLive = data.live;
-      updateStatus(isLive ? 'synced' : 'offline');
-      
-      if (isLive) {
-        showNotification('Producer is LIVE');
-      } else {
-        showNotification('Producer disconnected');
-      }
-    }
-    
-    function handlePresence() {
-      if (!channel) return;
-      const state = channel.presenceState();
-      const users = Object.values(state).flat();
-      console.log('[AD] Presence:', users);
-    }
-    
-    // ===== UI HELPERS =====
-    function toggleProgress() {
-      progressVisible = !progressVisible;
-      updateProgressUI();
-      
-      // Broadcast to producer
-      channel.send({
-        type: 'broadcast',
-        event: 'sharpie-visibility',
-        payload: { hidden: !progressVisible, source: 'ad' }
       });
-    }
+  }
+  
+  function broadcastEvent(event, payload) {
+    if (channel) channel.send({ type: 'broadcast', event, payload: { ...payload, source: 'ad' } });
+  }
+  
+  function applyFormatting(cell, formatting) {
+    if (!cell) return;
     
-    function updateProgressUI() {
-      const btn = document.getElementById('sharpieToggle');
-      
-      if (progressVisible) {
-        document.body.classList.add('show-progress');
-        btn.classList.remove('lines-hidden');
+    // Text color
+    if (formatting.cellFg !== undefined) {
+      if (formatting.cellFg) {
+        cell.style.color = formatting.cellFg;
       } else {
-        document.body.classList.remove('show-progress');
-        btn.classList.add('lines-hidden');
+        cell.style.removeProperty('color');
+      }
+    }
+    if (formatting.fgColor !== undefined) {
+      if (formatting.fgColor) {
+        cell.style.color = formatting.fgColor;
+      } else {
+        cell.style.removeProperty('color');
       }
     }
     
-    function updateStatus(status) {
-      const badge = document.getElementById('liveBadge');
-      const text = document.getElementById('liveText');
-      
-      badge.classList.remove('live', 'synced', 'connecting', 'offline');
-      
-      switch (status) {
-        case 'synced':
-          badge.classList.add('synced');
-          text.textContent = 'SYNCED';
-          document.getElementById('loading').style.display = 'none';
-          break;
-        case 'connecting':
-          badge.classList.add('connecting');
-          text.textContent = 'CONNECTING';
-          break;
-        case 'offline':
-          badge.classList.add('offline');
-          text.textContent = 'OFFLINE';
-          break;
-        default:
-          badge.classList.add('offline');
-          text.textContent = 'OFFLINE';
+    // Background color
+    if (formatting.cellBg !== undefined) {
+      if (formatting.cellBg) {
+        cell.style.backgroundColor = formatting.cellBg;
+      } else {
+        cell.style.removeProperty('background-color');
+      }
+    }
+    if (formatting.bgColor !== undefined) {
+      if (formatting.bgColor) {
+        cell.style.backgroundColor = formatting.bgColor;
+      } else {
+        cell.style.removeProperty('background-color');
       }
     }
     
-    function showError(msg) {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('schedule-container').style.display = 'none';
-      document.getElementById('error').style.display = 'flex';
-      document.getElementById('error').querySelector('p').textContent = msg;
-      updateStatus('offline');
+    // Alignment
+    if (formatting.align !== undefined) {
+      if (formatting.align) {
+        cell.style.textAlign = formatting.align;
+      } else {
+        cell.style.removeProperty('text-align');
+      }
     }
     
-    function showNotification(msg) {
-      const el = document.getElementById('notification');
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 2000);
+    // Vertical alignment
+    if (formatting.valign !== undefined) {
+      if (formatting.valign) {
+        cell.style.verticalAlign = formatting.valign;
+      } else {
+        cell.style.removeProperty('vertical-align');
+      }
     }
     
-    // Start when DOM ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
+    // Font family
+    if (formatting.fontFamily !== undefined) {
+      if (formatting.fontFamily) {
+        cell.style.fontFamily = formatting.fontFamily;
+      } else {
+        cell.style.removeProperty('font-family');
+      }
     }
-  })();
-  </script>
+    
+    // Font size
+    if (formatting.fontSize !== undefined) {
+      if (formatting.fontSize) {
+        cell.style.fontSize = formatting.fontSize;
+      } else {
+        cell.style.removeProperty('font-size');
+      }
+    }
+    
+    // Bold
+    if (formatting.bold !== undefined) {
+      cell.style.fontWeight = formatting.bold ? 'bold' : 'normal';
+    }
+    
+    // Italic
+    if (formatting.italic !== undefined) {
+      cell.style.fontStyle = formatting.italic ? 'italic' : 'normal';
+    }
+    
+    // Underline
+    if (formatting.underline !== undefined) {
+      cell.style.textDecoration = formatting.underline ? 'underline' : 'none';
+    }
+  }
+  
+  
+  function broadcastRowOrder() {
+    const tbody = document.querySelector('#scheduleScroll tbody');
+    if (!tbody) return;
+    const order = Array.from(tbody.querySelectorAll('tr[data-id]')).map(r => r.dataset.id);
+    broadcastEvent('row-reorder', { order, source: 'ad' });
+  }
+  
+  function updateFooter(status) {
+    document.getElementById('footer').textContent = `${status} • ${new Date().toLocaleTimeString()}`;
+  }
+  
+  function updateLiveStatus() {
+    const badge = document.getElementById('liveBadge');
+    badge.classList.remove('live', 'manual');
+    badge.classList.add(isLiveMode ? 'live' : 'manual');
+  }
+  
+  setInterval(async () => {
+    if (!channelCode) return;
+    try {
+      const { data } = await supabase.from('broadcasts').select('auto_update').eq('code', channelCode.toUpperCase()).single();
+      if (data) {
+        const wasLive = isLiveMode;
+        isLiveMode = data.auto_update === true;
+        if (wasLive !== isLiveMode) updateLiveStatus();
+      }
+    } catch (e) {}
+  }, 30000);
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
 </body>
 </html>
