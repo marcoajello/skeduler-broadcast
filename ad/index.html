@@ -214,17 +214,36 @@
       to { transform: rotate(360deg); }
     }
     
+    /* ===== CONTENT CENTERING ===== */
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
     /* ===== SCHEDULE CONTAINER ===== */
     #schedule-container {
       background: #000;
       border-radius: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      display: inline-block;
-      min-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: auto;
+      max-width: 100%;
+    }
+    
+    /* Center the schedule header over table */
+    #schedule-container .schedule-header,
+    #schedule-container .header-image,
+    #schedule-container > div:first-child:not(table) {
+      text-align: center;
+      width: 100%;
     }
     
     #schedule-container table {
+      margin: 0 auto;
       border-collapse: collapse;
       background: #000;
     }
