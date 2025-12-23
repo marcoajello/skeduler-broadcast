@@ -321,6 +321,15 @@
       object-fit: cover;
     }
     
+    /* Vertical alignment for tags cells */
+    td[data-valign="top"] .tags-pills { align-items: flex-start; align-content: flex-start; }
+    td[data-valign="middle"] .tags-pills { align-items: center; align-content: center; }
+    td[data-valign="bottom"] .tags-pills { align-items: flex-end; align-content: flex-end; }
+    /* Horizontal alignment for tags cells */
+    td[data-align="left"] .tags-pills { justify-content: flex-start; }
+    td[data-align="center"] .tags-pills { justify-content: center; }
+    td[data-align="right"] .tags-pills { justify-content: flex-end; }
+    
     .tag-pill .tag-dummy-circle {
       width: 20px;
       height: 20px;
