@@ -556,7 +556,10 @@
       const header = document.querySelector('#scheduleScroll .header-design-container, #scheduleScroll .header-image');
       if (header && table) {
         const tableWidth = table.offsetWidth;
-        header.style.width = tableWidth + 'px';
+        const headerWidth = header.offsetWidth;
+        // Use the larger of the two so text doesn't overflow
+        const targetWidth = Math.max(tableWidth, headerWidth);
+        header.style.width = targetWidth + 'px';
         header.style.marginBottom = '12px';
       }
     });
