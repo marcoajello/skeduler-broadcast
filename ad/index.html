@@ -606,6 +606,9 @@
       const row = e.currentTarget.closest('tr[data-id]');
       if (!row) return;
       
+      // Don't allow dragging sub-events independently
+      if (row.dataset.parent) return;
+      
       // Prevent text selection
       if (e.type.startsWith('touch')) {
         e.preventDefault();
@@ -791,7 +794,7 @@
           if (row) {
             tbody.appendChild(row);
             // Move sub-events with their parent
-            const subEvents = tbody.querySelectorAll(`tr[data-parent-id="${id}"]`);
+            const subEvents = tbody.querySelectorAll(`tr[data-parent="${id}"]`);
             subEvents.forEach(sub => tbody.appendChild(sub));
           }
         });
@@ -864,7 +867,7 @@
             if (row) {
               tbody.appendChild(row);
               // Move sub-events with their parent
-              const subEvents = tbody.querySelectorAll(`tr[data-parent-id="${id}"]`);
+              const subEvents = tbody.querySelectorAll(`tr[data-parent="${id}"]`);
               subEvents.forEach(sub => tbody.appendChild(sub));
             }
           });
@@ -976,7 +979,8 @@
   function broadcastRowOrder() {
     const tbody = document.querySelector('#scheduleScroll tbody');
     if (!tbody) return;
-    const order = Array.from(tbody.querySelectorAll('tr[data-id]')).map(r => r.dataset.id);
+    // Only include parent rows, not sub-events
+    const order = Array.from(tbody.querySelectorAll('tr[data-id]:not([data-parent])')).map(r => r.dataset.id);
     broadcastEvent('row-reorder', { order, source: 'ad' });
   }
   
