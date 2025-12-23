@@ -768,6 +768,17 @@
       
       // Setup interactive features (adds drag/action columns)
       setupRowInteractions();
+      
+      // Center header over table AFTER columns are added
+      const headerImg = document.querySelector('#schedule-container .header-image');
+      if (headerImg && table) {
+        requestAnimationFrame(() => {
+          const tableWidth = table.offsetWidth;
+          const headerWidth = headerImg.offsetWidth;
+          const offset = (tableWidth - headerWidth) / 2;
+          headerImg.style.marginLeft = offset + 'px';
+        });
+      }
     }
     
     function setupRowInteractions() {
