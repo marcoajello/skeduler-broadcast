@@ -331,7 +331,12 @@
 <body>
   <div class="header">
     <div class="header-left">
+      <div class="channel-name" id="channelName">Channel: Loading...</div>
+    </div>
+    
+    <div class="header-center">
       <div class="header-logo">
+        <span>SKEDULER</span>
         <svg viewBox="195 40 100 130">
           <defs>
             <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -366,12 +371,7 @@
             <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
           </g>
         </svg>
-        <span>SKEDULER</span>
       </div>
-    </div>
-    
-    <div class="header-center">
-      <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
     <div class="header-right">
@@ -461,9 +461,9 @@
         
         broadcastData = broadcast;
         
-        // Update channel name (centered)
+        // Update channel name (left side)
         const channelName = broadcast.title || 'Untitled';
-        document.getElementById('channelName').textContent = channelName;
+        document.getElementById('channelName').textContent = 'Channel: ' + channelName;
         document.title = channelName + ' - SKEDULER';
         
         // Update LIVE badge based on auto_update field
