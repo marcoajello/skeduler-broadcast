@@ -153,7 +153,6 @@
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      background: #000;
     }
     
     .loading, .error {
@@ -192,36 +191,17 @@
       to { transform: rotate(360deg); }
     }
     
-    /* ===== CONTENT CENTERING ===== */
-    .content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
     /* ===== SCHEDULE CONTAINER ===== */
     #schedule-container {
       background: #000;
       border-radius: 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: auto;
-      max-width: 100%;
-    }
-    
-    /* Center the schedule header over table */
-    #schedule-container .schedule-header,
-    #schedule-container .header-image,
-    #schedule-container > div:first-child:not(table) {
-      text-align: center;
-      width: 100%;
+      display: inline-block;
+      min-width: 100%;
     }
     
     #schedule-container table {
-      margin: 0 auto;
       border-collapse: collapse;
       background: #000;
     }
@@ -232,64 +212,22 @@
       background: #000;
     }
     
-    /* ===== COMPLETED ROW LINES ===== */
-    /* The schedule HTML has .completed-line elements that are display:none by default */
-    /* They show when body has .show-progress class */
-    body.show-progress .completed-line {
-      display: block;
+    .content {
+      background: #000;
     }
     
-    /* Hide when progress is hidden */
-    body:not(.show-progress) .completed-line {
+    /* ===== SHARPIE LINES ===== */
+    .sharpie-line-element {
+      position: absolute;
+      height: 4px;
+      background: #f44336;
+      pointer-events: none;
+      z-index: 500;
+    }
+    
+    body.sharpie-hidden .sharpie-line-element,
+    body.sharpie-hidden .row-complete::after {
       display: none;
-    }
-    
-    /* ===== TAG PILLS - Override inline styles from captured HTML ===== */
-    #schedule-container .tags-pills {
-      display: flex;
-      flex-wrap: wrap;
-      flex-direction: row;
-      gap: 4px;
-      padding: 4px;
-      align-items: flex-start;
-      align-content: flex-start;
-    }
-    
-    #schedule-container .tag-pill {
-      display: inline-flex;
-      width: auto;
-      max-width: none;
-      flex: 0 0 auto;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px 2px 3px;
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 600;
-      white-space: nowrap;
-      box-sizing: border-box;
-    }
-    
-    #schedule-container .tag-pill img {
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      min-height: 20px;
-      max-width: 20px;
-      max-height: 20px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
-    }
-    
-    #schedule-container .tag-pill .tag-dummy-circle {
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      min-height: 20px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
     }
     
     /* ===== SCHEDULE HEADER IMAGE ===== */
@@ -305,6 +243,81 @@
       margin: 0 auto;
     }
     
+    /* ===== TAG PILLS ===== */
+    .tagsBox {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      pointer-events: none;
+    }
+    
+    .tags-pills {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      padding: 4px;
+      position: relative;
+      z-index: 11;
+      pointer-events: none;
+      align-items: flex-start;
+      align-content: flex-start;
+      justify-content: flex-start;
+    }
+    
+    .tag-pill {
+      background: var(--panel, #ffffff);
+      color: var(--text, #111827);
+      padding: 2px 6px 2px 2px;
+      border-radius: 999px;
+      border: 1px solid #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      position: relative;
+      box-sizing: border-box;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    
+    .tag-pill.image-tag img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    /* Vertical alignment for tags cells */
+    td[data-valign="top"] .tags-pills { align-items: flex-start; align-content: flex-start; }
+    td[data-valign="middle"] .tags-pills { align-items: center; align-content: center; }
+    td[data-valign="bottom"] .tags-pills { align-items: flex-end; align-content: flex-end; }
+    /* Horizontal alignment for tags cells */
+    td[data-align="left"] .tags-pills { justify-content: flex-start; }
+    td[data-align="center"] .tags-pills { justify-content: center; }
+    td[data-align="right"] .tags-pills { justify-content: flex-end; }
+    
+    .tag-pill .tag-dummy-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      background: transparent;
+    }
+    
+    .tag-pill.minor-tag {
+      border: 2px solid #dc2626;
+      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
+    }
+    
+    .tag-pill .tag-x {
+      display: none;
+    }
+    
     /* ===== FOOTER ===== */
     .updated-at {
       text-align: center;
@@ -315,7 +328,7 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="show-progress">
+<body>
   <div class="header">
     <div class="header-left">
       <div class="header-logo">
@@ -366,7 +379,7 @@
         <span id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
-      <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress Lines">
+      <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress">
         <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
     </div>
@@ -389,17 +402,15 @@
   </div>
 
   <script>
-  (function() {
-    'use strict';
-    
     const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
     
-    let supabase = null;
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
     let broadcastCode = null;
     let broadcastData = null;
     let refreshInterval = null;
-    let progressVisible = true;
+    let sharpieVisible = true;
     
     async function init() {
       const params = new URLSearchParams(window.location.search);
@@ -410,12 +421,9 @@
         return;
       }
       
-      // Initialize Supabase
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      
-      // Setup progress toggle (sharpie lines)
+      // Setup sharpie toggle
       const sharpieToggle = document.getElementById('sharpieToggle');
-      sharpieToggle.addEventListener('click', toggleProgress);
+      sharpieToggle.addEventListener('click', toggleSharpie);
       
       await loadBroadcast();
       
@@ -423,15 +431,15 @@
       refreshInterval = setInterval(loadBroadcast, 30000);
     }
     
-    function toggleProgress() {
-      progressVisible = !progressVisible;
+    function toggleSharpie() {
+      sharpieVisible = !sharpieVisible;
       const btn = document.getElementById('sharpieToggle');
       
-      if (progressVisible) {
-        document.body.classList.add('show-progress');
+      if (sharpieVisible) {
+        document.body.classList.remove('sharpie-hidden');
         btn.classList.remove('lines-hidden');
       } else {
-        document.body.classList.remove('show-progress');
+        document.body.classList.add('sharpie-hidden');
         btn.classList.add('lines-hidden');
       }
     }
@@ -529,13 +537,7 @@
       text.textContent = 'OFFLINE';
     }
     
-    // Start when DOM ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-  })();
+    init();
   </script>
 </body>
 </html>
