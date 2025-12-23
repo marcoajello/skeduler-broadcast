@@ -237,48 +237,48 @@
     
     /* ===== COMPLETED ROW LINES ===== */
     body.show-progress .completed-line {
-      display: block !important;
+      display: block;
     }
     
     body:not(.show-progress) .completed-line {
-      display: none !important;
+      display: none;
     }
     
     /* ===== TAG PILLS ===== */
     #schedule-container .tags-pills {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      flex-direction: row !important;
-      gap: 4px !important;
-      padding: 4px !important;
-      align-items: flex-start !important;
-      align-content: flex-start !important;
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: row;
+      gap: 4px;
+      padding: 4px;
+      align-items: flex-start;
+      align-content: flex-start;
     }
     
     #schedule-container .tag-pill {
-      display: inline-flex !important;
-      width: auto !important;
-      max-width: none !important;
-      flex: 0 0 auto !important;
-      align-items: center !important;
-      gap: 4px !important;
-      padding: 2px 8px 2px 3px !important;
-      border-radius: 999px !important;
-      font-size: 10px !important;
-      font-weight: 600 !important;
-      white-space: nowrap !important;
+      display: inline-flex;
+      width: auto;
+      max-width: none;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px 2px 3px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
     }
     
     #schedule-container .tag-pill img {
-      width: 20px !important;
-      height: 20px !important;
-      min-width: 20px !important;
-      min-height: 20px !important;
-      max-width: 20px !important;
-      max-height: 20px !important;
-      border-radius: 50% !important;
-      object-fit: cover !important;
-      flex-shrink: 0 !important;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
     }
     
     /* ===== DRAGGABLE ROWS ===== */
@@ -287,31 +287,31 @@
     }
     
     #schedule-container tr[data-id].drag-over {
-      border-top: 3px solid var(--accent) !important;
+      border-top: 3px solid var(--accent);
     }
     
     /* ===== DRAG COLUMN ===== */
     .ad-drag-col {
-      width: 36px !important;
-      min-width: 36px !important;
-      max-width: 36px !important;
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
     }
     
     .ad-drag-th, .ad-drag-td {
-      width: 36px !important;
-      min-width: 36px !important;
-      max-width: 36px !important;
-      padding: 0 !important;
-      text-align: center !important;
-      vertical-align: middle !important;
-      background: #4b5563 !important;
-      border-left: 2px solid #ffffff !important;
-      border-top: 1px solid #ffffff !important;
-      border-bottom: 1px solid #ffffff !important;
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      padding: 0;
+      text-align: center;
+      vertical-align: middle;
+      background: #4b5563;
+      border-left: 2px solid #ffffff;
+      border-top: 1px solid #ffffff;
+      border-bottom: 1px solid #ffffff;
     }
     
     .ad-drag-th {
-      border-top: 2px solid #ffffff !important;
+      border-top: 2px solid #ffffff;
     }
     
     .ad-drag-handle {
@@ -338,54 +338,54 @@
     
     /* ===== ACTIONS COLUMN ===== */
     .ad-actions-col {
-      width: 50px !important;
-      min-width: 50px !important;
-      max-width: 50px !important;
+      width: 50px;
+      min-width: 50px;
+      max-width: 50px;
     }
     
     .ad-actions-th, .ad-actions-td {
-      width: 50px !important;
-      min-width: 50px !important;
-      max-width: 50px !important;
-      padding: 4px !important;
-      text-align: center !important;
-      vertical-align: middle !important;
-      background: #4b5563 !important;
-      border-right: 2px solid #ffffff !important;
-      border-top: 1px solid #ffffff !important;
-      border-bottom: 1px solid #ffffff !important;
+      width: 50px;
+      min-width: 50px;
+      max-width: 50px;
+      padding: 4px;
+      text-align: center;
+      vertical-align: middle;
+      background: #4b5563;
+      border-right: 2px solid #ffffff;
+      border-top: 1px solid #ffffff;
+      border-bottom: 1px solid #ffffff;
     }
     
     .ad-actions-th {
-      border-top: 2px solid #ffffff !important;
+      border-top: 2px solid #ffffff;
     }
     
     /* Rounded outer corners - remove outer borders */
     #schedule-container thead tr:first-child .ad-drag-th {
       border-top-left-radius: 8px;
-      border-left: none !important;
-      border-top: none !important;
+      border-left: none;
+      border-top: none;
       overflow: hidden;
     }
     
     #schedule-container thead tr:first-child .ad-actions-th {
       border-top-right-radius: 8px;
-      border-right: none !important;
-      border-top: none !important;
+      border-right: none;
+      border-top: none;
       overflow: hidden;
     }
     
     #schedule-container tbody tr:last-child .ad-drag-td {
       border-bottom-left-radius: 8px;
-      border-left: none !important;
-      border-bottom: none !important;
+      border-left: none;
+      border-bottom: none;
       overflow: hidden;
     }
     
     #schedule-container tbody tr:last-child .ad-actions-td {
       border-bottom-right-radius: 8px;
-      border-right: none !important;
-      border-bottom: none !important;
+      border-right: none;
+      border-bottom: none;
       overflow: hidden;
     }
     
@@ -432,7 +432,7 @@
     }
     
     body:not(.show-progress) .ad-completed-line {
-      display: none !important;
+      display: none;
     }
     
     /* Row needs relative positioning for the line */
@@ -456,7 +456,7 @@
     }
     
     #schedule-container td[data-key="duration"]:hover {
-      background: rgba(88, 166, 255, 0.1) !important;
+      background: rgba(88, 166, 255, 0.1);
     }
     
     .duration-edit-input {
@@ -579,11 +579,13 @@
   <div class="notification" id="notification"></div>
 
   <script>
+  (function() {
+    'use strict';
+    
     const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
+    let supabase = null;
     let channelCode = null;
     let channel = null;
     let progressVisible = true;
@@ -605,6 +607,9 @@
       channelCode = channelCode.toUpperCase();
       document.getElementById('channelName').textContent = 'Channel: ' + channelCode;
       document.title = 'AD - ' + channelCode;
+      
+      // Initialize Supabase
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Fetch channel title from Supabase
       async function fetchChannelTitle(code) {
@@ -830,7 +835,7 @@
     
     function getSharpieIcon(isMarked) {
       const color = isMarked ? '#fff' : '#9333ea';
-      return `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="${color}" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="${isMarked ? '#fff' : '#e0e0e0'}" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="${color}" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
+      return '<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="' + color + '" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="' + (isMarked ? '#fff' : '#e0e0e0') + '" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="' + color + '" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>';
     }
     
     // ===== DRAG AND DROP =====
@@ -887,7 +892,7 @@
       // Collect the dragged row and any subchildren
       const rowsToMove = [draggedRow];
       if (draggedRow.dataset.type === 'SUB') {
-        const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${draggedId}"]`);
+        const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggedId + '"]');
         subchildren.forEach(child => rowsToMove.push(child));
       }
       
@@ -901,7 +906,7 @@
         // Moving down - insert after target (and its subchildren)
         let insertAfter = targetRow;
         if (targetRow.dataset.type === 'SUB') {
-          const targetSubchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${targetRow.dataset.id || targetRow.id}"]`);
+          const targetSubchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + (targetRow.dataset.id || targetRow.id) + '"]');
           if (targetSubchildren.length > 0) {
             insertAfter = targetSubchildren[targetSubchildren.length - 1];
           }
@@ -971,7 +976,7 @@
     }
     
     function showCompletedLine(rowId) {
-      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
       if (!row) return;
       
       // Check if line already exists
@@ -989,7 +994,7 @@
     }
     
     function hideCompletedLine(rowId) {
-      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
       if (!row) return;
       
       const line = row.querySelector('.ad-completed-line');
@@ -1068,13 +1073,13 @@
         const tbody = document.querySelector('#schedule-container tbody');
         if (tbody) {
           order.forEach(rowId => {
-            const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+            const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
             if (row) {
               tbody.appendChild(row);
               
               // If this is a SUB row, also move its subchildren
               if (row.dataset.type === 'SUB') {
-                const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${rowId}"]`);
+                const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + rowId + '"]');
                 subchildren.forEach(child => tbody.appendChild(child));
               }
             }
@@ -1115,13 +1120,13 @@
       
       // Reorder rows - move each row and its subchildren
       order.forEach(rowId => {
-        const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+        const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
         if (row) {
           tbody.appendChild(row);
           
           // If this is a SUB row, also move its subchildren
           if (row.dataset.type === 'SUB') {
-            const subchildren = tbody.querySelectorAll(`tr.subchild[data-parent="${rowId}"]`);
+            const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + rowId + '"]');
             subchildren.forEach(child => tbody.appendChild(child));
           }
         }
@@ -1137,7 +1142,7 @@
       if (data.source === 'ad') return;
       
       const { rowId, duration } = data;
-      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
       if (!row) return;
       
       const durationCell = row.querySelector('td[data-key="duration"]');
@@ -1162,7 +1167,7 @@
       const { rowId, marked } = data;
       
       // Find the mark button for this row
-      const row = document.querySelector(`tr[data-id="${rowId}"], tr#${rowId}`);
+      const row = document.querySelector('tr[data-id="' + rowId + '"], tr#' + rowId);
       const btn = row?.querySelector('.ad-mark-btn');
       
       if (marked) {
@@ -1281,7 +1286,13 @@
       setTimeout(() => el.classList.remove('show'), 2000);
     }
     
-    init();
+    // Start when DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
   </script>
 </body>
 </html>
