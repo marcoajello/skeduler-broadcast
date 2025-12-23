@@ -744,8 +744,9 @@
     function displaySchedule(html) {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error').style.display = 'none';
-      document.getElementById('schedule-container').style.display = 'block';
-      document.getElementById('schedule-container').innerHTML = html;
+      const container = document.getElementById('schedule-container');
+      container.style.display = 'block';
+      container.innerHTML = html;
       document.getElementById('updated-at').textContent = 'Updated: ' + new Date().toLocaleTimeString();
       
       // Remove injected style tags that may have table styling
@@ -773,10 +774,13 @@
       const headerImg = document.querySelector('#schedule-container .header-image');
       if (headerImg && table) {
         requestAnimationFrame(() => {
-          const tableWidth = table.offsetWidth;
-          const headerWidth = headerImg.offsetWidth;
-          const offset = (tableWidth - headerWidth) / 2;
-          headerImg.style.marginLeft = offset + 'px';
+          const tableRect = table.getBoundingClientRect();
+          const headerRect = headerImg.getBoundingClientRect();
+          const tableCenterX = tableRect.left + tableRect.width / 2;
+          const headerCenterX = headerRect.left + headerRect.width / 2;
+          const offset = tableCenterX - headerCenterX;
+          headerImg.style.position = 'relative';
+          headerImg.style.left = offset + 'px';
         });
       }
     }
