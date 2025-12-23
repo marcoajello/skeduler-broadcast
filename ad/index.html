@@ -310,13 +310,15 @@
     }
     
     /* ===== DRAG COLUMN ===== */
-    .ad-drag-col {
+    .ad-drag-col,
+    col[data-key="drag"] {
       width: 36px;
       min-width: 36px;
       max-width: 36px;
     }
     
-    .ad-drag-th, .ad-drag-td {
+    #schedule-container th[data-key="drag"],
+    #schedule-container td[data-key="drag"] {
       width: 36px;
       min-width: 36px;
       max-width: 36px;
@@ -324,13 +326,9 @@
       text-align: center;
       vertical-align: middle;
       background: #4b5563;
-      border: 2px solid #ffffff;
-      border-right: 1px solid #ffffff;
-    }
-    
-    /* Remove top border doubling on body cells */
-    .ad-drag-td {
-      border-top: none;
+      outline: 2px solid #ffffff;
+      outline-offset: -2px;
+      border: none;
     }
     
     .ad-drag-handle {
@@ -356,13 +354,15 @@
     }
     
     /* ===== ACTIONS COLUMN ===== */
-    .ad-actions-col {
+    .ad-actions-col,
+    col[data-key="actions"] {
       width: 50px;
       min-width: 50px;
       max-width: 50px;
     }
     
-    .ad-actions-th, .ad-actions-td {
+    #schedule-container th[data-key="actions"],
+    #schedule-container td[data-key="actions"] {
       width: 50px;
       min-width: 50px;
       max-width: 50px;
@@ -370,32 +370,30 @@
       text-align: center;
       vertical-align: middle;
       background: #4b5563;
-      border: 2px solid #ffffff;
-      border-left: 1px solid #ffffff;
-    }
-    
-    /* Remove top border doubling on body cells */
-    .ad-actions-td {
-      border-top: none;
+      outline: 2px solid #ffffff;
+      outline-offset: -2px;
+      border: none;
     }
     
     /* Rounded outer corners */
-    #schedule-container thead tr:first-child .ad-drag-th {
-      border-top-left-radius: 8px;
+    #schedule-container thead tr:first-child th[data-key="drag"] {
+      border-top-left-radius: 6px;
+      overflow: hidden;
     }
     
-    #schedule-container thead tr:first-child .ad-actions-th {
-      border-top-right-radius: 8px;
+    #schedule-container thead tr:first-child th[data-key="actions"] {
+      border-top-right-radius: 6px;
+      overflow: hidden;
     }
     
-    #schedule-container tbody tr:last-child .ad-drag-td {
-      border-bottom-left-radius: 8px;
-      border-bottom: 2px solid #ffffff;
+    #schedule-container tbody tr:last-child td[data-key="drag"] {
+      border-bottom-left-radius: 6px;
+      overflow: hidden;
     }
     
-    #schedule-container tbody tr:last-child .ad-actions-td {
-      border-bottom-right-radius: 8px;
-      border-bottom: 2px solid #ffffff;
+    #schedule-container tbody tr:last-child td[data-key="actions"] {
+      border-bottom-right-radius: 6px;
+      overflow: hidden;
     }
     
     .ad-mark-btn {
@@ -763,33 +761,38 @@
         const dragTh = document.createElement('th');
         dragTh.className = 'ad-drag-th';
         dragTh.dataset.key = 'drag';
+        dragTh.style.cssText = 'width:36px;min-width:36px;max-width:36px;padding:0;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border-top-left-radius:6px;overflow:hidden;border:none;';
         dragTh.innerHTML = '';
         thead.insertBefore(dragTh, thead.firstChild);
         
         const actionsTh = document.createElement('th');
         actionsTh.className = 'ad-actions-th';
         actionsTh.dataset.key = 'actions';
+        actionsTh.style.cssText = 'width:50px;min-width:50px;max-width:50px;padding:4px;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border-top-right-radius:6px;overflow:hidden;border:none;';
         actionsTh.innerHTML = '';
         thead.appendChild(actionsTh);
       }
       
       // Add drag and actions cells to each row (including subchildren)
       const rows = table.querySelectorAll('tbody tr');
+      const rowsArray = Array.from(rows).filter(row => row.dataset.id || row.id);
+      const lastRowIndex = rowsArray.length - 1;
       
-      rows.forEach(row => {
+      rowsArray.forEach((row, index) => {
         // Get row ID - check both data-id and id attributes
         const rowId = row.dataset.id || row.id;
         
-        // Skip rows without IDs (like separator rows)
-        if (!rowId) return;
-        
         // Check if this is a subchild row
         const isSubchild = row.classList.contains('subchild');
+        const isLastRow = index === lastRowIndex;
         
         // Add drag cell at start
         const dragTd = document.createElement('td');
         dragTd.className = 'ad-drag-td';
         dragTd.dataset.key = 'drag';
+        let dragStyle = 'width:36px;min-width:36px;max-width:36px;padding:0;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border:none;';
+        if (isLastRow) dragStyle += 'border-bottom-left-radius:6px;overflow:hidden;';
+        dragTd.style.cssText = dragStyle;
         
         const dragHandle = document.createElement('div');
         dragHandle.className = 'ad-drag-handle';
@@ -809,6 +812,9 @@
         const actionsTd = document.createElement('td');
         actionsTd.className = 'ad-actions-td';
         actionsTd.dataset.key = 'actions';
+        let actionsStyle = 'width:50px;min-width:50px;max-width:50px;padding:4px;text-align:center;vertical-align:middle;background:#4b5563;outline:2px solid #ffffff;outline-offset:-2px;border:none;';
+        if (isLastRow) actionsStyle += 'border-bottom-right-radius:6px;overflow:hidden;';
+        actionsTd.style.cssText = actionsStyle;
         
         const markBtn = document.createElement('button');
         markBtn.className = 'ad-mark-btn' + (markedRows.has(rowId) ? ' marked' : '');
