@@ -217,60 +217,60 @@
     /* The schedule HTML has .completed-line elements that are display:none by default */
     /* They show when body has .show-progress class */
     body.show-progress .completed-line {
-      display: block !important;
+      display: block;
     }
     
     /* Hide when progress is hidden */
     body:not(.show-progress) .completed-line {
-      display: none !important;
+      display: none;
     }
     
     /* ===== TAG PILLS - Override inline styles from captured HTML ===== */
     #schedule-container .tags-pills {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      flex-direction: row !important;
-      gap: 4px !important;
-      padding: 4px !important;
-      align-items: flex-start !important;
-      align-content: flex-start !important;
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: row;
+      gap: 4px;
+      padding: 4px;
+      align-items: flex-start;
+      align-content: flex-start;
     }
     
     #schedule-container .tag-pill {
-      display: inline-flex !important;
-      width: auto !important;
-      max-width: none !important;
-      flex: 0 0 auto !important;
-      align-items: center !important;
-      gap: 4px !important;
-      padding: 2px 8px 2px 3px !important;
-      border-radius: 999px !important;
-      font-size: 10px !important;
-      font-weight: 600 !important;
-      white-space: nowrap !important;
-      box-sizing: border-box !important;
+      display: inline-flex;
+      width: auto;
+      max-width: none;
+      flex: 0 0 auto;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px 2px 3px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+      box-sizing: border-box;
     }
     
     #schedule-container .tag-pill img {
-      width: 20px !important;
-      height: 20px !important;
-      min-width: 20px !important;
-      min-height: 20px !important;
-      max-width: 20px !important;
-      max-height: 20px !important;
-      border-radius: 50% !important;
-      object-fit: cover !important;
-      flex-shrink: 0 !important;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+      max-width: 20px;
+      max-height: 20px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
     }
     
     #schedule-container .tag-pill .tag-dummy-circle {
-      width: 20px !important;
-      height: 20px !important;
-      min-width: 20px !important;
-      min-height: 20px !important;
-      border-radius: 50% !important;
-      display: inline-block !important;
-      flex-shrink: 0 !important;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      min-height: 20px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
     }
     
     /* ===== SCHEDULE HEADER IMAGE ===== */
@@ -370,11 +370,13 @@
   </div>
 
   <script>
+  (function() {
+    'use strict';
+    
     const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
     
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
+    let supabase = null;
     let broadcastCode = null;
     let broadcastData = null;
     let refreshInterval = null;
@@ -388,6 +390,9 @@
         showError('No broadcast code provided');
         return;
       }
+      
+      // Initialize Supabase
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       
       // Setup progress toggle (sharpie lines)
       const sharpieToggle = document.getElementById('sharpieToggle');
@@ -505,7 +510,13 @@
       text.textContent = 'OFFLINE';
     }
     
-    init();
+    // Start when DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
   </script>
 </body>
 </html>
