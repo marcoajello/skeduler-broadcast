@@ -282,6 +282,7 @@
     }
     
     .tags-pills {
+      flex: 1;
       display: flex;
       flex-wrap: wrap;
       gap: 3px;
@@ -291,6 +292,7 @@
       pointer-events: none;
       align-items: flex-start;
       align-content: flex-start;
+      justify-content: flex-start;
     }
     
     .tag-pill {
@@ -310,8 +312,7 @@
       position: relative;
       box-sizing: border-box;
       white-space: nowrap;
-      height: fit-content;
-      align-self: flex-start;
+      flex: 0 0 auto;
     }
     
     .tag-pill.image-tag img {
