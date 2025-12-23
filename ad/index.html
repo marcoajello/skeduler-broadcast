@@ -609,9 +609,6 @@
     let isLive = false;
     let markedRows = new Set();
     
-    // Drag state
-    let draggedRow = null;
-    
     async function init() {
       const params = new URLSearchParams(window.location.search);
       channelCode = params.get('c') || params.get('code') || params.get('channel');
