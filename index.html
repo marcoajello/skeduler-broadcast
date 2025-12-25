@@ -31,23 +31,26 @@
     
     /* ===== HEADER ===== */
     .header {
-      position: sticky;
+      position: fixed;
       top: 0;
+      left: 0;
+      right: 0;
       z-index: 100;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 12px 16px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       min-height: 48px;
+      width: 100%;
     }
     
     .header-left {
       display: flex;
       align-items: center;
       gap: 8px;
-      justify-self: start;
+      flex: 1;
     }
     
     .header-logo {
@@ -66,8 +69,10 @@
     }
     
     .header-center {
-      justify-self: center;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
     }
     
     .channel-name {
@@ -84,7 +89,13 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      justify-self: end;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    
+    /* Add padding to body to account for fixed header */
+    body {
+      padding-top: 48px;
     }
     
     /* ===== LIVE INDICATOR ===== */
@@ -343,22 +354,19 @@
     /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 768px) {
       .header {
-        grid-template-columns: 1fr auto auto;
-        gap: 8px;
         padding: 10px 12px;
-        width: 100%;
       }
       
       .header-left {
-        justify-self: start;
+        flex: 0 0 auto;
       }
       
       .header-center {
-        justify-self: center;
+        flex: 1;
       }
       
       .header-right {
-        justify-self: end;
+        flex: 0 0 auto;
         gap: 8px;
       }
       
