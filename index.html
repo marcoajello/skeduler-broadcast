@@ -343,26 +343,23 @@
     /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 768px) {
       .header {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto;
+        grid-template-columns: 1fr auto auto;
         gap: 8px;
         padding: 10px 12px;
+        width: 100%;
       }
       
       .header-left {
-        order: 1;
-        justify-self: center;
+        justify-self: start;
       }
       
       .header-center {
-        order: 0;
         justify-self: center;
       }
       
       .header-right {
-        position: absolute;
-        right: 12px;
-        top: 10px;
+        justify-self: end;
+        gap: 8px;
       }
       
       .channel-name {
