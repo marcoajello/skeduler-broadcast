@@ -195,10 +195,8 @@
     #schedule-container {
       background: #000;
       border-radius: 8px;
-      overflow-x: auto;
+      overflow: visible;
       -webkit-overflow-scrolling: touch;
-      display: inline-block;
-      min-width: 100%;
     }
     
     #schedule-container table {
@@ -207,13 +205,29 @@
     }
     
     #schedule-container .schedule-scroll {
-      overflow-x: auto;
+      overflow: visible;
       -webkit-overflow-scrolling: touch;
       background: #000;
     }
     
     .content {
       background: #000;
+      overflow: visible;
+    }
+    
+    /* Mobile: scale down the table to fit screen */
+    @media (max-width: 768px) {
+      #schedule-container {
+        transform-origin: top left;
+        transform: scale(var(--mobile-scale, 0.4));
+        width: max-content;
+      }
+      
+      .content {
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
     }
     
     /* ===== SHARPIE LINES ===== */
@@ -521,6 +535,27 @@
       refreshInterval = setInterval(loadBroadcast, 30000);
     }
     
+    function autoScaleTable() {
+      // Only scale on mobile
+      if (window.innerWidth > 768) return;
+      
+      const container = document.getElementById('schedule-container');
+      const table = container.querySelector('table');
+      if (!table) return;
+      
+      // Get actual table width
+      const tableWidth = table.scrollWidth || table.offsetWidth;
+      const screenWidth = window.innerWidth - 16; // account for padding
+      
+      if (tableWidth > screenWidth) {
+        const scale = screenWidth / tableWidth;
+        document.documentElement.style.setProperty('--mobile-scale', Math.min(scale, 1));
+      }
+    }
+    
+    // Recalculate on resize
+    window.addEventListener('resize', autoScaleTable);
+    
     function toggleSharpie() {
       sharpieVisible = !sharpieVisible;
       const btn = document.getElementById('sharpieToggle');
@@ -588,6 +623,9 @@
         document.getElementById('error').style.display = 'none';
         document.getElementById('schedule-container').style.display = 'block';
         document.getElementById('schedule-container').innerHTML = html;
+        
+        // Auto-scale table to fit mobile screens
+        autoScaleTable();
         
         // Show last updated
         const updated = new Date(broadcast.updated_at);
