@@ -325,6 +325,99 @@
       font-size: 11px;
       color: var(--muted);
     }
+    
+    /* ===== MOBILE RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .header {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        gap: 8px;
+        padding: 10px 12px;
+      }
+      
+      .header-left {
+        order: 1;
+        justify-self: center;
+      }
+      
+      .header-center {
+        order: 0;
+        justify-self: center;
+      }
+      
+      .header-right {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+      }
+      
+      .channel-name {
+        font-size: 12px;
+        max-width: 200px;
+      }
+      
+      .header-logo span {
+        font-size: 10px;
+      }
+      
+      .header-logo svg {
+        width: 16px;
+        height: 16px;
+      }
+      
+      .live-badge {
+        padding: 3px 8px;
+        font-size: 10px;
+      }
+      
+      .content {
+        padding: 8px;
+      }
+      
+      #schedule-container {
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      
+      #schedule-container table {
+        font-size: 11px;
+      }
+      
+      #schedule-container td,
+      #schedule-container th {
+        padding: 4px 6px;
+      }
+      
+      .tag-pill {
+        font-size: 8px;
+        padding: 1px 4px 1px 1px;
+      }
+      
+      .tag-pill img {
+        width: 16px;
+        height: 16px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .header-logo span {
+        display: none;
+      }
+      
+      .channel-name {
+        font-size: 11px;
+        max-width: 150px;
+      }
+      
+      #schedule-container table {
+        font-size: 10px;
+      }
+      
+      #schedule-container td,
+      #schedule-container th {
+        padding: 3px 4px;
+      }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
