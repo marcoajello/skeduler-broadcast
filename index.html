@@ -95,7 +95,7 @@
     
     /* Add padding to body to account for fixed header */
     body {
-      padding-top: 48px;
+      padding-top: 60px;
     }
     
     /* ===== LIVE INDICATOR ===== */
@@ -226,6 +226,16 @@
       overflow: visible;
     }
     
+    /* ===== META BANNER (from embedded HTML) ===== */
+    #schedule-container .meta-banner {
+      margin-bottom: 0;
+    }
+    
+    /* ===== HEADER DESIGN CONTAINER ===== */
+    #schedule-container .header-design-container {
+      margin-bottom: 0;
+    }
+    
     /* Mobile: scale down the table to fit screen */
     @media (max-width: 768px) {
       #schedule-container {
@@ -251,8 +261,9 @@
     }
     
     body.sharpie-hidden .sharpie-line-element,
-    body.sharpie-hidden .row-complete::after {
-      display: none;
+    body.sharpie-hidden .row-complete::after,
+    body.sharpie-hidden .completed-line {
+      display: none !important;
     }
     
     /* ===== SCHEDULE HEADER IMAGE ===== */
@@ -623,11 +634,15 @@
         
         const html = await response.text();
         
+        // Extract just the body content from the fetched HTML
+        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+        const bodyContent = bodyMatch ? bodyMatch[1] : html;
+        
         // Display
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'none';
         document.getElementById('schedule-container').style.display = 'block';
-        document.getElementById('schedule-container').innerHTML = html;
+        document.getElementById('schedule-container').innerHTML = bodyContent;
         
         // Auto-scale table to fit mobile screens
         autoScaleTable();
