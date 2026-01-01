@@ -431,6 +431,7 @@
     
     await loadScheduleFromBucket();
     subscribeToChannel();
+    subscribeToLiveStatus();
   }
   
   async function loadScheduleFromBucket() {
@@ -685,7 +686,6 @@
       document.removeEventListener('mouseup', endDrag);
       document.removeEventListener('touchend', endDrag);
       
-      renumberRows();
       broadcastRowOrder();
       updateAllSharpieLines();
     }
@@ -737,41 +737,6 @@
         line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
         line.style.left = (table.offsetLeft + 36) + 'px';
         line.style.width = (table.offsetWidth - 72) + 'px';
-      }
-    });
-  }
-  
-  function renumberRows() {
-    const tbody = document.querySelector('#scheduleScroll tbody');
-    if (!tbody) return;
-    
-    let idx = 1;
-    let parentIdx = null;
-    let subLetterCode = 0;
-    
-    tbody.querySelectorAll('tr[data-id]').forEach(tr => {
-      const idxCell = tr.querySelector('td[data-key="idx"]');
-      if (!idxCell) return;
-      
-      const isSubchild = tr.classList.contains('subchild') || tr.dataset.parent;
-      const type = tr.dataset.type;
-      
-      if (isSubchild) {
-        // Sub-event: use parent number + letter (e.g., 7A, 7B)
-        const letter = String.fromCharCode(65 + subLetterCode);
-        idxCell.textContent = parentIdx + letter;
-        subLetterCode++;
-      } else if (type === 'SUB') {
-        // SUB row (parent of sub-events)
-        parentIdx = idx;
-        subLetterCode = 0;
-        idxCell.textContent = idx;
-        idx++;
-      } else {
-        // Regular row
-        parentIdx = null;
-        idxCell.textContent = idx;
-        idx++;
       }
     });
   }
@@ -834,7 +799,6 @@
             subEvents.forEach(sub => tbody.appendChild(sub));
           }
         });
-        renumberRows();
         updateAllSharpieLines();
       })
       .on('broadcast', { event: 'duration-change' }, ({ payload }) => {
@@ -909,7 +873,6 @@
             }
           });
         }
-        renumberRows();
         updateAllSharpieLines();
       })
       .subscribe((status) => {
@@ -1032,17 +995,33 @@
     badge.classList.add(isLiveMode ? 'live' : 'manual');
   }
   
-  setInterval(async () => {
-    if (!channelCode) return;
-    try {
-      const { data } = await supabase.from('broadcasts').select('auto_update').eq('code', channelCode.toUpperCase()).single();
-      if (data) {
-        const wasLive = isLiveMode;
-        isLiveMode = data.auto_update === true;
-        if (wasLive !== isLiveMode) updateLiveStatus();
-      }
-    } catch (e) {}
-  }, 30000);
+  // Subscribe to realtime changes on broadcast record for instant LIVE badge updates
+  let broadcastSubscription = null;
+  function subscribeToLiveStatus() {
+    if (!channelCode || !supabase) return;
+    
+    broadcastSubscription = supabase
+      .channel('broadcast-status-' + channelCode.toUpperCase())
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'broadcasts',
+        filter: `code=eq.${channelCode.toUpperCase()}`
+      }, (payload) => {
+        console.log('[AD Sync] Broadcast record updated:', payload);
+        if (payload.new && payload.new.auto_update !== undefined) {
+          const wasLive = isLiveMode;
+          isLiveMode = payload.new.auto_update === true;
+          if (wasLive !== isLiveMode) {
+            console.log('[AD Sync] LIVE status changed:', isLiveMode ? 'LIVE' : 'MANUAL');
+            updateLiveStatus();
+          }
+        }
+      })
+      .subscribe((status) => {
+        console.log('[AD Sync] Broadcast status subscription:', status);
+      });
+  }
 
   document.addEventListener('DOMContentLoaded', init);
 })();
