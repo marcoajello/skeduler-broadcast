@@ -547,6 +547,9 @@
       
       await loadBroadcast();
       
+      // Subscribe to realtime LIVE status changes
+      subscribeToLiveStatus();
+      
       // Auto-refresh every 30 seconds
       refreshInterval = setInterval(loadBroadcast, 30000);
     }
@@ -670,6 +673,26 @@
         badge.classList.add('manual');
         text.textContent = 'MANUAL';
       }
+    }
+    
+    // Subscribe to realtime changes on broadcast record for instant LIVE badge updates
+    function subscribeToLiveStatus() {
+      if (!broadcastCode) return;
+      
+      supabase
+        .channel('broadcast-status-' + broadcastCode.toUpperCase())
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'broadcasts',
+          filter: `code=eq.${broadcastCode.toUpperCase()}`
+        }, (payload) => {
+          console.log('[Broadcast] Record updated:', payload);
+          if (payload.new && payload.new.auto_update !== undefined) {
+            updateLiveBadge(payload.new.auto_update === true);
+          }
+        })
+        .subscribe();
     }
     
     function showError(msg) {
