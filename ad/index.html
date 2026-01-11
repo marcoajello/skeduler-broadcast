@@ -220,6 +220,9 @@
     
     /* ===== DRAGGING ===== */
     tr.dragging { opacity: 0.6; outline: 2px dashed var(--accent); }
+    body.is-dragging { user-select: none; -webkit-user-select: none; cursor: grabbing !important; }
+    body.is-dragging * { user-select: none; -webkit-user-select: none; }
+    td[data-key="drag"] { user-select: none; -webkit-user-select: none; }
     
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
@@ -615,31 +618,37 @@
     function startDrag(e) {
       const row = e.currentTarget.closest('tr[data-id]');
       if (!row) return;
-      
+
       // Don't allow dragging sub-events independently
       if (row.dataset.parent) return;
-      
-      // Prevent text selection
-      if (e.type.startsWith('touch')) {
-        e.preventDefault();
-      }
-      
+
+      // Prevent text selection for both mouse and touch
+      e.preventDefault();
+
       const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
-      
+
       dragState = {
         row: row,
         startY: clientY,
         currentY: clientY,
         scrollContainer: document.querySelector('.schedule-scroll')
       };
-      
+
       row.classList.add('dragging');
       draggingRow = row;
-      
+
+      // Prevent text selection during drag
+      document.body.classList.add('is-dragging');
+      document.addEventListener('selectstart', preventSelect);
+
       document.addEventListener('mousemove', moveDrag);
       document.addEventListener('touchmove', moveDrag, { passive: false });
       document.addEventListener('mouseup', endDrag);
       document.addEventListener('touchend', endDrag);
+    }
+
+    function preventSelect(e) {
+      e.preventDefault();
     }
     
     function moveDrag(e) {
@@ -685,16 +694,20 @@
     
     function endDrag() {
       if (!dragState) return;
-      
+
       dragState.row.classList.remove('dragging');
       draggingRow = null;
       dragState = null;
-      
+
+      // Re-enable text selection
+      document.body.classList.remove('is-dragging');
+      document.removeEventListener('selectstart', preventSelect);
+
       document.removeEventListener('mousemove', moveDrag);
       document.removeEventListener('touchmove', moveDrag);
       document.removeEventListener('mouseup', endDrag);
       document.removeEventListener('touchend', endDrag);
-      
+
       broadcastRowOrder();
       updateAllSharpieLines();
     }
