@@ -356,7 +356,7 @@
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v16.4 -->
+  <!-- v17.0 - Added row-times handler, reconnection logic, heartbeat -->
 </head>
 <body>
   <div class="header">
@@ -409,6 +409,15 @@
   let markedRows = new Set();
   let linesHidden = false;
   let isLiveMode = false;
+
+  // Reconnection state
+  let reconnectAttempts = 0;
+  let reconnectTimer = null;
+  let heartbeatTimer = null;
+  let lastHeartbeat = Date.now();
+  const MAX_RECONNECT_ATTEMPTS = 10;
+  const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+  const HEARTBEAT_TIMEOUT = 45000; // 45 seconds without response = reconnect
   
   async function init() {
     // Restore sharpie visibility state
@@ -875,14 +884,108 @@
         }
         updateAllSharpieLines();
       })
+      .on('broadcast', { event: 'row-times' }, ({ payload }) => {
+        // Update START and END times from producer after reorder/duration change
+        if (!payload?.times) return;
+        Object.entries(payload.times).forEach(([rowId, times]) => {
+          const row = document.querySelector(`tr[data-id="${rowId}"]`);
+          if (!row) return;
+          const startCell = row.querySelector('td[data-key="start"]');
+          const endCell = row.querySelector('td[data-key="end"]');
+          if (startCell && times.start) startCell.textContent = times.start;
+          if (endCell && times.end) endCell.textContent = times.end;
+        });
+      })
+      .on('broadcast', { event: 'sync-status' }, ({ payload }) => {
+        // Producer is telling us sync status (live/offline)
+        if (payload?.live !== undefined) {
+          isLiveMode = payload.live;
+          updateLiveStatus();
+        }
+      })
+      .on('broadcast', { event: 'heartbeat' }, () => {
+        // Heartbeat received from producer - we're still connected
+        lastHeartbeat = Date.now();
+      })
       .subscribe((status) => {
+        console.log('[AD] Channel subscription status:', status);
         if (status === 'SUBSCRIBED') {
+          reconnectAttempts = 0;
+          clearTimeout(reconnectTimer);
           updateFooter('Connected');
           broadcastEvent('request-sync', {});
-        } else {
+          startHeartbeat();
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           updateFooter('Disconnected');
+          stopHeartbeat();
+          scheduleReconnect();
+        } else {
+          updateFooter(status);
         }
       });
+  }
+
+  function startHeartbeat() {
+    stopHeartbeat();
+    lastHeartbeat = Date.now();
+
+    heartbeatTimer = setInterval(() => {
+      const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+
+      // Send our own heartbeat ping
+      broadcastEvent('heartbeat-ping', { timestamp: Date.now() });
+
+      // Check if we've lost connection (no heartbeat from producer)
+      if (timeSinceLastHeartbeat > HEARTBEAT_TIMEOUT) {
+        console.log('[AD] Heartbeat timeout - reconnecting');
+        updateFooter('Connection lost - reconnecting...');
+        stopHeartbeat();
+        scheduleReconnect();
+      }
+    }, HEARTBEAT_INTERVAL);
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatTimer) {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = null;
+    }
+  }
+
+  function scheduleReconnect() {
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      updateFooter('Connection failed - please refresh');
+      return;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+    reconnectAttempts++;
+
+    console.log(`[AD] Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms`);
+    updateFooter(`Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      reconnect();
+    }, delay);
+  }
+
+  async function reconnect() {
+    console.log('[AD] Attempting reconnect...');
+
+    // Cleanup old channel
+    if (channel) {
+      try {
+        await channel.unsubscribe();
+      } catch (e) {
+        console.log('[AD] Error unsubscribing:', e);
+      }
+      channel = null;
+    }
+
+    // Resubscribe
+    subscribeToChannel();
   }
   
   function broadcastEvent(event, payload) {
@@ -1022,6 +1125,34 @@
         console.log('[AD Sync] Broadcast status subscription:', status);
       });
   }
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    stopHeartbeat();
+    clearTimeout(reconnectTimer);
+    if (channel) {
+      try {
+        channel.unsubscribe();
+      } catch (e) {}
+    }
+    if (broadcastSubscription) {
+      try {
+        broadcastSubscription.unsubscribe();
+      } catch (e) {}
+    }
+  });
+
+  // Handle visibility change - reconnect when page becomes visible again
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && channelCode) {
+      // Check if we need to reconnect
+      const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
+      if (timeSinceLastHeartbeat > HEARTBEAT_TIMEOUT) {
+        console.log('[AD] Page visible after timeout - reconnecting');
+        scheduleReconnect();
+      }
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', init);
 })();
