@@ -55,12 +55,14 @@
     .live-badge.manual .live-text { display: none; }
     
     .header-progress-btn {
-      width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
-      background: var(--ad-purple); cursor: pointer;
+      width: 28px; height: 28px; padding: 4px; border-radius: 50%; border: 2px solid #f44336;
+      background: #f44336; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: var(--ad-purple); }
+    .header-progress-btn.lines-hidden { background: transparent; border-color: #f44336; }
+    .header-progress-btn.lines-hidden:hover { background: rgba(244,67,54,0.1); }
     .header-progress-btn:not(.lines-hidden) { background: #f44336; }
     
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.9); } }
@@ -210,12 +212,14 @@
       width: 22px; height: 22px;
       min-width: 22px; min-height: 22px;
       display: inline-flex; align-items: center; justify-content: center;
-      background: white; color: var(--accent);
-      border: 1px solid #e0e0e0; border-radius: 4px;
+      background: transparent; color: #9ca3af;
+      border: 1px solid #f44336; border-radius: 50%;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: none;
+      transition: all 0.15s ease;
     }
-    button.sharpie svg { width: 14px; height: 14px; }
+    button.sharpie:hover { background: rgba(244,67,54,0.1); border-color: #f44336; }
+    button.sharpie svg { width: 12px; height: 12px; }
     button.sharpie.active { background: #f44336; color: white; border-color: #d32f2f; }
     
     /* ===== DRAGGING ===== */
@@ -310,12 +314,17 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       font-size: 9px;
       font-weight: 600;
-      text-transform: uppercase;
       letter-spacing: 0.3px;
       position: relative;
       box-sizing: border-box;
       white-space: nowrap;
       flex: 0 0 auto;
+    }
+    
+    .tag-pill span {
+      text-transform: none;
+      font-size: inherit;
+    }
     }
     
     .tag-pill.image-tag img {
