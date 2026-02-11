@@ -221,6 +221,7 @@
       border-radius: 8px;
       overflow: visible;
       -webkit-overflow-scrolling: touch;
+      display: inline-block;
     }
     
     #schedule-container table {
@@ -237,6 +238,7 @@
     .content {
       background: #000;
       overflow: visible;
+      text-align: center;
     }
     
     /* ===== META BANNER (from embedded HTML) ===== */
@@ -582,6 +584,9 @@
       // Subscribe to realtime LIVE status changes
       subscribeToLiveStatus();
       
+      // Subscribe to AD viewer's sharpie events
+      subscribeToAdSync();
+      
       // Auto-refresh every 30 seconds
       refreshInterval = setInterval(loadBroadcast, 30000);
     }
@@ -706,6 +711,9 @@
         // Auto-scale table to fit mobile screens
         autoScaleTable();
         
+        // Subscribe to live sharpie events from AD/producer
+        subscribeToSharpieChannel();
+        
         // Show last updated
         const updated = new Date(broadcast.updated_at);
         document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleString();
@@ -714,6 +722,88 @@
         console.error('Load error:', err);
         showError('Failed to load broadcast');
       }
+    }
+    
+    // === SHARPIE LIVE SYNC ===
+    let sharpieChannel = null;
+    const markedRows = new Set();
+    
+    function subscribeToSharpieChannel() {
+      if (sharpieChannel) return; // already subscribed
+      
+      sharpieChannel = supabase.channel(`ad-sync-${broadcastCode.toUpperCase()}`, {
+        config: { broadcast: { self: false } }
+      });
+      
+      sharpieChannel
+        .on('broadcast', { event: 'sharpie-toggle' }, ({ payload }) => {
+          if (!payload?.rowId) return;
+          const row = document.querySelector(`#schedule-container tr[data-id="${payload.rowId}"]`);
+          if (!row) return;
+          
+          if (payload.marked) {
+            markedRows.add(payload.rowId);
+            addSharpieLineElement(row);
+          } else {
+            markedRows.delete(payload.rowId);
+            const line = document.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+            if (line) line.remove();
+          }
+        })
+        .on('broadcast', { event: 'sharpie-visibility' }, ({ payload }) => {
+          if (payload.hidden) {
+            document.body.classList.add('sharpie-hidden');
+            document.getElementById('sharpieToggle')?.classList.add('lines-hidden');
+          } else {
+            document.body.classList.remove('sharpie-hidden');
+            document.getElementById('sharpieToggle')?.classList.remove('lines-hidden');
+          }
+        })
+        .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
+          // On full sync, re-apply sharpie rows if provided
+          if (payload?.sharpieRows) {
+            // Clear existing
+            document.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
+            markedRows.clear();
+            payload.sharpieRows.forEach(rowId => {
+              markedRows.add(rowId);
+              const row = document.querySelector(`#schedule-container tr[data-id="${rowId}"]`);
+              if (row) addSharpieLineElement(row);
+            });
+          }
+        })
+        .subscribe();
+      
+      console.log('[Broadcast] Subscribed to sharpie channel: ad-sync-' + broadcastCode.toUpperCase());
+    }
+    
+    function addSharpieLineElement(row) {
+      const container = document.getElementById('schedule-container');
+      const table = container?.querySelector('table');
+      if (!container || !table) return;
+      
+      // Remove existing line for this row
+      container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
+      
+      const line = document.createElement('div');
+      line.className = 'sharpie-line-element';
+      line.dataset.rowId = row.dataset.id;
+      
+      // Position relative to the container
+      const containerRect = container.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      
+      line.style.position = 'absolute';
+      line.style.top = (rowRect.top - containerRect.top + rowRect.height / 2 - 2) + 'px';
+      line.style.left = '0px';
+      line.style.width = table.offsetWidth + 'px';
+      
+      // Need container to be positioned
+      if (getComputedStyle(container).position === 'static') {
+        container.style.position = 'relative';
+      }
+      
+      container.appendChild(line);
     }
     
     function updateLiveBadge(isLive) {
