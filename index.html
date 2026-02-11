@@ -177,6 +177,10 @@
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     
     .loading, .error {
@@ -221,7 +225,7 @@
       border-radius: 8px;
       overflow: visible;
       -webkit-overflow-scrolling: touch;
-      display: inline-block;
+      position: relative;
     }
     
     #schedule-container table {
@@ -235,11 +239,6 @@
       background: #000;
     }
     
-    .content {
-      background: #000;
-      overflow: visible;
-      text-align: center;
-    }
     
     /* ===== META BANNER (from embedded HTML) ===== */
     #schedule-container .meta-banner {
@@ -772,9 +771,19 @@
             });
           }
         })
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[Broadcast] Subscribed to sharpie channel, requesting sync...');
+            // Request current state from producer/AD
+            sharpieChannel.send({
+              type: 'broadcast',
+              event: 'request-sync',
+              payload: { source: 'broadcast-viewer' }
+            });
+          }
+        });
       
-      console.log('[Broadcast] Subscribed to sharpie channel: ad-sync-' + broadcastCode.toUpperCase());
+      console.log('[Broadcast] Subscribing to sharpie channel: ad-sync-' + broadcastCode.toUpperCase());
     }
     
     function addSharpieLineElement(row) {
