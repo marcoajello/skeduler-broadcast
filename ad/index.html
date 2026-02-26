@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SKEDULER AD</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../config.js"></script>
   <style>
     :root {
       --bg: #0a0e13;
@@ -402,8 +403,8 @@
 (function() {
   'use strict';
   
-  const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
   
   let supabase = null;
   let channel = null;
@@ -482,20 +483,57 @@
     }
   }
   
+  function initDayTabs(container) {
+    const tabs = container.querySelectorAll('.bday-tab');
+    if (!tabs.length) return;
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        var dayId = tab.getAttribute('data-day-id');
+        container.querySelectorAll('.broadcast-day-section').forEach(function(s) { s.style.display = 'none'; });
+        var target = container.querySelector('.broadcast-day-section[data-day-id="' + dayId + '"]');
+        if (target) target.style.display = 'block';
+        tabs.forEach(function(t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+      });
+    });
+  }
+
   function injectSchedule(html) {
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
-    
-    // Remove buttons and style tags from loaded HTML
-    container.querySelectorAll('button').forEach(btn => btn.remove());
-    container.querySelectorAll('style').forEach(s => s.remove());
+
+    // Remove buttons and style tags from loaded HTML (but NOT day tab buttons/styles)
+    container.querySelectorAll('button:not(.bday-tab)').forEach(btn => btn.remove());
+    container.querySelectorAll('style').forEach(s => {
+      // Keep styles that contain day tab CSS
+      if (!s.textContent.includes('broadcast-day-tabs') && !s.textContent.includes('bday-tab')) {
+        s.remove();
+      }
+    });
     container.querySelectorAll('.completed-line').forEach(el => el.remove());
-    
+
     // DO NOT strip row backgrounds - we need them for colors!
-    
-    setupColumns();
-    setupRowInteractions();
-    initCompletedState();
+
+    // Wire up day tabs
+    initDayTabs(container);
+
+    // If multi-day, set up each day section
+    const hasDayTabs = container.querySelector('.broadcast-day-tabs');
+    if (hasDayTabs) {
+      container.querySelectorAll('.broadcast-day-section').forEach(section => {
+        const table = section.querySelector('table');
+        if (table) {
+          setupColumns(table);
+          setupRowInteractions(table);
+        }
+      });
+      initCompletedState();
+    } else {
+      setupColumns();
+      setupRowInteractions();
+      initCompletedState();
+    }
   }
   
   function initCompletedState() {
@@ -510,8 +548,8 @@
     });
   }
   
-  function setupColumns() {
-    const table = document.querySelector('#scheduleScroll table');
+  function setupColumns(tableArg) {
+    const table = tableArg || document.querySelector('#scheduleScroll table');
     if (!table) return;
     
     const headerRow = table.querySelector('thead tr');
@@ -586,8 +624,8 @@
     return `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
   }
   
-  function setupRowInteractions() {
-    const tbody = document.querySelector('#scheduleScroll tbody');
+  function setupRowInteractions(tableArg) {
+    const tbody = tableArg ? tableArg.querySelector('tbody') : document.querySelector('#scheduleScroll tbody');
     if (!tbody) return;
     
     // Touch + Mouse drag system (replaces HTML5 Drag and Drop)

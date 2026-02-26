@@ -446,6 +446,7 @@
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
 </head>
 <body>
   <div class="header">
@@ -522,9 +523,9 @@
 
   <script>
     (function() {
-    const SUPABASE_URL = 'https://qcnepxcqilqrhayzhlfa.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbmVweGNxaWxxcmhheXpobGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0NTgwMjYsImV4cCI6MjA3ODAzNDAyNn0.Gz7wvMgtu-UtCqw-5MF9s-T-pk-eo2TSw7zOtedWozk';
-    
+    const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
+
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     
     let broadcastCode = null;
@@ -588,6 +589,22 @@
       }
     }
     
+    function initDayTabs(container) {
+      const tabs = container.querySelectorAll('.bday-tab');
+      if (!tabs.length) return;
+
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          var dayId = tab.getAttribute('data-day-id');
+          container.querySelectorAll('.broadcast-day-section').forEach(function(s) { s.style.display = 'none'; });
+          var target = container.querySelector('.broadcast-day-section[data-day-id="' + dayId + '"]');
+          if (target) target.style.display = 'block';
+          tabs.forEach(function(t) { t.classList.remove('active'); });
+          tab.classList.add('active');
+        });
+      });
+    }
+
     async function loadBroadcast() {
       try {
         // Look up broadcast by code
@@ -646,7 +663,10 @@
         document.getElementById('error').style.display = 'none';
         document.getElementById('schedule-container').style.display = 'block';
         document.getElementById('schedule-container').innerHTML = bodyContent;
-        
+
+        // Wire up day tabs (scripts injected via innerHTML don't execute)
+        initDayTabs(document.getElementById('schedule-container'));
+
         // Auto-scale table to fit mobile screens
         autoScaleTable();
         
