@@ -166,6 +166,16 @@
     .qr-btn:hover { background: rgba(248, 81, 73, 0.15); }
     .qr-btn.active { background: var(--live-red, #f85149); color: white; }
     .qr-btn svg { width: 14px; height: 14px; }
+    #day-tabs-bar {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      z-index: 99;
+      background: #161b22;
+    }
+    #day-tabs-bar:empty { display: none; }
+    body.has-day-tabs { padding-top: 108px; }
     .qr-popover { display: none; position: fixed; top: 50px; right: 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; text-align: center; min-width: 220px; }
     .qr-popover.visible { display: block; }
     .qr-popover img { width: 180px; height: 180px; display: block; margin: 0 auto 8px; border-radius: 4px; }
@@ -529,6 +539,7 @@
     </div>
   </div>
   
+  <div id="day-tabs-bar"></div>
   <div class="content">
     <div id="loading" class="loading">
       <div class="spinner"></div>
@@ -650,17 +661,47 @@
     }
     
     function initDayTabs(container) {
-      const tabs = container.querySelectorAll('.bday-tab');
-      if (!tabs.length) return;
+      const tabBar = container.querySelector('.broadcast-day-tabs');
+      if (!tabBar) return;
 
+      // Move the tab bar out of the schedule container to sit below the fixed header
+      const tabBarHost = document.getElementById('day-tabs-bar');
+      if (tabBarHost) {
+        tabBarHost.innerHTML = '';
+        tabBarHost.appendChild(tabBar);
+        document.body.classList.add('has-day-tabs');
+      }
+
+      const tabs = tabBar.querySelectorAll('.bday-tab');
       tabs.forEach(function(tab) {
         tab.addEventListener('click', function() {
           var dayId = tab.getAttribute('data-day-id');
+          // Hide all sections
           container.querySelectorAll('.broadcast-day-section').forEach(function(s) { s.style.display = 'none'; });
+          // Show target section
           var target = container.querySelector('.broadcast-day-section[data-day-id="' + dayId + '"]');
           if (target) target.style.display = 'block';
+          // Update active tab
           tabs.forEach(function(t) { t.classList.remove('active'); });
           tab.classList.add('active');
+
+          // Reposition sharpie lines for the newly visible section
+          // Remove all existing lines first
+          container.querySelectorAll('.sharpie-line-element').forEach(function(el) { el.remove(); });
+          // Re-add lines for marked rows that are in the now-visible section
+          if (typeof markedRows !== 'undefined' && markedRows.size > 0) {
+            setTimeout(function() {
+              markedRows.forEach(function(rowId) {
+                var row = container.querySelector('tr[data-id="' + rowId + '"]');
+                if (row) {
+                  var section = row.closest('.broadcast-day-section');
+                  if (!section || section.style.display !== 'none') {
+                    addSharpieLineElement(row);
+                  }
+                }
+              });
+            }, 50); // small delay for layout to settle
+          }
         });
       });
     }
@@ -819,25 +860,32 @@
     
     function addSharpieLineElement(row) {
       const container = document.getElementById('schedule-container');
-      const table = container?.querySelector('table');
-      if (!container || !table) return;
-      
+      if (!container) return;
+
+      // Find the table containing this row (handles multi-day sections)
+      const table = row.closest('table');
+      if (!table) return;
+
+      // Skip if row is in a hidden day section
+      const section = row.closest('.broadcast-day-section');
+      if (section && section.style.display === 'none') return;
+
       // Remove existing line for this row
       container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
-      
+
       const line = document.createElement('div');
       line.className = 'sharpie-line-element';
       line.dataset.rowId = row.dataset.id;
-      
+
       // Position relative to the container
       const containerRect = container.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();
-      
+
       line.style.position = 'absolute';
       line.style.top = (rowRect.top - containerRect.top + rowRect.height / 2 - 2) + 'px';
       line.style.left = '0px';
       line.style.width = table.offsetWidth + 'px';
-      
+
       // Need container to be positioned
       if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';

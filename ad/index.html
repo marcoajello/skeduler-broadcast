@@ -522,11 +522,28 @@
     tabs.forEach(function(tab) {
       tab.addEventListener('click', function() {
         var dayId = tab.getAttribute('data-day-id');
+        // Cancel any in-progress drag to prevent cross-day row moves
+        if (typeof draggingRow !== 'undefined') draggingRow = null;
+        // Hide all sections
         container.querySelectorAll('.broadcast-day-section').forEach(function(s) { s.style.display = 'none'; });
+        // Show target section
         var target = container.querySelector('.broadcast-day-section[data-day-id="' + dayId + '"]');
         if (target) target.style.display = 'block';
+        // Update active tab
         tabs.forEach(function(t) { t.classList.remove('active'); });
         tab.classList.add('active');
+
+        // Re-setup columns and row interactions for the newly visible section
+        if (target) {
+          var table = target.querySelector('table');
+          if (table) {
+            setupColumns(table);
+            setupRowInteractions(table);
+          }
+        }
+
+        // Reposition sharpie lines for the visible section
+        setTimeout(function() { updateAllSharpieLines(); }, 50);
       });
     });
   }
@@ -546,7 +563,6 @@
     container.querySelectorAll('.completed-line').forEach(el => el.remove());
 
     // DO NOT strip row backgrounds - we need them for colors!
-<<<<<<< HEAD
 
     // Wire up day tabs
     initDayTabs(container);
@@ -567,14 +583,9 @@
       setupRowInteractions();
       initCompletedState();
     }
-=======
-    
-    setupColumns();
-    setupRowInteractions();
-    initCompletedState();
     setupQRCode();
   }
-  
+
   function setupQRCode() {
     const btn = document.getElementById('qrBtn');
     const popover = document.getElementById('qrPopover');
@@ -597,7 +608,6 @@
         btn.classList.remove('active');
       }
     });
->>>>>>> df4c080fb5068ce2dcb4b9e2de5dd5143440bd91
   }
   
   function initCompletedState() {
@@ -835,11 +845,18 @@
   
   function addSharpieLineElement(row) {
     const container = document.getElementById('scheduleScroll');
-    const table = container.querySelector('table');
-    if (!container || !table) return;
-    
+    if (!container) return;
+
+    // Find the table containing this row (handles multi-day sections)
+    const table = row.closest('table');
+    if (!table) return;
+
+    // Skip if row is in a hidden day section
+    const section = row.closest('.broadcast-day-section');
+    if (section && section.style.display === 'none') return;
+
     container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
-    
+
     const line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
@@ -851,17 +868,13 @@
   
   function updateAllSharpieLines() {
     const container = document.getElementById('scheduleScroll');
-    const table = container?.querySelector('table');
-    if (!table) return;
-    
+    if (!container) return;
+
+    // Remove all existing lines and re-add for visible rows
+    container.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
     markedRows.forEach(rowId => {
-      const row = document.querySelector(`tr[data-id="${rowId}"]`);
-      const line = container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
-      if (row && line) {
-        line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-        line.style.left = (table.offsetLeft + 36) + 'px';
-        line.style.width = (table.offsetWidth - 72) + 'px';
-      }
+      const row = container.querySelector(`tr[data-id="${rowId}"]`);
+      if (row) addSharpieLineElement(row);
     });
   }
   
