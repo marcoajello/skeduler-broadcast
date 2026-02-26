@@ -56,13 +56,26 @@
     .live-badge.manual .live-text { display: none; }
     
     .header-progress-btn {
-      width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
-      background: var(--ad-purple); cursor: pointer;
+      width: 28px; height: 28px; padding: 4px; border-radius: 50%; border: 2px solid #f44336;
+      background: #f44336; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: var(--ad-purple); }
+    .header-progress-btn.lines-hidden { background: transparent; border-color: #f44336; }
+    .header-progress-btn.lines-hidden:hover { background: rgba(244,67,54,0.1); }
     .header-progress-btn:not(.lines-hidden) { background: #f44336; }
+    
+    /* QR Code toggle */
+    .qr-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--ad-purple, #6c5ce7); background: transparent; color: var(--text, #e5e7eb); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; position: relative; }
+    .qr-btn:hover { background: rgba(108, 92, 231, 0.15); }
+    .qr-btn.active { background: var(--ad-purple, #6c5ce7); color: white; }
+    .qr-btn svg { width: 14px; height: 14px; }
+    .qr-popover { display: none; position: fixed; top: 50px; right: 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; text-align: center; min-width: 220px; }
+    .qr-popover.visible { display: block; }
+    .qr-popover img { width: 180px; height: 180px; display: block; margin: 0 auto 8px; border-radius: 4px; }
+    .qr-popover .qr-label { font-size: 11px; font-weight: 600; color: #374151; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .qr-popover .qr-url { font-size: 10px; color: #6b7280; word-break: break-all; max-width: 200px; margin: 0 auto; }
     
     @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.9); } }
     
@@ -211,12 +224,14 @@
       width: 22px; height: 22px;
       min-width: 22px; min-height: 22px;
       display: inline-flex; align-items: center; justify-content: center;
-      background: white; color: var(--accent);
-      border: 1px solid #e0e0e0; border-radius: 4px;
+      background: transparent; color: #9ca3af;
+      border: 1px solid #f44336; border-radius: 50%;
       cursor: pointer;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: none;
+      transition: all 0.15s ease;
     }
-    button.sharpie svg { width: 14px; height: 14px; }
+    button.sharpie:hover { background: rgba(244,67,54,0.1); border-color: #f44336; }
+    button.sharpie svg { width: 12px; height: 12px; }
     button.sharpie.active { background: #f44336; color: white; border-color: #d32f2f; }
     
     /* ===== DRAGGING ===== */
@@ -311,12 +326,17 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       font-size: 9px;
       font-weight: 600;
-      text-transform: uppercase;
       letter-spacing: 0.3px;
       position: relative;
       box-sizing: border-box;
       white-space: nowrap;
       flex: 0 0 auto;
+    }
+    
+    .tag-pill span {
+      text-transform: none;
+      font-size: inherit;
+    }
     }
     
     .tag-pill.image-tag img {
@@ -381,6 +401,12 @@
         <span class="live-text" id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
+      <button class="qr-btn" id="qrBtn" title="Show QR Code">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+        </svg>
+      </button>
       <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');localStorage.setItem('ad-sharpie-hidden', document.body.classList.contains('sharpie-lines-hidden'));">
         <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
@@ -397,6 +423,12 @@
   
   <div class="duration-popup" id="durationPopup">
     <input type="text" id="durationInput" placeholder="0:30">
+  </div>
+  
+  <div class="qr-popover" id="qrPopover">
+    <div class="qr-label">SCAN TO VIEW SCHEDULE</div>
+    <img id="qrImage" alt="QR Code" />
+    <div class="qr-url" id="qrUrl"></div>
   </div>
 
 <script>
@@ -514,6 +546,7 @@
     container.querySelectorAll('.completed-line').forEach(el => el.remove());
 
     // DO NOT strip row backgrounds - we need them for colors!
+<<<<<<< HEAD
 
     // Wire up day tabs
     initDayTabs(container);
@@ -534,6 +567,37 @@
       setupRowInteractions();
       initCompletedState();
     }
+=======
+    
+    setupColumns();
+    setupRowInteractions();
+    initCompletedState();
+    setupQRCode();
+  }
+  
+  function setupQRCode() {
+    const btn = document.getElementById('qrBtn');
+    const popover = document.getElementById('qrPopover');
+    const qrImage = document.getElementById('qrImage');
+    const qrUrlEl = document.getElementById('qrUrl');
+    if (!btn || !popover) return;
+    const broadcastUrl = window.location.origin + '/?c=' + (channelCode || '');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isVisible = popover.classList.toggle('visible');
+      btn.classList.toggle('active', isVisible);
+      if (isVisible && !qrImage.src) {
+        qrImage.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(broadcastUrl);
+        qrUrlEl.textContent = broadcastUrl;
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!popover.contains(e.target) && e.target !== btn) {
+        popover.classList.remove('visible');
+        btn.classList.remove('active');
+      }
+    });
+>>>>>>> df4c080fb5068ce2dcb4b9e2de5dd5143440bd91
   }
   
   function initCompletedState() {

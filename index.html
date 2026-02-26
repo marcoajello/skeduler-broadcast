@@ -151,19 +151,36 @@
     
     /* ===== SHARPIE TOGGLE ===== */
     .header-progress-btn {
-      width: 28px; height: 28px; padding: 4px; border-radius: 4px; border: none;
+      width: 28px; height: 28px; padding: 4px; border-radius: 50%; border: 2px solid #f44336;
       background: #f44336; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: var(--border); }
+    .header-progress-btn.lines-hidden { background: transparent; border-color: #f44336; }
+    .header-progress-btn.lines-hidden:hover { background: rgba(244,67,54,0.1); }
     .header-progress-btn:not(.lines-hidden) { background: #f44336; }
+    
+    /* QR Code toggle */
+    .qr-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--live-red, #f85149); background: transparent; color: var(--text, #e5e7eb); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
+    .qr-btn:hover { background: rgba(248, 81, 73, 0.15); }
+    .qr-btn.active { background: var(--live-red, #f85149); color: white; }
+    .qr-btn svg { width: 14px; height: 14px; }
+    .qr-popover { display: none; position: fixed; top: 50px; right: 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; text-align: center; min-width: 220px; }
+    .qr-popover.visible { display: block; }
+    .qr-popover img { width: 180px; height: 180px; display: block; margin: 0 auto 8px; border-radius: 4px; }
+    .qr-popover .qr-label { font-size: 11px; font-weight: 600; color: #374151; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .qr-popover .qr-url { font-size: 10px; color: #6b7280; word-break: break-all; max-width: 200px; margin: 0 auto; }
     
     /* ===== CONTENT ===== */
     .content {
       padding: 16px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     
     .loading, .error {
@@ -208,6 +225,7 @@
       border-radius: 8px;
       overflow: visible;
       -webkit-overflow-scrolling: touch;
+      position: relative;
     }
     
     #schedule-container table {
@@ -221,10 +239,6 @@
       background: #000;
     }
     
-    .content {
-      background: #000;
-      overflow: visible;
-    }
     
     /* ===== META BANNER (from embedded HTML) ===== */
     #schedule-container .meta-banner {
@@ -313,12 +327,16 @@
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       font-size: 9px;
       font-weight: 600;
-      text-transform: uppercase;
       letter-spacing: 0.3px;
       position: relative;
       box-sizing: border-box;
       white-space: nowrap;
       flex: 0 0 auto;
+    }
+    
+    .tag-pill span {
+      text-transform: none;
+      font-size: inherit;
     }
     
     .tag-pill.image-tag img {
@@ -499,6 +517,12 @@
         <span id="liveText">LIVE</span>
         <span class="live-dot"></span>
       </div>
+      <button class="qr-btn" id="qrBtn" title="Show QR Code">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
+        </svg>
+      </button>
       <button class="header-progress-btn" id="sharpieToggle" title="Toggle Progress">
         <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
@@ -519,6 +543,12 @@
     
     <div id="schedule-container" style="display:none;"></div>
     <div id="updated-at" class="updated-at"></div>
+  </div>
+  
+  <div class="qr-popover" id="qrPopover">
+    <div class="qr-label">SCAN TO VIEW SCHEDULE</div>
+    <img id="qrImage" alt="QR Code" />
+    <div class="qr-url" id="qrUrl"></div>
   </div>
 
   <script>
@@ -546,10 +576,16 @@
       const sharpieToggle = document.getElementById('sharpieToggle');
       sharpieToggle.addEventListener('click', toggleSharpie);
       
+      // Setup QR code
+      setupQRCode();
+      
       await loadBroadcast();
       
       // Subscribe to realtime LIVE status changes
       subscribeToLiveStatus();
+      
+      // Subscribe to AD viewer's sharpie events
+      subscribeToAdSync();
       
       // Auto-refresh every 30 seconds
       refreshInterval = setInterval(loadBroadcast, 30000);
@@ -575,6 +611,30 @@
     
     // Recalculate on resize
     window.addEventListener('resize', autoScaleTable);
+    
+    function setupQRCode() {
+      const btn = document.getElementById('qrBtn');
+      const popover = document.getElementById('qrPopover');
+      const qrImage = document.getElementById('qrImage');
+      const qrUrlEl = document.getElementById('qrUrl');
+      if (!btn || !popover) return;
+      const pageUrl = window.location.href;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = popover.classList.toggle('visible');
+        btn.classList.toggle('active', isVisible);
+        if (isVisible && !qrImage.src) {
+          qrImage.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(pageUrl);
+          qrUrlEl.textContent = pageUrl;
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (!popover.contains(e.target) && e.target !== btn) {
+          popover.classList.remove('visible');
+          btn.classList.remove('active');
+        }
+      });
+    }
     
     function toggleSharpie() {
       sharpieVisible = !sharpieVisible;
@@ -670,6 +730,9 @@
         // Auto-scale table to fit mobile screens
         autoScaleTable();
         
+        // Subscribe to live sharpie events from AD/producer
+        subscribeToSharpieChannel();
+        
         // Show last updated
         const updated = new Date(broadcast.updated_at);
         document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleString();
@@ -678,6 +741,98 @@
         console.error('Load error:', err);
         showError('Failed to load broadcast');
       }
+    }
+    
+    // === SHARPIE LIVE SYNC ===
+    let sharpieChannel = null;
+    const markedRows = new Set();
+    
+    function subscribeToSharpieChannel() {
+      if (sharpieChannel) return; // already subscribed
+      
+      sharpieChannel = supabase.channel(`ad-sync-${broadcastCode.toUpperCase()}`, {
+        config: { broadcast: { self: false } }
+      });
+      
+      sharpieChannel
+        .on('broadcast', { event: 'sharpie-toggle' }, ({ payload }) => {
+          if (!payload?.rowId) return;
+          const row = document.querySelector(`#schedule-container tr[data-id="${payload.rowId}"]`);
+          if (!row) return;
+          
+          if (payload.marked) {
+            markedRows.add(payload.rowId);
+            addSharpieLineElement(row);
+          } else {
+            markedRows.delete(payload.rowId);
+            const line = document.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+            if (line) line.remove();
+          }
+        })
+        .on('broadcast', { event: 'sharpie-visibility' }, ({ payload }) => {
+          if (payload.hidden) {
+            document.body.classList.add('sharpie-hidden');
+            document.getElementById('sharpieToggle')?.classList.add('lines-hidden');
+          } else {
+            document.body.classList.remove('sharpie-hidden');
+            document.getElementById('sharpieToggle')?.classList.remove('lines-hidden');
+          }
+        })
+        .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
+          // On full sync, re-apply sharpie rows if provided
+          if (payload?.sharpieRows) {
+            // Clear existing
+            document.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
+            markedRows.clear();
+            payload.sharpieRows.forEach(rowId => {
+              markedRows.add(rowId);
+              const row = document.querySelector(`#schedule-container tr[data-id="${rowId}"]`);
+              if (row) addSharpieLineElement(row);
+            });
+          }
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('[Broadcast] Subscribed to sharpie channel, requesting sync...');
+            // Request current state from producer/AD
+            sharpieChannel.send({
+              type: 'broadcast',
+              event: 'request-sync',
+              payload: { source: 'broadcast-viewer' }
+            });
+          }
+        });
+      
+      console.log('[Broadcast] Subscribing to sharpie channel: ad-sync-' + broadcastCode.toUpperCase());
+    }
+    
+    function addSharpieLineElement(row) {
+      const container = document.getElementById('schedule-container');
+      const table = container?.querySelector('table');
+      if (!container || !table) return;
+      
+      // Remove existing line for this row
+      container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
+      
+      const line = document.createElement('div');
+      line.className = 'sharpie-line-element';
+      line.dataset.rowId = row.dataset.id;
+      
+      // Position relative to the container
+      const containerRect = container.getBoundingClientRect();
+      const rowRect = row.getBoundingClientRect();
+      
+      line.style.position = 'absolute';
+      line.style.top = (rowRect.top - containerRect.top + rowRect.height / 2 - 2) + 'px';
+      line.style.left = '0px';
+      line.style.width = table.offsetWidth + 'px';
+      
+      // Need container to be positioned
+      if (getComputedStyle(container).position === 'static') {
+        container.style.position = 'relative';
+      }
+      
+      container.appendChild(line);
     }
     
     function updateLiveBadge(isLive) {
