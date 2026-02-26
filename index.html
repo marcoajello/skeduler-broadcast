@@ -714,9 +714,20 @@
         
         const html = await response.text();
         
-        // Extract just the body content from the fetched HTML
-        const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        const bodyContent = bodyMatch ? bodyMatch[1] : html;
+        // Extract body content from fetched HTML
+        // For multi-day broadcasts, content has day tabs at top level (no <body> wrapper)
+        // Use greedy match to capture all content between body tags
+        let bodyContent;
+        if (html.includes('broadcast-day-tabs') || html.includes('broadcast-day-section')) {
+          // Multi-day: use the HTML as-is (already extracted body content)
+          // Strip any document wrappers if present
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          bodyContent = bodyMatch ? bodyMatch[1] : html;
+        } else {
+          // Single-day: original behavior
+          const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+          bodyContent = bodyMatch ? bodyMatch[1] : html;
+        }
         
         // Display
         document.getElementById('loading').style.display = 'none';
