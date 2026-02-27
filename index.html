@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1200, initial-scale=0.4, minimum-scale=0.25, maximum-scale=4.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d1117">
   <title>SKEDULER LIVE</title>
@@ -31,26 +31,23 @@
     
     /* ===== HEADER ===== */
     .header {
-      position: fixed;
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
       z-index: 100;
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      justify-content: space-between;
       padding: 12px 16px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       min-height: 48px;
-      width: 100%;
     }
     
     .header-left {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex: 1;
+      justify-self: start;
     }
     
     .header-logo {
@@ -69,10 +66,8 @@
     }
     
     .header-center {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
+      justify-self: center;
+      text-align: center;
     }
     
     .channel-name {
@@ -89,13 +84,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      flex: 1;
-      justify-content: flex-end;
-    }
-    
-    /* Add padding to body to account for fixed header */
-    body {
-      padding-top: 60px;
+      justify-self: end;
     }
     
     /* ===== LIVE INDICATOR ===== */
@@ -166,16 +155,6 @@
     .qr-btn:hover { background: rgba(248, 81, 73, 0.15); }
     .qr-btn.active { background: var(--live-red, #f85149); color: white; }
     .qr-btn svg { width: 14px; height: 14px; }
-    #day-tabs-bar {
-      position: fixed;
-      top: 60px;
-      left: 0;
-      right: 0;
-      z-index: 99;
-      background: #161b22;
-    }
-    #day-tabs-bar:empty { display: none; }
-    body.has-day-tabs { padding-top: 108px; }
     .qr-popover { display: none; position: fixed; top: 50px; right: 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; text-align: center; min-width: 220px; }
     .qr-popover.visible { display: block; }
     .qr-popover img { width: 180px; height: 180px; display: block; margin: 0 auto 8px; border-radius: 4px; }
@@ -184,13 +163,17 @@
     
     /* ===== CONTENT ===== */
     .content {
-      padding: 16px;
+      padding: 0;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       background: #000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+    }
+    #schedule-container {
+      width: 100%;
+    }
+    /* Schedule sections get horizontal padding, tabs stay flush */
+    .content .broadcast-day-section {
+      padding: 16px;
     }
     
     .loading, .error {
@@ -233,7 +216,7 @@
     #schedule-container {
       background: #000;
       border-radius: 8px;
-      overflow: visible;
+      overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       position: relative;
     }
@@ -244,36 +227,11 @@
     }
     
     #schedule-container .schedule-scroll {
-      overflow: visible;
+      overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       background: #000;
     }
     
-    
-    /* ===== META BANNER (from embedded HTML) ===== */
-    #schedule-container .meta-banner {
-      margin-bottom: 0;
-    }
-    
-    /* ===== HEADER DESIGN CONTAINER ===== */
-    #schedule-container .header-design-container {
-      margin-bottom: 0;
-    }
-    
-    /* Mobile: scale down the table to fit screen */
-    @media (max-width: 768px) {
-      #schedule-container {
-        transform-origin: top left;
-        transform: scale(var(--mobile-scale, 0.4));
-        width: max-content;
-      }
-      
-      .content {
-        overflow-x: auto;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-    }
     
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
@@ -285,9 +243,8 @@
     }
     
     body.sharpie-hidden .sharpie-line-element,
-    body.sharpie-hidden .row-complete::after,
-    body.sharpie-hidden .completed-line {
-      display: none !important;
+    body.sharpie-hidden .row-complete::after {
+      display: none;
     }
     
     /* ===== SCHEDULE HEADER IMAGE ===== */
@@ -389,89 +346,6 @@
       font-size: 11px;
       color: var(--muted);
     }
-    
-    /* ===== MOBILE RESPONSIVE ===== */
-    @media (max-width: 768px) {
-      .header {
-        padding: 10px 12px;
-      }
-      
-      .header-left {
-        flex: 0 0 auto;
-      }
-      
-      .header-center {
-        flex: 1;
-      }
-      
-      .header-right {
-        flex: 0 0 auto;
-        gap: 8px;
-      }
-      
-      .channel-name {
-        font-size: 12px;
-        max-width: 200px;
-      }
-      
-      .header-logo span {
-        font-size: 10px;
-      }
-      
-      .header-logo svg {
-        width: 16px;
-        height: 16px;
-      }
-      
-      .live-badge {
-        padding: 3px 8px;
-        font-size: 10px;
-      }
-      
-      .content {
-        padding: 8px;
-      }
-      
-      #schedule-container {
-        border-radius: 4px;
-        font-size: 12px;
-      }
-      
-      #schedule-container table {
-        font-size: 11px;
-      }
-      
-      #schedule-container td,
-      #schedule-container th {
-        padding: 4px 6px;
-      }
-      
-      .tag-pill {
-        font-size: 8px;
-        padding: 1px 4px 1px 1px;
-      }
-      
-      .tag-pill img {
-        width: 16px;
-        height: 16px;
-      }
-    }
-    
-    @media (max-width: 480px) {
-      .channel-name {
-        font-size: 11px;
-        max-width: 150px;
-      }
-      
-      #schedule-container table {
-        font-size: 10px;
-      }
-      
-      #schedule-container td,
-      #schedule-container th {
-        padding: 3px 4px;
-      }
-    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
@@ -479,12 +353,7 @@
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="channel-name" id="channelName">Channel: Loading...</div>
-    </div>
-    
-    <div class="header-center">
       <div class="header-logo">
-        <span>SKEDULER</span>
         <svg viewBox="195 40 100 130">
           <defs>
             <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -519,7 +388,12 @@
             <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
           </g>
         </svg>
+        <span>SKEDULER</span>
       </div>
+    </div>
+    
+    <div class="header-center">
+      <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
     <div class="header-right">
@@ -568,60 +442,45 @@
     const SUPABASE_ANON_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
 
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
+
     let broadcastCode = null;
     let broadcastData = null;
     let refreshInterval = null;
     let sharpieVisible = true;
-    
+    let _lastUpdatedAt = null; // Track last-known updated_at to skip no-op refreshes
+    let _lastContentHash = null; // Track content hash to avoid DOM thrash on identical HTML
+
+    /** Simple fast hash for change detection (djb2) */
+    function _quickHash(str) {
+      let hash = 5381;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash) + str.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return hash;
+    }
+
     async function init() {
       const params = new URLSearchParams(window.location.search);
       broadcastCode = params.get('c') || params.get('code') || window.location.pathname.split('/').pop();
-      
+
       if (!broadcastCode || broadcastCode === 'index.html' || broadcastCode === '' || broadcastCode === 'broadcast-viewer-index.html') {
         showError('No broadcast code provided');
         return;
       }
-      
+
       // Setup sharpie toggle
       const sharpieToggle = document.getElementById('sharpieToggle');
       sharpieToggle.addEventListener('click', toggleSharpie);
-      
-      // Setup QR code
+
+      // Setup QR code toggle
       setupQRCode();
-      
+
       await loadBroadcast();
-      
-      // Subscribe to realtime LIVE status changes
-      subscribeToLiveStatus();
-      
-      // Subscribe to AD viewer's sharpie events
-      subscribeToSharpieChannel();
-      
+
       // Auto-refresh every 30 seconds
       refreshInterval = setInterval(loadBroadcast, 30000);
     }
-    
-    function autoScaleTable() {
-      // Only scale on mobile
-      if (window.innerWidth > 768) return;
-      
-      const container = document.getElementById('schedule-container');
-      const table = container.querySelector('table');
-      if (!table) return;
-      
-      // Get actual table width
-      const tableWidth = table.scrollWidth || table.offsetWidth;
-      const screenWidth = window.innerWidth - 16; // account for padding
-      
-      if (tableWidth > screenWidth) {
-        const scale = screenWidth / tableWidth;
-        document.documentElement.style.setProperty('--mobile-scale', Math.min(scale, 1));
-      }
-    }
-    
-    // Recalculate on resize
-    window.addEventListener('resize', autoScaleTable);
     
     function setupQRCode() {
       const btn = document.getElementById('qrBtn');
@@ -664,12 +523,11 @@
       const tabBar = container.querySelector('.broadcast-day-tabs');
       if (!tabBar) return;
 
-      // Move the tab bar out of the schedule container to sit below the fixed header
+      // Move tab bar to dedicated host div if available
       const tabBarHost = document.getElementById('day-tabs-bar');
       if (tabBarHost) {
         tabBarHost.innerHTML = '';
         tabBarHost.appendChild(tabBar);
-        document.body.classList.add('has-day-tabs');
       }
 
       const tabs = tabBar.querySelectorAll('.bday-tab');
@@ -684,23 +542,22 @@
           // Update active tab
           tabs.forEach(function(t) { t.classList.remove('active'); });
           tab.classList.add('active');
+          document.dispatchEvent(new CustomEvent('broadcast-day-changed', { detail: { dayId: dayId } }));
 
           // Reposition sharpie lines for the newly visible section
-          // Remove all existing lines first
           container.querySelectorAll('.sharpie-line-element').forEach(function(el) { el.remove(); });
-          // Re-add lines for marked rows that are in the now-visible section
           if (typeof markedRows !== 'undefined' && markedRows.size > 0) {
             setTimeout(function() {
               markedRows.forEach(function(rowId) {
                 var row = container.querySelector('tr[data-id="' + rowId + '"]');
                 if (row) {
-                  var section = row.closest('.broadcast-day-section');
-                  if (!section || section.style.display !== 'none') {
+                  var sec = row.closest('.broadcast-day-section');
+                  if (!sec || sec.style.display !== 'none') {
                     addSharpieLineElement(row);
                   }
                 }
               });
-            }, 50); // small delay for layout to settle
+            }, 50);
           }
         });
       });
@@ -714,22 +571,31 @@
           .select('*')
           .eq('code', broadcastCode.toUpperCase())
           .single();
-        
+
         if (lookupError || !broadcast) {
           showError('Broadcast not found');
           return;
         }
-        
+
         broadcastData = broadcast;
-        
-        // Update channel name (left side)
+
+        // Update channel name (centered)
         const channelName = broadcast.title || 'Untitled';
-        document.getElementById('channelName').textContent = 'Channel: ' + channelName;
+        document.getElementById('channelName').textContent = channelName;
         document.title = channelName + ' - SKEDULER';
-        
+
         // Update LIVE badge based on auto_update field
         updateLiveBadge(broadcast.auto_update);
-        
+
+        // ---------------------------------------------------------------
+        // OPTIMIZATION: Skip re-fetch if updated_at hasn't changed
+        // (the producer updates this timestamp on every push)
+        // ---------------------------------------------------------------
+        if (_lastUpdatedAt && broadcast.updated_at === _lastUpdatedAt) {
+          console.log('[Broadcast] No change since last refresh (updated_at unchanged), skipping fetch');
+          return;
+        }
+
         // Fetch HTML from storage
         let htmlPath;
         if (broadcast.channel_number) {
@@ -737,58 +603,90 @@
         } else {
           htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
         }
-        
+
         const { data: urlData } = supabase.storage
           .from('schedule-files')
           .getPublicUrl(htmlPath);
-        
+
         const cacheBuster = Date.now();
         const publicUrl = urlData.publicUrl + '?t=' + cacheBuster;
-        
+
         console.log('[Broadcast] Fetching:', publicUrl);
-        
+
         const response = await fetch(publicUrl);
         if (!response.ok) {
           showError('Could not load schedule');
           return;
         }
-        
+
         const html = await response.text();
-        
-        // Extract body content from fetched HTML
-        // For multi-day broadcasts, content has day tabs at top level (no <body> wrapper)
-        // Use greedy match to capture all content between body tags
-        let bodyContent;
-        if (html.includes('broadcast-day-tabs') || html.includes('broadcast-day-section')) {
-          // Multi-day: use the HTML as-is (already extracted body content)
-          // Strip any document wrappers if present
-          const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-          bodyContent = bodyMatch ? bodyMatch[1] : html;
-        } else {
-          // Single-day: original behavior
-          const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-          bodyContent = bodyMatch ? bodyMatch[1] : html;
+
+        // ---------------------------------------------------------------
+        // OPTIMIZATION: Skip DOM replacement if content is identical
+        // ---------------------------------------------------------------
+        const contentHash = _quickHash(html);
+        if (_lastContentHash === contentHash) {
+          console.log('[Broadcast] HTML content identical (hash match), skipping DOM update');
+          _lastUpdatedAt = broadcast.updated_at;
+          document.getElementById('updated-at').textContent = 'Last updated: ' + new Date(broadcast.updated_at).toLocaleString();
+          return;
         }
-        
-        // Display
+
+        // ---------------------------------------------------------------
+        // Smart DOM update: preserve scroll position & sharpie state
+        // ---------------------------------------------------------------
+        const container = document.getElementById('schedule-container');
+
+        // Remember scroll position
+        const scrollTop = window.scrollY || document.documentElement.scrollTop;
+        const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+
+        // Remember which day tab was active
+        const activeTab = container.querySelector('.bday-tab.active');
+        const activeDayId = activeTab ? activeTab.getAttribute('data-day-id') : null;
+
+        // Remember sharpie state (managed by realtime, not HTML)
+        const savedMarkedRows = new Set(markedRows);
+
+        // Apply new content
         document.getElementById('loading').style.display = 'none';
         document.getElementById('error').style.display = 'none';
-        document.getElementById('schedule-container').style.display = 'block';
-        document.getElementById('schedule-container').innerHTML = bodyContent;
+        container.style.display = 'block';
+        container.innerHTML = html;
 
         // Wire up day tabs (scripts injected via innerHTML don't execute)
-        initDayTabs(document.getElementById('schedule-container'));
+        initDayTabs(container);
 
-        // Auto-scale table to fit mobile screens
-        autoScaleTable();
-        
-        // Subscribe to live sharpie events from AD/producer
+        // Restore active day tab if it still exists
+        if (activeDayId) {
+          const restoredTab = container.querySelector('.bday-tab[data-day-id="' + activeDayId + '"]');
+          if (restoredTab) {
+            restoredTab.click(); // This switches visible section and marks active
+          }
+        }
+
+        // Restore sharpie marks
+        markedRows.clear();
+        savedMarkedRows.forEach(function(rowId) {
+          markedRows.add(rowId);
+          var row = container.querySelector('tr[data-id="' + rowId + '"]');
+          if (row) addSharpieLineElement(row);
+        });
+
+        // Restore scroll position
+        window.scrollTo(scrollLeft, scrollTop);
+
+        // Subscribe to live sharpie events from AD/producer (idempotent)
         subscribeToSharpieChannel();
-        
+
+        // Update tracking state
+        _lastUpdatedAt = broadcast.updated_at;
+        _lastContentHash = contentHash;
+
         // Show last updated
         const updated = new Date(broadcast.updated_at);
         document.getElementById('updated-at').textContent = 'Last updated: ' + updated.toLocaleString();
-        
+
       } catch (err) {
         console.error('Load error:', err);
         showError('Failed to load broadcast');
@@ -800,7 +698,7 @@
     const markedRows = new Set();
     
     function subscribeToSharpieChannel() {
-      if (sharpieChannel) return; // already subscribed
+      if (sharpieChannel) return;
       
       sharpieChannel = supabase.channel(`ad-sync-${broadcastCode.toUpperCase()}`, {
         config: { broadcast: { self: false } }
@@ -831,9 +729,7 @@
           }
         })
         .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
-          // On full sync, re-apply sharpie rows if provided
           if (payload?.sharpieRows) {
-            // Clear existing
             document.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
             markedRows.clear();
             payload.sharpieRows.forEach(rowId => {
@@ -846,7 +742,6 @@
         .subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             console.log('[Broadcast] Subscribed to sharpie channel, requesting sync...');
-            // Request current state from producer/AD
             sharpieChannel.send({
               type: 'broadcast',
               event: 'request-sync',
@@ -870,14 +765,12 @@
       const section = row.closest('.broadcast-day-section');
       if (section && section.style.display === 'none') return;
 
-      // Remove existing line for this row
       container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
 
       const line = document.createElement('div');
       line.className = 'sharpie-line-element';
       line.dataset.rowId = row.dataset.id;
 
-      // Position relative to the container
       const containerRect = container.getBoundingClientRect();
       const rowRect = row.getBoundingClientRect();
 
@@ -886,11 +779,10 @@
       line.style.left = '0px';
       line.style.width = table.offsetWidth + 'px';
 
-      // Need container to be positioned
       if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
       }
-      
+
       container.appendChild(line);
     }
     
@@ -907,26 +799,6 @@
         badge.classList.add('manual');
         text.textContent = 'MANUAL';
       }
-    }
-    
-    // Subscribe to realtime changes on broadcast record for instant LIVE badge updates
-    function subscribeToLiveStatus() {
-      if (!broadcastCode) return;
-      
-      supabase
-        .channel('broadcast-status-' + broadcastCode.toUpperCase())
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'broadcasts',
-          filter: `code=eq.${broadcastCode.toUpperCase()}`
-        }, (payload) => {
-          console.log('[Broadcast] Record updated:', payload);
-          if (payload.new && payload.new.auto_update !== undefined) {
-            updateLiveBadge(payload.new.auto_update === true);
-          }
-        })
-        .subscribe();
     }
     
     function showError(msg) {
