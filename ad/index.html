@@ -834,36 +834,43 @@
     const rows = tbody.querySelectorAll('tr[data-id]');
 
     rows.forEach(row => {
-      // Make draggable
-      row.draggable = true;
+      const isSubChild = row.classList.contains('subchild');
 
-      // Drag start
-      row.addEventListener('dragstart', (e) => {
-        draggingRow = row;
-        row.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', row.dataset.id);
-      });
+      if (isSubChild) {
+        // Sub-children should not be independently draggable
+        row.draggable = false;
+      } else {
+        // Make draggable
+        row.draggable = true;
 
-      // Drag end
-      row.addEventListener('dragend', () => {
-        if (draggingRow) {
-          draggingRow.classList.remove('dragging');
-        }
-        draggingRow = null;
+        // Drag start
+        row.addEventListener('dragstart', (e) => {
+          draggingRow = row;
+          row.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', row.dataset.id);
+        });
 
-        // Broadcast new order
-        broadcastRowOrder();
-      });
+        // Drag end
+        row.addEventListener('dragend', () => {
+          if (draggingRow) {
+            draggingRow.classList.remove('dragging');
+          }
+          draggingRow = null;
 
-      // Duration click
+          // Broadcast new order
+          broadcastRowOrder();
+        });
+      }
+
+      // Duration click (both parent rows and sub-children)
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
 
-      // Sharpie button click
+      // Sharpie button click (both parent rows and sub-children)
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
@@ -884,6 +891,16 @@
           tbody.appendChild(draggingRow);
         } else {
           tbody.insertBefore(draggingRow, afterEl);
+        }
+
+        // Keep sub-children attached to their parent SUB row
+        if (draggingRow.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
+          let insertAfter = draggingRow;
+          subchildren.forEach(child => {
+            insertAfter.after(child);
+            insertAfter = child;
+          });
         }
       });
     }
@@ -1180,7 +1197,14 @@
 
     payload.order.forEach(id => {
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (row) tbody.appendChild(row);
+      if (row) {
+        tbody.appendChild(row);
+        // If this is a SUB row, also move its subchildren so they stay attached
+        if (row.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + id + '"]');
+          subchildren.forEach(child => tbody.appendChild(child));
+        }
+      }
     });
 
     updateAllSharpieLines();
