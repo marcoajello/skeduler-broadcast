@@ -242,12 +242,6 @@
       display: none;
     }
 
-    /* Clip completed lines to the schedule boundary */
-    #schedule-container .schedule-scroll,
-    #schedule-container .broadcast-day-section {
-      overflow: hidden;
-    }
-
     /* Show baked-in completed-line spans when sharpie is visible */
     body.show-progress .completed-line {
       display: block;
@@ -660,6 +654,9 @@
         // Restore scroll position
         window.scrollTo(scrollLeft, scrollTop);
 
+        // Clip baked-in completed lines to table width
+        clipCompletedLines();
+
         // Subscribe to live sharpie events from AD/producer (idempotent)
         subscribeToSharpieChannel();
 
@@ -807,6 +804,9 @@
           span.setAttribute('data-row-line', 'true');
           firstTd.style.position = 'relative';
           firstTd.style.overflow = 'visible';
+          // Clip to table width
+          const table = row.closest('table');
+          if (table) span.style.width = table.offsetWidth + 'px';
           firstTd.insertBefore(span, firstTd.firstChild);
         }
       }
@@ -820,6 +820,13 @@
       if (span) span.remove();
     }
 
+    /** Clip all .completed-line spans to their table width so they don't overflow */
+    function clipCompletedLines() {
+      document.querySelectorAll('#schedule-container .completed-line').forEach(function(span) {
+        var table = span.closest('table');
+        if (table) span.style.width = table.offsetWidth + 'px';
+      });
+    }
 
     function updateLiveBadge(isLive) {
       const badge = document.getElementById('liveBadge');
