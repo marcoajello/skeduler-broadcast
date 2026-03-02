@@ -246,6 +246,15 @@
     body.sharpie-hidden .row-complete::after {
       display: none;
     }
+
+    /* Show baked-in completed-line spans when sharpie is visible */
+    body.show-progress .completed-line {
+      display: block;
+    }
+    /* Hide them when sharpie is toggled off */
+    body.sharpie-hidden .completed-line {
+      display: none;
+    }
     
     /* ===== SCHEDULE HEADER IMAGE ===== */
     .header-image {
@@ -473,6 +482,9 @@
       const sharpieToggle = document.getElementById('sharpieToggle');
       sharpieToggle.addEventListener('click', toggleSharpie);
 
+      // Sharpie starts visible — enable show-progress so baked-in completed lines render
+      document.body.classList.add('show-progress');
+
       // Setup QR code toggle
       setupQRCode();
 
@@ -509,12 +521,14 @@
     function toggleSharpie() {
       sharpieVisible = !sharpieVisible;
       const btn = document.getElementById('sharpieToggle');
-      
+
       if (sharpieVisible) {
         document.body.classList.remove('sharpie-hidden');
+        document.body.classList.add('show-progress');
         btn.classList.remove('lines-hidden');
       } else {
         document.body.classList.add('sharpie-hidden');
+        document.body.classList.remove('show-progress');
         btn.classList.add('lines-hidden');
       }
     }
@@ -665,12 +679,15 @@
           }
         }
 
-        // Restore sharpie marks
+        // Restore sharpie marks and completed state
         markedRows.clear();
         savedMarkedRows.forEach(function(rowId) {
           markedRows.add(rowId);
           var row = container.querySelector('tr[data-id="' + rowId + '"]');
-          if (row) addSharpieLineElement(row);
+          if (row) {
+            addSharpieLineElement(row);
+            markRowComplete(row);
+          }
         });
 
         // Restore scroll position
@@ -709,34 +726,54 @@
           if (!payload?.rowId) return;
           const row = document.querySelector(`#schedule-container tr[data-id="${payload.rowId}"]`);
           if (!row) return;
-          
+
           if (payload.marked) {
             markedRows.add(payload.rowId);
             addSharpieLineElement(row);
+            markRowComplete(row);
           } else {
             markedRows.delete(payload.rowId);
             const line = document.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
             if (line) line.remove();
+            unmarkRowComplete(row);
           }
         })
         .on('broadcast', { event: 'sharpie-visibility' }, ({ payload }) => {
           if (payload.hidden) {
+            sharpieVisible = false;
             document.body.classList.add('sharpie-hidden');
+            document.body.classList.remove('show-progress');
             document.getElementById('sharpieToggle')?.classList.add('lines-hidden');
           } else {
+            sharpieVisible = true;
             document.body.classList.remove('sharpie-hidden');
+            document.body.classList.add('show-progress');
             document.getElementById('sharpieToggle')?.classList.remove('lines-hidden');
           }
         })
         .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
           if (payload?.sharpieRows) {
+            // Clear existing sharpie lines
             document.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
+            // Clear existing completed state from all rows
+            document.querySelectorAll('#schedule-container tr.row-complete').forEach(tr => unmarkRowComplete(tr));
             markedRows.clear();
+
             payload.sharpieRows.forEach(rowId => {
               markedRows.add(rowId);
               const row = document.querySelector(`#schedule-container tr[data-id="${rowId}"]`);
-              if (row) addSharpieLineElement(row);
+              if (row) {
+                addSharpieLineElement(row);
+                markRowComplete(row);
+              }
             });
+          }
+          // Sync sharpie visibility state from producer
+          if (typeof payload?.linesHidden === 'boolean') {
+            sharpieVisible = !payload.linesHidden;
+            document.body.classList.toggle('sharpie-hidden', payload.linesHidden);
+            document.body.classList.toggle('show-progress', !payload.linesHidden);
+            document.getElementById('sharpieToggle')?.classList.toggle('lines-hidden', payload.linesHidden);
           }
         })
         .subscribe((status) => {
@@ -785,7 +822,38 @@
 
       container.appendChild(line);
     }
-    
+
+    /** Mark a row as completed — adds class + inserts .completed-line span if missing */
+    function markRowComplete(row) {
+      row.classList.add('row-complete');
+      row.dataset.completed = 'true';
+      // Insert a .completed-line span into first visible TD if not already present
+      if (!row.querySelector('.completed-line')) {
+        const tds = row.querySelectorAll('td');
+        let firstTd = null;
+        for (const td of tds) {
+          if (td.style.display !== 'none') { firstTd = td; break; }
+        }
+        if (firstTd) {
+          const span = document.createElement('span');
+          span.className = 'completed-line';
+          span.setAttribute('data-row-line', 'true');
+          firstTd.style.position = 'relative';
+          firstTd.style.overflow = 'visible';
+          firstTd.insertBefore(span, firstTd.firstChild);
+        }
+      }
+    }
+
+    /** Remove completed state from a row */
+    function unmarkRowComplete(row) {
+      row.classList.remove('row-complete');
+      delete row.dataset.completed;
+      const span = row.querySelector('.completed-line');
+      if (span) span.remove();
+    }
+
+
     function updateLiveBadge(isLive) {
       const badge = document.getElementById('liveBadge');
       const text = document.getElementById('liveText');
