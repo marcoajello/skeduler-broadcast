@@ -635,32 +635,6 @@
         container.style.display = 'block';
         container.innerHTML = html;
 
-        // Override inline table-layout:fixed so the actions column doesn't
-        // compress the schedule columns — it scrolls off to the right instead.
-        container.querySelectorAll('table').forEach(function(tbl) {
-          // Sum widths of non-actions cols to preserve schedule column sizes
-          var scheduleWidth = 0;
-          tbl.querySelectorAll('colgroup col').forEach(function(col) {
-            if (col.dataset.key !== 'actions') {
-              scheduleWidth += parseFloat(col.style.width) || 0;
-            }
-          });
-          // Switch to auto layout: schedule cols keep their min-width,
-          // actions col extends the table past the viewport and scrolls.
-          tbl.style.tableLayout = 'auto';
-          tbl.style.width = '';
-          if (scheduleWidth > 0) {
-            tbl.style.minWidth = scheduleWidth + 'px';
-          }
-          // Give each non-actions col a min-width so auto layout doesn't shrink them
-          tbl.querySelectorAll('colgroup col').forEach(function(col) {
-            var w = parseFloat(col.style.width);
-            if (w && col.dataset.key !== 'actions') {
-              col.style.minWidth = w + 'px';
-            }
-          });
-        });
-
         // Wire up day tabs (scripts injected via innerHTML don't execute)
         initDayTabs(container);
 
