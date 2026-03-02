@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SKEDULER AD</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../config.js"></script>
+  <script src="config.js"></script>
   <style>
+    /* ===== EXACT DOM VARIABLES ===== */
     :root {
       --bg: #0a0e13;
-      --panel: #161b22;
+      --panel: #222a35;
       --muted: #9ca3af;
       --text: #f9fafb;
       --accent: #3b82f6;
-      --row: #0d1117;
+      --row: #222a35;
       --rowAlt: #1a2129;
       --border: #374151;
       --ad-purple: #a371f7;
@@ -30,108 +31,232 @@
       flex-direction: column;
     }
     
-    /* ===== HEADER ===== */
+    /* ===== HEADER - AD STYLE ===== */
     .header {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      display: flex;
       align-items: center;
-      padding: 12px 16px;
+      justify-content: space-between;
+      padding: 8px 16px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
-      min-height: 48px;
+      height: 48px;
       flex-shrink: 0;
     }
     
-    .header-left { display: flex; align-items: center; gap: 8px; justify-self: start; }
-    .channel-label { font-size: 14px; color: var(--text); }
-    .channel-label span { color: var(--muted); }
-    .header-center { justify-self: center; display: flex; align-items: center; gap: 6px; }
-    .header-right { display: flex; align-items: center; gap: 12px; justify-self: end; }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
     
-    .live-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; height: 28px; }
-    .live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); }
-    .live-badge.live .live-dot { background: var(--ad-purple); animation: pulse 1.5s ease-in-out infinite; }
-    .live-badge.live .live-text { color: var(--ad-purple); text-transform: uppercase; }
-    .live-badge.manual .live-dot { background: var(--muted); }
-    .live-badge.manual .live-text { display: none; }
+    .status-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
     
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+    
+    .status-dot.connected {
+      background: var(--ad-purple);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.7); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(163, 113, 247, 0); }
+    }
+    
+    .channel-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    
+    /* Header sharpie toggle button - red circle style */
     .header-progress-btn {
-      width: 28px; height: 28px; padding: 4px; border-radius: 50%; border: 2px solid #f44336;
-      background: #f44336; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
+      width: 28px;
+      height: 28px;
+      padding: 4px;
+      border-radius: 50%;
+      border: 2px solid #f44336;
+      background: #f44336;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.15s ease;
     }
     .header-progress-btn:hover { filter: brightness(1.1); }
-    .header-progress-btn.lines-hidden { background: transparent; border-color: #f44336; }
-    .header-progress-btn.lines-hidden:hover { background: rgba(244,67,54,0.1); }
-    .header-progress-btn:not(.lines-hidden) { background: #f44336; }
+    .header-progress-btn.lines-hidden {
+      background: transparent;
+      border-color: #f44336;
+    }
+    .header-progress-btn.lines-hidden:hover {
+      background: rgba(244,67,54,0.1);
+    }
+    .header-progress-btn svg {
+      width: 16px;
+      height: 16px;
+    }
     
-    /* QR Code toggle */
-    .qr-btn { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--ad-purple, #6c5ce7); background: transparent; color: var(--text, #e5e7eb); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; position: relative; }
-    .qr-btn:hover { background: rgba(108, 92, 231, 0.15); }
-    .qr-btn.active { background: var(--ad-purple, #6c5ce7); color: white; }
+    /* QR Code toggle button */
+    .qr-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border-radius: 50%;
+      border: 2px solid var(--ad-purple, #6c5ce7);
+      background: transparent;
+      color: var(--text, #e5e7eb);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+    .qr-btn:hover {
+      background: rgba(108, 92, 231, 0.15);
+    }
+    .qr-btn.active {
+      background: var(--ad-purple, #6c5ce7);
+      color: white;
+    }
     .qr-btn svg { width: 14px; height: 14px; }
-    .qr-popover { display: none; position: fixed; top: 50px; right: 16px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 9999; text-align: center; min-width: 220px; }
+    
+    /* QR Code popover */
+    .qr-popover {
+      display: none;
+      position: fixed;
+      top: 50px;
+      right: 16px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      z-index: 9999;
+      text-align: center;
+      min-width: 220px;
+    }
     .qr-popover.visible { display: block; }
-    .qr-popover img { width: 180px; height: 180px; display: block; margin: 0 auto 8px; border-radius: 4px; }
-    .qr-popover .qr-label { font-size: 11px; font-weight: 600; color: #374151; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .qr-popover .qr-url { font-size: 10px; color: #6b7280; word-break: break-all; max-width: 200px; margin: 0 auto; }
+    .qr-popover img {
+      width: 180px;
+      height: 180px;
+      display: block;
+      margin: 0 auto 8px;
+      border-radius: 4px;
+    }
+    .qr-popover .qr-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #374151;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .qr-popover .qr-url {
+      font-size: 10px;
+      color: #6b7280;
+      word-break: break-all;
+      max-width: 200px;
+      margin: 0 auto;
+    }
     
-    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.9); } }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text);
+    }
     
-    .header-logo { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
-    .ad-badge { background: var(--ad-purple); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px; }
-    .header-logo svg { width: 20px; height: 20px; }
+    .ad-badge {
+      background: var(--ad-purple);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+    }
+    
+    /* Sharpie icon in header */
+    .header-logo svg {
+      width: 20px;
+      height: 20px;
+    }
     
     /* ===== MAIN CONTENT ===== */
-    .main-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-    #schedule-container { flex: 1; overflow: hidden; position: relative; }
-    .schedule-scroll { position: relative; width: 100%; height: 100%; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; }
-    
-    /* Wrapper to keep header and table together */
-    .schedule-scroll > * {
-      flex-shrink: 0;
+    .main-content {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     
-    /* ===== TABLE - Purple border glow ===== */
-    #scheduleScroll table,
+    #schedule-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .schedule-scroll {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+    }
+    
+    /* ===== TABLE STYLING - EXACT DOM CLONE ===== */
     table.schedule {
       border-collapse: collapse;
-      width: auto;
+      width: 100%;
       table-layout: fixed;
-      border-radius: 8px;
-      box-shadow: 0 0 0 2px var(--ad-purple), 0 0 20px rgba(163, 113, 247, 0.3);
+      background: var(--row);
     }
     
-    /* Round corners on corner cells - with white borders */
-    #scheduleScroll table thead tr:first-child th:first-child {
-      border-top-left-radius: 8px;
+    table.schedule th,
+    table.schedule td {
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 12px;
       overflow: hidden;
-      background: #4b5563;
-    }
-    #scheduleScroll table thead tr:first-child th:last-child {
-      border-top-right-radius: 8px;
-      overflow: hidden;
-      background: #4b5563;
-    }
-    #scheduleScroll table tbody tr:last-child td:first-child {
-      border-bottom-left-radius: 8px;
-      overflow: hidden;
-    }
-    #scheduleScroll table tbody tr:last-child td:last-child {
-      border-bottom-right-radius: 8px;
-      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
-    /* Bottom corner cells need the cell-bg to also have rounded corners */
-    #scheduleScroll table tbody tr:last-child td:first-child .cell-bg {
-      border-bottom-left-radius: 6px;
-    }
-    #scheduleScroll table tbody tr:last-child td:last-child .cell-bg {
-      border-bottom-right-radius: 6px;
-    }
-    
-    #scheduleScroll table thead th {
+    table.schedule thead th {
       position: sticky;
       top: 0;
       z-index: 100;
@@ -140,105 +265,180 @@
       color: var(--text);
     }
     
-    /* Override for drag/action header cells */
-    #scheduleScroll table thead th[data-key="drag"],
-    #scheduleScroll table thead th[data-key="actions"] {
-      background: #4b5563;
-      border: 2px solid #ffffff;
+    table.schedule tbody tr {
+      background: var(--row);
     }
     
-    /* ===== DRAG & ACTION COLUMNS ===== */
-    td[data-key="drag"],
-    td[data-key="actions"] {
-      position: relative;
-      padding: 0 !important;
-      width: 60px;
-      min-width: 60px;
-      max-width: 60px;
+    table.schedule tbody tr:nth-child(even) {
+      background: var(--rowAlt);
     }
     
-    th[data-key="drag"],
-    th[data-key="actions"] {
-      width: 60px;
-      min-width: 60px;
-      max-width: 60px;
-      background: #4b5563;
+    /* ===== DRAG & ACTION COLUMNS - EXACT DOM STYLING ===== */
+    table.schedule thead th[data-key="drag"],
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="drag"],
+    table.schedule tbody td[data-key="actions"] {
+      background: #141920;
+      border: 1px solid #ffffff;
+      overflow: hidden;
     }
     
-    /* White borders on drag/action columns - specific sides to avoid doubling */
-    th[data-key="drag"],
-    td[data-key="drag"] {
-      border-left: 2px solid #ffffff;
-      border-top: 2px solid #ffffff;
-      border-bottom: 2px solid #ffffff;
-      border-right: 2px solid #ffffff;
+    /* Drag column */
+    table.schedule thead th[data-key="drag"],
+    table.schedule tbody td[data-key="drag"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      text-align: center;
+      vertical-align: middle;
+      cursor: grab;
+      user-select: none;
+      padding: 0;
     }
     
-    th[data-key="actions"],
-    td[data-key="actions"] {
-      border-left: 2px solid #ffffff;
-      border-top: 2px solid #ffffff;
-      border-bottom: 2px solid #ffffff;
-      border-right: 2px solid #ffffff;
+    table.schedule tbody td[data-key="drag"]:active {
+      cursor: grabbing;
     }
     
-    /* Remove internal horizontal borders to prevent doubling */
-    tbody td[data-key="drag"],
-    tbody td[data-key="actions"] {
-      border-top: none;
-    }
-    
-    /* Absolute div covers row background */
-    .cell-bg {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: #4b5563;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    td[data-key="drag"] { cursor: grab; }
-    td[data-key="drag"]:active { cursor: grabbing; }
-    
+    /* 3x3 drag handle dots - exact DOM pattern */
     .drag-dots {
       display: inline-block;
-      width: 12px; height: 12px;
+      width: 12px;
+      height: 12px;
+      vertical-align: middle;
       background-image: 
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px),
-        radial-gradient(circle, #9ca3af 1px, transparent 1px);
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px),
+        radial-gradient(circle, #999 1px, transparent 1px);
       background-size: 2px 2px;
-      background-position: 0 0, 5px 0, 10px 0, 0 5px, 5px 5px, 10px 5px, 0 10px, 5px 10px, 10px 10px;
+      background-position: 
+        0 0, 5px 0, 10px 0,
+        0 5px, 5px 5px, 10px 5px,
+        0 10px, 5px 10px, 10px 10px;
       background-repeat: no-repeat;
     }
     
+    /* Action column */
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="actions"] {
+      width: 36px;
+      min-width: 36px;
+      max-width: 36px;
+      text-align: center;
+      vertical-align: middle;
+      padding: 0;
+    }
+    
+    /* Action buttons container */
+    td[data-key="actions"] > div,
+    th[data-key="actions"] > div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+    }
+    
+    /* Sharpie button - circular red-border style */
     button.sharpie {
-      margin: 0; padding: 0;
-      width: 22px; height: 22px;
-      min-width: 22px; min-height: 22px;
-      display: inline-flex; align-items: center; justify-content: center;
-      background: transparent; color: #9ca3af;
-      border: 1px solid #f44336; border-radius: 50%;
+      margin: 0;
+      padding: 0;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      box-sizing: border-box;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: #9ca3af;
+      border: 1px solid #f44336;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 500;
+      box-shadow: none;
+      transition: all 0.15s ease;
+    }
+    
+    button.sharpie svg {
+      width: 12px;
+      height: 12px;
+    }
+    
+    button.sharpie:hover {
+      background: rgba(244,67,54,0.1);
+      border-color: #f44336;
+    }
+    
+    button.sharpie.active {
+      background: #f44336;
+      color: white;
+      border-color: #d32f2f;
+    }
+    
+    /* Master sharpie in header */
+    button.master-sharpie-toggle {
+      margin: 0;
+      padding: 0;
+      width: 22px;
+      height: 22px;
+      min-width: 22px;
+      min-height: 22px;
+      max-width: 22px;
+      max-height: 22px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f44336;
+      color: white;
+      border: 1px solid #d32f2f;
+      border-radius: 50%;
       cursor: pointer;
       box-shadow: none;
       transition: all 0.15s ease;
     }
-    button.sharpie:hover { background: rgba(244,67,54,0.1); border-color: #f44336; }
-    button.sharpie svg { width: 12px; height: 12px; }
-    button.sharpie.active { background: #f44336; color: white; border-color: #d32f2f; }
     
-    /* ===== DRAGGING ===== */
-    tr.dragging { opacity: 0.6; outline: 2px dashed var(--accent); }
-    body.is-dragging { user-select: none; -webkit-user-select: none; cursor: grabbing !important; }
-    body.is-dragging * { user-select: none; -webkit-user-select: none; }
-    td[data-key="drag"] { user-select: none; -webkit-user-select: none; }
+    button.master-sharpie-toggle svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    button.master-sharpie-toggle:hover {
+      background: #e53935;
+      border-color: #c62828;
+    }
+    
+    button.master-sharpie-toggle.lines-hidden {
+      background: transparent;
+      color: #9ca3af;
+      border-color: #f44336;
+    }
+    
+    button.master-sharpie-toggle.lines-hidden:hover {
+      background: rgba(244,67,54,0.1);
+      border-color: #f44336;
+    }
+    
+    /* ===== DRAGGING STATES - EXACT DOM ===== */
+    tr.dragging {
+      opacity: 0.6;
+      outline: 2px dashed var(--accent);
+    }
+    
+    tr.subchild.attached {
+      outline: 2px solid #3a7bffcc;
+    }
     
     /* ===== SHARPIE LINES ===== */
     .sharpie-line-element {
@@ -248,9 +448,12 @@
       pointer-events: none;
       z-index: 500;
     }
-    body.sharpie-lines-hidden .sharpie-line-element { display: none; }
     
-    /* ===== DURATION POPUP ===== */
+    body.sharpie-lines-hidden .sharpie-line-element {
+      display: none;
+    }
+    
+    /* ===== DURATION EDITOR POPUP ===== */
     .duration-popup {
       position: fixed;
       background: var(--panel);
@@ -261,170 +464,140 @@
       z-index: 10000;
       display: none;
     }
-    .duration-popup.show { display: block; }
-    .duration-popup input {
-      width: 80px; padding: 6px 8px;
-      border: 1px solid var(--border); border-radius: 4px;
-      background: var(--bg); color: var(--text);
-      font-size: 14px; text-align: center;
-    }
     
-    /* ===== SCHEDULE HEADER IMAGE ===== */
-    .header-image {
-      text-align: center;
-      margin-bottom: 12px;
-    }
-    
-    .header-image img {
-      max-width: 100%;
-      height: auto;
+    .duration-popup.show {
       display: block;
-      margin: 0 auto;
     }
     
-    /* Header design container - match table width */
-    .header-design-container {
-      width: 100%;
-      margin-bottom: 12px;
+    .duration-popup input {
+      width: 80px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
     }
     
-    .header-design-container > div {
-      margin: 0 auto;
+    .duration-popup input:focus {
+      outline: none;
+      border-color: var(--accent);
     }
     
-    /* ===== TAG PILLS ===== */
-    .tagsBox {
+    /* ===== RESIZE HANDLES ===== */
+    .col-resize-grip {
       position: absolute;
-      inset: 0;
-      display: flex;
-      pointer-events: none;
+      right: -4px;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 101;
     }
     
-    .tags-pills {
-      flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 3px;
-      padding: 4px;
-      position: relative;
-      z-index: 11;
-      pointer-events: none;
-      align-items: flex-start;
-      align-content: flex-start;
-      justify-content: flex-start;
-    }
-    
-    .tag-pill {
-      background: var(--panel, #ffffff);
-      color: var(--text, #111827);
-      padding: 2px 6px 2px 2px;
-      border-radius: 999px;
-      border: 1px solid #94a3b8;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      position: relative;
-      box-sizing: border-box;
-      white-space: nowrap;
-      flex: 0 0 auto;
-    }
-    
-    .tag-pill span {
-      text-transform: none;
-      font-size: inherit;
-    }
-    }
-    
-    .tag-pill.image-tag img {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      object-fit: cover;
-    }
-    
-    /* Vertical alignment for tags cells */
-    td[data-valign="top"] .tags-pills { align-items: flex-start; align-content: flex-start; }
-    td[data-valign="middle"] .tags-pills { align-items: center; align-content: center; }
-    td[data-valign="bottom"] .tags-pills { align-items: flex-end; align-content: flex-end; }
-    /* Horizontal alignment for tags cells */
-    td[data-align="left"] .tags-pills { justify-content: flex-start; }
-    td[data-align="center"] .tags-pills { justify-content: center; }
-    td[data-align="right"] .tags-pills { justify-content: flex-end; }
-    
-    .tag-pill .tag-dummy-circle {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: inline-block;
-      background: transparent;
-    }
-    
-    .tag-pill.minor-tag {
-      border: 2px solid #dc2626;
-      box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.3);
-    }
-    
-    .tag-pill .tag-x {
-      display: none;
+    .row-resize-grip {
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 100%;
+      height: 8px;
+      cursor: row-resize;
+      z-index: 101;
     }
     
     /* ===== FOOTER ===== */
     .footer {
-      text-align: center; padding: 8px;
-      font-size: 11px; color: var(--muted);
+      text-align: center;
+      padding: 8px;
+      font-size: 11px;
+      color: var(--muted);
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
   </style>
-  <!-- v17.0 - Added row-times handler, reconnection logic, heartbeat -->
 </head>
 <body>
   <div class="header">
     <div class="header-left">
-      <div class="channel-label">
-        <span>Channel:</span> <strong id="channelName">Loading...</strong>
-      </div>
+      <button class="status-btn" id="statusBtn" title="Connection status">
+        <span class="status-dot" id="statusDot"></span>
+      </button>
+      <div class="channel-name" id="channelName">Loading...</div>
     </div>
+    
     <div class="header-center">
       <div class="header-logo">
         <span>SKEDULER</span>
         <span class="ad-badge">AD</span>
-        <svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
+        <svg viewBox="195 40 100 130">
+          <defs>
+            <linearGradient id="hCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#cc2222"/>
+              <stop offset="40%" stop-color="#ee3333"/>
+              <stop offset="100%" stop-color="#aa1111"/>
+            </linearGradient>
+            <linearGradient id="hTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#dd2222"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+            <linearGradient id="hBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#d0d0d0"/>
+              <stop offset="30%" stop-color="#eeeeee"/>
+              <stop offset="70%" stop-color="#e0e0e0"/>
+              <stop offset="100%" stop-color="#c8c8c8"/>
+            </linearGradient>
+            <linearGradient id="hClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#aa1111"/>
+              <stop offset="50%" stop-color="#dd3333"/>
+              <stop offset="100%" stop-color="#991111"/>
+            </linearGradient>
+          </defs>
+          <g transform="rotate(45 245 96)">
+            <path fill="url(#hCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+            <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+            <path fill="url(#hClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+            <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+            <path fill="url(#hBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+            <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+            <path fill="url(#hTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+            <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+          </g>
+        </svg>
       </div>
     </div>
+
     <div class="header-right">
-      <div class="live-badge manual" id="liveBadge">
-        <span class="live-text" id="liveText">LIVE</span>
-        <span class="live-dot"></span>
-      </div>
       <button class="qr-btn" id="qrBtn" title="Show QR Code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
           <rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/>
         </svg>
       </button>
-      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress" onclick="document.body.classList.toggle('sharpie-lines-hidden');this.classList.toggle('lines-hidden');localStorage.setItem('ad-sharpie-hidden', document.body.classList.contains('sharpie-lines-hidden'));">
-        <svg width="18" height="18" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
+      <button class="header-progress-btn" id="progressBtn" title="Toggle Progress">
+        <svg width="16" height="16" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
     </div>
   </div>
   
   <div class="main-content">
     <div id="schedule-container">
-      <div class="schedule-scroll" id="scheduleScroll"></div>
+      <div class="schedule-scroll" id="scheduleScroll">
+        <!-- Schedule table injected here -->
+      </div>
     </div>
   </div>
   
-  <div class="footer" id="footer">Waiting for connection...</div>
+  <div class="footer" id="footer">
+    Waiting for connection...
+  </div>
   
+  <!-- Duration Editor Popup -->
   <div class="duration-popup" id="durationPopup">
     <input type="text" id="durationInput" placeholder="0:30">
   </div>
   
+  <!-- QR Code Popover -->
   <div class="qr-popover" id="qrPopover">
     <div class="qr-label">SCAN TO VIEW SCHEDULE</div>
     <img id="qrImage" alt="QR Code" />
@@ -435,33 +608,21 @@
 (function() {
   'use strict';
   
-  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
-  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
+  // === CONFIG ===
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
   
+  // === STATE ===
   let supabase = null;
   let channel = null;
   let channelCode = null;
   let draggingRow = null;
   let markedRows = new Set();
   let linesHidden = false;
-  let isLiveMode = false;
-
-  // Reconnection state
-  let reconnectAttempts = 0;
-  let reconnectTimer = null;
-  let heartbeatTimer = null;
-  let lastHeartbeat = Date.now();
-  const MAX_RECONNECT_ATTEMPTS = 10;
-  const HEARTBEAT_INTERVAL = 30000; // 30 seconds
-  const HEARTBEAT_TIMEOUT = 45000; // 45 seconds without response = reconnect
   
+  // === INIT ===
   async function init() {
-    // Restore sharpie visibility state
-    if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
-      document.body.classList.add('sharpie-lines-hidden');
-      document.getElementById('progressBtn')?.classList.add('lines-hidden');
-    }
-    
+    // Get channel code from URL
     const params = new URLSearchParams(window.location.search);
     channelCode = params.get('c');
     
@@ -471,46 +632,36 @@
       return;
     }
     
-    document.getElementById('channelName').textContent = 'Loading...';
+    document.getElementById('channelName').textContent = `Channel: ${channelCode}`;
+    
+    // Init Supabase
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
+    // Load initial schedule from bucket
     await loadScheduleFromBucket();
+    
+    // Subscribe to realtime
     subscribeToChannel();
-    subscribeToLiveStatus();
   }
   
+  // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      const { data: broadcast, error: lookupError } = await supabase
-        .from('broadcasts')
-        .select('*')
-        .eq('code', channelCode.toUpperCase())
-        .single();
+      const { data, error } = await supabase.storage
+        .from('broadcast-schedules')
+        .download(`${channelCode}.html`);
       
-      if (lookupError || !broadcast) throw new Error('Broadcast not found');
+      if (error) throw error;
       
-      isLiveMode = broadcast.auto_update === true;
-      updateLiveStatus();
-      
-      document.getElementById('channelName').textContent = broadcast.title || `Channel ${channelCode}`;
-      
-      let htmlPath = broadcast.channel_number 
-        ? `${broadcast.user_id}/ch${broadcast.channel_number}_${broadcast.file_name}.html`
-        : `${broadcast.user_id}/${broadcast.file_name}.html`;
-      
-      const { data: urlData } = supabase.storage.from('schedule-files').getPublicUrl(htmlPath);
-      const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-      
-      const response = await fetch(publicUrl);
-      if (!response.ok) throw new Error('Could not load schedule');
-      
-      const html = await response.text();
+      const html = await data.text();
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
       console.error('Load error:', err);
       document.getElementById('scheduleScroll').innerHTML = 
-        `<div style="padding:40px;text-align:center;color:var(--muted);">No schedule found for channel ${channelCode}</div>`;
+        `<div style="padding:40px;text-align:center;color:var(--muted);">
+          No schedule found for channel ${channelCode}
+        </div>`;
       updateFooter('No schedule');
     }
   }
@@ -532,17 +683,18 @@
         // Update active tab
         tabs.forEach(function(t) { t.classList.remove('active'); });
         tab.classList.add('active');
+        document.dispatchEvent(new CustomEvent('broadcast-day-changed', { detail: { dayId: dayId } }));
 
-        // Re-setup columns and row interactions for the newly visible section
+        // Re-setup for visible section
         if (target) {
           var table = target.querySelector('table');
           if (table) {
-            setupColumns(table);
-            setupRowInteractions(table);
+            setupColumnsForTable(table);
+            setupRowInteractionsForTable(table);
           }
         }
 
-        // Reposition sharpie lines for the visible section
+        // Reposition sharpie lines
         setTimeout(function() { updateAllSharpieLines(); }, 50);
       });
     });
@@ -552,56 +704,305 @@
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
 
-    // Remove buttons and style tags from loaded HTML (but NOT day tab buttons/styles)
-    container.querySelectorAll('button:not(.bday-tab)').forEach(btn => btn.remove());
-    container.querySelectorAll('style').forEach(s => {
-      // Keep styles that contain day tab CSS
-      if (!s.textContent.includes('broadcast-day-tabs') && !s.textContent.includes('bday-tab')) {
-        s.remove();
-      }
-    });
-    container.querySelectorAll('.completed-line').forEach(el => el.remove());
-
-    // DO NOT strip row backgrounds - we need them for colors!
-
-    // Wire up day tabs
+    // Wire up day tabs (scripts injected via innerHTML don't execute)
     initDayTabs(container);
 
-    // If multi-day, set up each day section
+    // If multi-day tabs are present, set up each day section and listen for tab changes
     const hasDayTabs = container.querySelector('.broadcast-day-tabs');
     if (hasDayTabs) {
+      // Setup columns and interactions for ALL day sections (even hidden ones)
       container.querySelectorAll('.broadcast-day-section').forEach(section => {
         const table = section.querySelector('table');
         if (table) {
-          setupColumns(table);
-          setupRowInteractions(table);
+          setupColumnsForTable(table);
+          setupRowInteractionsForTable(table);
+          setupMasterSharpieForTable(table);
         }
       });
-      initCompletedState();
+
+      // Listen for tab changes to re-bind interactions on the newly visible section
+      document.addEventListener('broadcast-day-changed', function(e) {
+        // Cancel any in-progress drag to prevent cross-day row moves
+        if (draggingRow) {
+          draggingRow.classList.remove('dragging');
+          draggingRow = null;
+        }
+
+        const dayId = e.detail?.dayId;
+        if (!dayId) return;
+        const section = container.querySelector(`.broadcast-day-section[data-day-id="${dayId}"]`);
+        if (section) {
+          const table = section.querySelector('table');
+          if (table) {
+            setupRowInteractionsForTable(table);
+            setupMasterSharpieForTable(table);
+          }
+        }
+      });
     } else {
+      // Single day - original behavior
       setupColumns();
       setupRowInteractions();
-      initCompletedState();
+      setupMasterSharpie();
     }
+
+    // Setup QR code toggle
     setupQRCode();
   }
+  
+  // === SETUP COLUMNS ===
+  function setupColumnsForTable(table) {
+    if (!table) return;
 
+    // Add drag column header
+    const headerRow = table.querySelector('thead tr');
+    if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
+      const th = document.createElement('th');
+      th.setAttribute('data-key', 'drag');
+      headerRow.insertBefore(th, headerRow.firstChild);
+    }
+
+    // Add action column header with master sharpie
+    if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
+      const th = document.createElement('th');
+      th.setAttribute('data-key', 'actions');
+      th.innerHTML = `<div><button class="master-sharpie-toggle master-sharpie-btn" title="Toggle all sharpie lines">${getSharpieIconSVG()}</button></div>`;
+      headerRow.appendChild(th);
+    }
+
+    // Add colgroup entries
+    const colgroup = table.querySelector('colgroup');
+    if (colgroup) {
+      if (!colgroup.querySelector('col[data-key="drag"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'drag');
+        col.style.width = '36px';
+        colgroup.insertBefore(col, colgroup.firstChild);
+      }
+      if (!colgroup.querySelector('col[data-key="actions"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'actions');
+        col.style.width = '36px';
+        colgroup.appendChild(col);
+      }
+    }
+
+    // Add cells to each row
+    const rows = table.querySelectorAll('tbody tr[data-id]');
+    rows.forEach(row => {
+      // Drag cell
+      if (!row.querySelector('td[data-key="drag"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'drag');
+        td.innerHTML = '<span class="drag-dots"></span>';
+        row.insertBefore(td, row.firstChild);
+      }
+
+      // Action cell with sharpie button
+      if (!row.querySelector('td[data-key="actions"]')) {
+        const td = document.createElement('td');
+        td.setAttribute('data-key', 'actions');
+        td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
+        row.appendChild(td);
+      }
+    });
+  }
+
+  function setupColumns() {
+    const table = document.querySelector('#scheduleScroll table');
+    setupColumnsForTable(table);
+  }
+  
+  function getSharpieIconSVG() {
+    return `<svg viewBox="195 40 100 130">
+      <defs>
+        <linearGradient id="sCapG" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#cc2222"/>
+          <stop offset="40%" stop-color="#ee3333"/>
+          <stop offset="100%" stop-color="#aa1111"/>
+        </linearGradient>
+        <linearGradient id="sTipG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#dd2222"/>
+          <stop offset="100%" stop-color="#991111"/>
+        </linearGradient>
+        <linearGradient id="sBodyG" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#d0d0d0"/>
+          <stop offset="30%" stop-color="#eeeeee"/>
+          <stop offset="70%" stop-color="#e0e0e0"/>
+          <stop offset="100%" stop-color="#c8c8c8"/>
+        </linearGradient>
+        <linearGradient id="sClipG" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#aa1111"/>
+          <stop offset="50%" stop-color="#dd3333"/>
+          <stop offset="100%" stop-color="#991111"/>
+        </linearGradient>
+      </defs>
+      <g transform="rotate(45 245 96)">
+        <path fill="url(#sCapG)" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/>
+        <path fill="rgba(255,255,255,0.25)" d="m234,61l0,-27q0,-14 8,-20l0,47l-8,0z"/>
+        <path fill="url(#sClipG)" d="m258,21l4,0q6,0 6,6l0,47q0,2 -2,2l-6,0q-2,0 -2,-2l0,-53z"/>
+        <ellipse fill="#881111" cx="263" cy="76" rx="5" ry="2.5"/>
+        <path fill="url(#sBodyG)" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/>
+        <rect fill="rgba(255,255,255,0.4)" x="234" y="69" width="5" height="68" rx="2"/>
+        <path fill="url(#sTipG)" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/>
+        <path fill="rgba(255,255,255,0.15)" d="m240,168q-1,8 5,20l0,-19l-5,-1z"/>
+      </g>
+    </svg>`;
+  }
+  
+  // === ROW INTERACTIONS ===
+  function setupRowInteractionsForTable(table) {
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr[data-id]');
+
+    rows.forEach(row => {
+      // Make draggable
+      row.draggable = true;
+
+      // Drag start
+      row.addEventListener('dragstart', (e) => {
+        draggingRow = row;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', row.dataset.id);
+      });
+
+      // Drag end
+      row.addEventListener('dragend', () => {
+        if (draggingRow) {
+          draggingRow.classList.remove('dragging');
+        }
+        draggingRow = null;
+
+        // Broadcast new order
+        broadcastRowOrder();
+      });
+
+      // Duration click
+      const durCell = row.querySelector('td[data-key="duration"]');
+      if (durCell) {
+        durCell.style.cursor = 'pointer';
+        durCell.addEventListener('click', () => openDurationEditor(row, durCell));
+      }
+
+      // Sharpie button click
+      const sharpieBtn = row.querySelector('button.sharpie');
+      if (sharpieBtn) {
+        sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
+      }
+    });
+
+    // Tbody dragover - exact DOM implementation
+    if (!tbody._dragoverSetup) {
+      tbody._dragoverSetup = true;
+      tbody.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggingRow) return;
+
+        const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
+        const afterEl = calcAfter(candidates, e.clientY);
+
+        if (afterEl === null) {
+          tbody.appendChild(draggingRow);
+        } else {
+          tbody.insertBefore(draggingRow, afterEl);
+        }
+      });
+    }
+  }
+
+  function setupRowInteractions() {
+    const table = document.querySelector('#scheduleScroll table');
+    setupRowInteractionsForTable(table);
+  }
+  
+  // Exact DOM calcAfter function
+  function calcAfter(list, y) {
+    const scrollContainer = document.querySelector('.schedule-scroll');
+    const zoom = scrollContainer ? parseFloat(scrollContainer.style.zoom || '1') : 1;
+    const adjustedY = y / zoom;
+    
+    let closest = { offset: -Infinity, element: null };
+    
+    list.forEach(el => {
+      const box = el.getBoundingClientRect();
+      const offset = adjustedY - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset, element: el };
+      }
+    });
+    
+    return closest.element;
+  }
+  
+  // === MASTER SHARPIE ===
+  function setupMasterSharpieForTable(table) {
+    // Find the master sharpie button within this table's header (if table exists)
+    const btn = table ? (table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie')) : null;
+    const progressBtn = document.getElementById('progressBtn');
+
+    // Restore sharpie visibility state
+    if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
+      linesHidden = true;
+      document.body.classList.add('sharpie-lines-hidden');
+      if (btn) btn.classList.add('lines-hidden');
+      if (progressBtn) progressBtn.classList.add('lines-hidden');
+    }
+
+    function toggleSharpieVisibility() {
+      linesHidden = !linesHidden;
+      document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+      // Update all master sharpie buttons across all day tables
+      document.querySelectorAll('.master-sharpie-btn, #masterSharpie').forEach(b => {
+        b.classList.toggle('lines-hidden', linesHidden);
+      });
+      if (progressBtn) progressBtn.classList.toggle('lines-hidden', linesHidden);
+      localStorage.setItem('ad-sharpie-hidden', linesHidden);
+      broadcastEvent('sharpie-visibility', { hidden: linesHidden });
+    }
+
+    if (btn && !btn._sharpieSetup) {
+      btn._sharpieSetup = true;
+      btn.addEventListener('click', toggleSharpieVisibility);
+    }
+    if (progressBtn && !progressBtn._sharpieSetup) {
+      progressBtn._sharpieSetup = true;
+      progressBtn.addEventListener('click', toggleSharpieVisibility);
+    }
+  }
+
+  function setupMasterSharpie() {
+    const table = document.querySelector('#scheduleScroll table');
+    setupMasterSharpieForTable(table);
+  }
+  
+  // === QR CODE ===
   function setupQRCode() {
     const btn = document.getElementById('qrBtn');
     const popover = document.getElementById('qrPopover');
     const qrImage = document.getElementById('qrImage');
-    const qrUrlEl = document.getElementById('qrUrl');
+    const qrUrl = document.getElementById('qrUrl');
     if (!btn || !popover) return;
+    
+    // Build the broadcast viewer URL (not the AD viewer URL)
     const broadcastUrl = window.location.origin + '/?c=' + (channelCode || '');
+    
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const isVisible = popover.classList.toggle('visible');
       btn.classList.toggle('active', isVisible);
+      
       if (isVisible && !qrImage.src) {
-        qrImage.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(broadcastUrl);
-        qrUrlEl.textContent = broadcastUrl;
+        const encoded = encodeURIComponent(broadcastUrl);
+        qrImage.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encoded;
+        qrUrl.textContent = broadcastUrl;
       }
     });
+    
+    // Close on outside click
     document.addEventListener('click', (e) => {
       if (!popover.contains(e.target) && e.target !== btn) {
         popover.classList.remove('visible');
@@ -610,242 +1011,37 @@
     });
   }
   
-  function initCompletedState() {
-    document.querySelectorAll('#scheduleScroll tr[data-completed="true"], #scheduleScroll tr.row-complete').forEach(row => {
-      const rowId = row.dataset.id;
-      if (rowId && !markedRows.has(rowId)) {
-        markedRows.add(rowId);
-        const btn = row.querySelector('button.sharpie');
-        if (btn) btn.classList.add('active');
-        addSharpieLineElement(row);
-      }
-    });
-  }
-  
-  function setupColumns(tableArg) {
-    const table = tableArg || document.querySelector('#scheduleScroll table');
-    if (!table) return;
-    
-    const headerRow = table.querySelector('thead tr');
-    
-    // Add drag header
-    if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
-      const th = document.createElement('th');
-      th.setAttribute('data-key', 'drag');
-      headerRow.insertBefore(th, headerRow.firstChild);
-    }
-    
-    // Add action header
-    if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
-      const th = document.createElement('th');
-      th.setAttribute('data-key', 'actions');
-      headerRow.appendChild(th);
-    }
-    
-    // Add colgroup entries
-    const colgroup = table.querySelector('colgroup');
-    if (colgroup) {
-      if (!colgroup.querySelector('col[data-key="drag"]')) {
-        const col = document.createElement('col');
-        col.setAttribute('data-key', 'drag');
-        col.style.width = '60px';
-        colgroup.insertBefore(col, colgroup.firstChild);
-      }
-      if (!colgroup.querySelector('col[data-key="actions"]')) {
-        const col = document.createElement('col');
-        col.setAttribute('data-key', 'actions');
-        col.style.width = '60px';
-        colgroup.appendChild(col);
-      }
-    }
-    
-    // Add cells to each row
-    table.querySelectorAll('tbody tr[data-id]').forEach(row => {
-      // Drag cell
-      if (!row.querySelector('td[data-key="drag"]')) {
-        const td = document.createElement('td');
-        td.setAttribute('data-key', 'drag');
-        td.style.background = 'transparent';
-        td.innerHTML = '<div class="cell-bg"><span class="drag-dots"></span></div>';
-        row.insertBefore(td, row.firstChild);
-      }
-      
-      // Action cell
-      if (!row.querySelector('td[data-key="actions"]')) {
-        const td = document.createElement('td');
-        td.setAttribute('data-key', 'actions');
-        td.style.background = 'transparent';
-        td.innerHTML = `<div class="cell-bg"><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
-        row.appendChild(td);
-      }
-    });
-    
-    // Center header over table (after columns added)
-    requestAnimationFrame(() => {
-      const header = document.querySelector('#scheduleScroll .header-design-container, #scheduleScroll .header-image');
-      if (header && table) {
-        const tableWidth = table.offsetWidth;
-        const headerWidth = header.offsetWidth;
-        // Use the larger of the two so text doesn't overflow
-        const targetWidth = Math.max(tableWidth, headerWidth);
-        header.style.width = targetWidth + 'px';
-        header.style.marginBottom = '12px';
-      }
-    });
-  }
-  
-  function getSharpieIconSVG() {
-    return `<svg viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>`;
-  }
-  
-  function setupRowInteractions(tableArg) {
-    const tbody = tableArg ? tableArg.querySelector('tbody') : document.querySelector('#scheduleScroll tbody');
-    if (!tbody) return;
-    
-    // Touch + Mouse drag system (replaces HTML5 Drag and Drop)
-    let dragState = null;
-    
-    tbody.querySelectorAll('tr[data-id]').forEach(row => {
-      // Drag handle (grab column) - mouse + touch
-      const dragHandle = row.querySelector('td[data-key="drag"]');
-      if (dragHandle) {
-        dragHandle.addEventListener('mousedown', startDrag);
-        dragHandle.addEventListener('touchstart', startDrag, { passive: false });
-      }
-      
-      // Duration cell click
-      const durCell = row.querySelector('td[data-key="duration"]');
-      if (durCell) {
-        durCell.style.cursor = 'pointer';
-        durCell.addEventListener('click', () => openDurationEditor(row, durCell));
-      }
-      
-      // Sharpie button
-      const sharpieBtn = row.querySelector('button.sharpie');
-      if (sharpieBtn) {
-        sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
-      }
-    });
-    
-    function startDrag(e) {
-      const row = e.currentTarget.closest('tr[data-id]');
-      if (!row) return;
-
-      // Don't allow dragging sub-events independently
-      if (row.dataset.parent) return;
-
-      // Prevent text selection for both mouse and touch
-      e.preventDefault();
-
-      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
-
-      dragState = {
-        row: row,
-        startY: clientY,
-        currentY: clientY,
-        scrollContainer: document.querySelector('.schedule-scroll')
-      };
-
-      row.classList.add('dragging');
-      draggingRow = row;
-
-      // Prevent text selection during drag
-      document.body.classList.add('is-dragging');
-      document.addEventListener('selectstart', preventSelect);
-
-      document.addEventListener('mousemove', moveDrag);
-      document.addEventListener('touchmove', moveDrag, { passive: false });
-      document.addEventListener('mouseup', endDrag);
-      document.addEventListener('touchend', endDrag);
-    }
-
-    function preventSelect(e) {
-      e.preventDefault();
-    }
-    
-    function moveDrag(e) {
-      if (!dragState) return;
-      
-      if (e.type.startsWith('touch')) {
-        e.preventDefault();
-      }
-      
-      const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
-      dragState.currentY = clientY;
-      
-      // Auto-scroll if dragging near edges
-      const scrollContainer = dragState.scrollContainer;
-      const rect = scrollContainer.getBoundingClientRect();
-      const scrollThreshold = 60;
-      const scrollSpeed = 5;
-      
-      if (clientY - rect.top < scrollThreshold) {
-        scrollContainer.scrollTop -= scrollSpeed;
-      } else if (rect.bottom - clientY < scrollThreshold) {
-        scrollContainer.scrollTop += scrollSpeed;
-      }
-      
-      // Find closest row and reorder
-      const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
-      let closest = { offset: -Infinity, element: null };
-      
-      candidates.forEach(el => {
-        const box = el.getBoundingClientRect();
-        const offset = clientY - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          closest = { offset, element: el };
-        }
-      });
-      
-      if (closest.element === null) {
-        tbody.appendChild(dragState.row);
-      } else {
-        tbody.insertBefore(dragState.row, closest.element);
-      }
-    }
-    
-    function endDrag() {
-      if (!dragState) return;
-
-      dragState.row.classList.remove('dragging');
-      draggingRow = null;
-      dragState = null;
-
-      // Re-enable text selection
-      document.body.classList.remove('is-dragging');
-      document.removeEventListener('selectstart', preventSelect);
-
-      document.removeEventListener('mousemove', moveDrag);
-      document.removeEventListener('touchmove', moveDrag);
-      document.removeEventListener('mouseup', endDrag);
-      document.removeEventListener('touchend', endDrag);
-
-      broadcastRowOrder();
-      updateAllSharpieLines();
-    }
-  }
-  
+  // === SHARPIE TOGGLE ===
   function toggleRowSharpie(row) {
     const rowId = row.dataset.id;
     const btn = row.querySelector('button.sharpie');
-    const container = document.getElementById('scheduleScroll');
+    const scrollContainer = document.getElementById('scheduleScroll');
     
     if (markedRows.has(rowId)) {
+      // Unmark
       markedRows.delete(rowId);
       btn?.classList.remove('active');
-      container.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`)?.remove();
-      broadcastEvent('sharpie-toggle', { rowId, marked: false, source: 'ad' });
+      
+      // Remove line
+      const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
+      if (line) line.remove();
+      
+      broadcastEvent('sharpie-toggle', { rowId, marked: false });
     } else {
+      // Mark
       markedRows.add(rowId);
       btn?.classList.add('active');
+      
+      // Add line
       addSharpieLineElement(row);
-      broadcastEvent('sharpie-toggle', { rowId, marked: true, source: 'ad' });
+      
+      broadcastEvent('sharpie-toggle', { rowId, marked: true });
     }
   }
   
   function addSharpieLineElement(row) {
-    const container = document.getElementById('scheduleScroll');
-    if (!container) return;
+    const scrollContainer = document.getElementById('scheduleScroll');
+    if (!scrollContainer) return;
 
     // Find the table containing this row (handles multi-day sections)
     const table = row.closest('table');
@@ -855,37 +1051,46 @@
     const section = row.closest('.broadcast-day-section');
     if (section && section.style.display === 'none') return;
 
-    container.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`)?.remove();
+    // Remove existing
+    const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
+    if (existing) existing.remove();
 
+    // Create line
     const line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
-    line.style.top = (table.offsetTop + row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = (table.offsetLeft + 36) + 'px';
-    line.style.width = (table.offsetWidth - 72) + 'px';
-    container.appendChild(line);
+
+    // Position (skip drag column, end before action column)
+    const padding = 42; // 36px column + 6px padding
+    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    line.style.left = padding + 'px';
+    line.style.right = padding + 'px';
+
+    scrollContainer.appendChild(line);
   }
-  
+
   function updateAllSharpieLines() {
-    const container = document.getElementById('scheduleScroll');
-    if (!container) return;
+    const scrollContainer = document.getElementById('scheduleScroll');
+    if (!scrollContainer) return;
 
     // Remove all existing lines and re-add for visible rows
-    container.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
+    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
     markedRows.forEach(rowId => {
-      const row = container.querySelector(`tr[data-id="${rowId}"]`);
+      const row = scrollContainer.querySelector(`tr[data-id="${rowId}"]`);
       if (row) addSharpieLineElement(row);
     });
   }
   
+  // === DURATION EDITOR ===
   function openDurationEditor(row, cell) {
     const popup = document.getElementById('durationPopup');
     const input = document.getElementById('durationInput');
-    const rect = cell.getBoundingClientRect();
     
+    const rect = cell.getBoundingClientRect();
     popup.style.left = rect.left + 'px';
     popup.style.top = (rect.bottom + 4) + 'px';
     popup.classList.add('show');
+    
     input.value = cell.textContent.trim();
     input.focus();
     input.select();
@@ -900,15 +1105,24 @@
       const newValue = input.value.trim();
       if (newValue !== cell.textContent.trim()) {
         cell.textContent = newValue;
-        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue, source: 'ad' });
+        broadcastEvent('duration-change', { rowId: row.dataset.id, duration: newValue });
       }
       close();
     };
     
-    const outsideClick = (e) => { if (!popup.contains(e.target) && e.target !== cell) save(); };
+    const outsideClick = (e) => {
+      if (!popup.contains(e.target) && e.target !== cell) {
+        save();
+      }
+    };
+    
     const keyHandler = (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); save(); }
-      else if (e.key === 'Escape') close();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        save();
+      } else if (e.key === 'Escape') {
+        close();
+      }
     };
     
     setTimeout(() => {
@@ -917,371 +1131,202 @@
     }, 10);
   }
   
+  // === REALTIME SYNC ===
   function subscribeToChannel() {
-    channel = supabase.channel(`ad-sync-${channelCode.toUpperCase()}`, {
+    channel = supabase.channel(`ad-sync-${channelCode}`, {
       config: { broadcast: { self: false } }
     });
     
     channel
-      .on('broadcast', { event: 'row-reorder' }, ({ payload }) => {
-        if (!payload?.order) return;
-        const tbody = document.querySelector('#scheduleScroll tbody');
-        if (!tbody) return;
-        payload.order.forEach(id => {
-          const row = tbody.querySelector(`tr[data-id="${id}"]`);
-          if (row) {
-            tbody.appendChild(row);
-            // Move sub-events with their parent
-            const subEvents = tbody.querySelectorAll(`tr[data-parent="${id}"]`);
-            subEvents.forEach(sub => tbody.appendChild(sub));
-          }
-        });
-        updateAllSharpieLines();
-      })
-      .on('broadcast', { event: 'duration-change' }, ({ payload }) => {
-        if (!payload?.rowId) return;
-        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-        const cell = row?.querySelector('td[data-key="duration"]');
-        if (cell) cell.textContent = payload.duration;
-      })
-      .on('broadcast', { event: 'sharpie-toggle' }, ({ payload }) => {
-        if (!payload?.rowId) return;
-        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-        if (!row) return;
-        const btn = row.querySelector('button.sharpie');
-        if (payload.marked) {
-          markedRows.add(payload.rowId);
-          btn?.classList.add('active');
-          addSharpieLineElement(row);
-        } else {
-          markedRows.delete(payload.rowId);
-          btn?.classList.remove('active');
-          document.getElementById('scheduleScroll').querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`)?.remove();
-        }
-      })
-      .on('broadcast', { event: 'sharpie-visibility' }, ({ payload }) => {
-        linesHidden = payload.hidden;
-        document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
-      })
-      .on('broadcast', { event: 'cell-format' }, ({ payload }) => {
-        if (!payload?.rowId || !payload?.columnKey || !payload?.formatting) return;
-        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-        const cell = row?.querySelector(`td[data-key="${payload.columnKey}"]`);
-        if (cell) {
-          // Apply formatting via dataset
-          Object.entries(payload.formatting).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== '') {
-              cell.dataset[key] = value;
-              // Also apply as inline styles for immediate visual feedback
-              applyFormatting(cell, payload.formatting);
-            }
-          });
-        }
-      })
-      .on('broadcast', { event: 'row-format' }, ({ payload }) => {
-        if (!payload?.rowId || !payload?.formatting) return;
-        const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-        if (!row) return;
-        const cells = row.querySelectorAll('td[data-key]:not([data-key="drag"]):not([data-key="actions"])');
-        cells.forEach(cell => {
-          const key = cell.dataset.key;
-          const cellFormat = payload.formatting[key];
-          if (cellFormat) {
-            Object.entries(cellFormat).forEach(([fmtKey, fmtValue]) => {
-              if (fmtValue !== undefined && fmtValue !== null && fmtValue !== '') {
-                cell.dataset[fmtKey] = fmtValue;
-              }
-            });
-            applyFormatting(cell, cellFormat);
-          }
-        });
-      })
-      .on('broadcast', { event: 'full-sync' }, ({ payload }) => {
-        if (payload?.html) injectSchedule(payload.html);
-        if (payload?.order) {
-          const tbody = document.querySelector('#scheduleScroll tbody');
-          payload.order.forEach(id => {
-            const row = tbody?.querySelector(`tr[data-id="${id}"]`);
-            if (row) {
-              tbody.appendChild(row);
-              // Move sub-events with their parent
-              const subEvents = tbody.querySelectorAll(`tr[data-parent="${id}"]`);
-              subEvents.forEach(sub => tbody.appendChild(sub));
-            }
-          });
-        }
-        updateAllSharpieLines();
-      })
-      .on('broadcast', { event: 'row-times' }, ({ payload }) => {
-        // Update START and END times from producer after reorder/duration change
-        if (!payload?.times) return;
-        Object.entries(payload.times).forEach(([rowId, times]) => {
-          const row = document.querySelector(`tr[data-id="${rowId}"]`);
-          if (!row) return;
-          const startCell = row.querySelector('td[data-key="start"]');
-          const endCell = row.querySelector('td[data-key="end"]');
-          if (startCell && times.start) startCell.textContent = times.start;
-          if (endCell && times.end) endCell.textContent = times.end;
-        });
-      })
-      .on('broadcast', { event: 'sync-status' }, ({ payload }) => {
-        // Producer is telling us sync status (live/offline)
-        if (payload?.live !== undefined) {
-          isLiveMode = payload.live;
-          updateLiveStatus();
-        }
-      })
-      .on('broadcast', { event: 'heartbeat' }, () => {
-        // Heartbeat received from producer - we're still connected
-        lastHeartbeat = Date.now();
-      })
+      .on('broadcast', { event: 'row-reorder' }, handleIncomingReorder)
+      .on('broadcast', { event: 'duration-change' }, handleIncomingDuration)
+      .on('broadcast', { event: 'sharpie-toggle' }, handleIncomingSharpie)
+      .on('broadcast', { event: 'sharpie-visibility' }, handleIncomingVisibility)
+      .on('broadcast', { event: 'column-resize' }, handleIncomingColumnResize)
+      .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
+      .on('broadcast', { event: 'row-times' }, handleIncomingRowTimes)
+      .on('broadcast', { event: 'full-sync' }, handleFullSync)
       .subscribe((status) => {
-        console.log('[AD] Channel subscription status:', status);
+        const dot = document.getElementById('statusDot');
         if (status === 'SUBSCRIBED') {
-          reconnectAttempts = 0;
-          clearTimeout(reconnectTimer);
+          dot.classList.add('connected');
           updateFooter('Connected');
+          
+          // Request full sync from DOM
           broadcastEvent('request-sync', {});
-          startHeartbeat();
-        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-          updateFooter('Disconnected');
-          stopHeartbeat();
-          scheduleReconnect();
         } else {
-          updateFooter(status);
+          dot.classList.remove('connected');
+          updateFooter('Disconnected');
         }
       });
   }
-
-  function startHeartbeat() {
-    stopHeartbeat();
-    lastHeartbeat = Date.now();
-
-    heartbeatTimer = setInterval(() => {
-      const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
-
-      // Send our own heartbeat ping
-      broadcastEvent('heartbeat-ping', { timestamp: Date.now() });
-
-      // Check if we've lost connection (no heartbeat from producer)
-      if (timeSinceLastHeartbeat > HEARTBEAT_TIMEOUT) {
-        console.log('[AD] Heartbeat timeout - reconnecting');
-        updateFooter('Connection lost - reconnecting...');
-        stopHeartbeat();
-        scheduleReconnect();
-      }
-    }, HEARTBEAT_INTERVAL);
-  }
-
-  function stopHeartbeat() {
-    if (heartbeatTimer) {
-      clearInterval(heartbeatTimer);
-      heartbeatTimer = null;
-    }
-  }
-
-  function scheduleReconnect() {
-    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      updateFooter('Connection failed - please refresh');
-      return;
-    }
-
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, max 30s
-    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-    reconnectAttempts++;
-
-    console.log(`[AD] Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms`);
-    updateFooter(`Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-
-    clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(() => {
-      reconnect();
-    }, delay);
-  }
-
-  async function reconnect() {
-    console.log('[AD] Attempting reconnect...');
-
-    // Cleanup old channel
-    if (channel) {
-      try {
-        await channel.unsubscribe();
-      } catch (e) {
-        console.log('[AD] Error unsubscribing:', e);
-      }
-      channel = null;
-    }
-
-    // Resubscribe
-    subscribeToChannel();
-  }
   
+  // Get the currently active day ID (for multi-day broadcasts)
+  function getActiveBroadcastDayId() {
+    const activeTab = document.querySelector('.bday-tab.active');
+    return activeTab ? activeTab.getAttribute('data-day-id') : null;
+  }
+
+  // Get the active day's tbody (or fallback to main tbody)
+  function getActiveTbody() {
+    const dayId = getActiveBroadcastDayId();
+    if (dayId) {
+      const section = document.querySelector(`.broadcast-day-section[data-day-id="${dayId}"]`);
+      if (section) return section.querySelector('tbody');
+    }
+    return document.querySelector('#scheduleScroll tbody');
+  }
+
   function broadcastEvent(event, payload) {
-    if (channel) channel.send({ type: 'broadcast', event, payload: { ...payload, source: 'ad' } });
-  }
-  
-  function applyFormatting(cell, formatting) {
-    if (!cell) return;
-    
-    // Text color
-    if (formatting.cellFg !== undefined) {
-      if (formatting.cellFg) {
-        cell.style.color = formatting.cellFg;
-      } else {
-        cell.style.removeProperty('color');
-      }
-    }
-    if (formatting.fgColor !== undefined) {
-      if (formatting.fgColor) {
-        cell.style.color = formatting.fgColor;
-      } else {
-        cell.style.removeProperty('color');
-      }
-    }
-    
-    // Background color
-    if (formatting.cellBg !== undefined) {
-      if (formatting.cellBg) {
-        cell.style.backgroundColor = formatting.cellBg;
-      } else {
-        cell.style.removeProperty('background-color');
-      }
-    }
-    if (formatting.bgColor !== undefined) {
-      if (formatting.bgColor) {
-        cell.style.backgroundColor = formatting.bgColor;
-      } else {
-        cell.style.removeProperty('background-color');
-      }
-    }
-    
-    // Alignment
-    if (formatting.align !== undefined) {
-      if (formatting.align) {
-        cell.style.textAlign = formatting.align;
-      } else {
-        cell.style.removeProperty('text-align');
-      }
-    }
-    
-    // Vertical alignment
-    if (formatting.valign !== undefined) {
-      if (formatting.valign) {
-        cell.style.verticalAlign = formatting.valign;
-      } else {
-        cell.style.removeProperty('vertical-align');
-      }
-    }
-    
-    // Font family
-    if (formatting.fontFamily !== undefined) {
-      if (formatting.fontFamily) {
-        cell.style.fontFamily = formatting.fontFamily;
-      } else {
-        cell.style.removeProperty('font-family');
-      }
-    }
-    
-    // Font size
-    if (formatting.fontSize !== undefined) {
-      if (formatting.fontSize) {
-        cell.style.fontSize = formatting.fontSize;
-      } else {
-        cell.style.removeProperty('font-size');
-      }
-    }
-    
-    // Bold
-    if (formatting.bold !== undefined) {
-      cell.style.fontWeight = formatting.bold ? 'bold' : 'normal';
-    }
-    
-    // Italic
-    if (formatting.italic !== undefined) {
-      cell.style.fontStyle = formatting.italic ? 'italic' : 'normal';
-    }
-    
-    // Underline
-    if (formatting.underline !== undefined) {
-      cell.style.textDecoration = formatting.underline ? 'underline' : 'none';
+    if (channel) {
+      const dayId = getActiveBroadcastDayId();
+      channel.send({ type: 'broadcast', event, payload: { ...payload, dayId: dayId, source: 'ad' } });
     }
   }
-  
-  
+
   function broadcastRowOrder() {
-    const tbody = document.querySelector('#scheduleScroll tbody');
+    const tbody = getActiveTbody();
     if (!tbody) return;
-    // Only include parent rows, not sub-events
-    const order = Array.from(tbody.querySelectorAll('tr[data-id]:not([data-parent])')).map(r => r.dataset.id);
+
+    const order = Array.from(tbody.querySelectorAll('tr[data-id]'))
+      .map(row => row.dataset.id);
+
     broadcastEvent('row-reorder', { order, source: 'ad' });
   }
   
-  function updateFooter(status) {
-    document.getElementById('footer').textContent = `${status} • ${new Date().toLocaleTimeString()}`;
+  // === INCOMING EVENT HANDLERS ===
+  function handleIncomingReorder({ payload }) {
+    if (!payload?.order) return;
+
+    // Find the tbody containing the first row in the order (handles multi-day)
+    const firstRow = document.querySelector(`#scheduleScroll tr[data-id="${payload.order[0]}"]`);
+    const tbody = firstRow ? firstRow.closest('tbody') : getActiveTbody();
+    if (!tbody) return;
+
+    payload.order.forEach(id => {
+      const row = tbody.querySelector(`tr[data-id="${id}"]`);
+      if (row) tbody.appendChild(row);
+    });
+
+    updateAllSharpieLines();
   }
   
-  function updateLiveStatus() {
-    const badge = document.getElementById('liveBadge');
-    badge.classList.remove('live', 'manual');
-    badge.classList.add(isLiveMode ? 'live' : 'manual');
-  }
-  
-  // Subscribe to realtime changes on broadcast record for instant LIVE badge updates
-  let broadcastSubscription = null;
-  function subscribeToLiveStatus() {
-    if (!channelCode || !supabase) return;
+  function handleIncomingRowTimes({ payload }) {
+    if (!payload?.times) return;
     
-    broadcastSubscription = supabase
-      .channel('broadcast-status-' + channelCode.toUpperCase())
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'broadcasts',
-        filter: `code=eq.${channelCode.toUpperCase()}`
-      }, (payload) => {
-        console.log('[AD Sync] Broadcast record updated:', payload);
-        if (payload.new && payload.new.auto_update !== undefined) {
-          const wasLive = isLiveMode;
-          isLiveMode = payload.new.auto_update === true;
-          if (wasLive !== isLiveMode) {
-            console.log('[AD Sync] LIVE status changed:', isLiveMode ? 'LIVE' : 'MANUAL');
-            updateLiveStatus();
-          }
-        }
-      })
-      .subscribe((status) => {
-        console.log('[AD Sync] Broadcast status subscription:', status);
-      });
-  }
-
-  // Cleanup on page unload
-  window.addEventListener('beforeunload', () => {
-    stopHeartbeat();
-    clearTimeout(reconnectTimer);
-    if (channel) {
-      try {
-        channel.unsubscribe();
-      } catch (e) {}
-    }
-    if (broadcastSubscription) {
-      try {
-        broadcastSubscription.unsubscribe();
-      } catch (e) {}
-    }
-  });
-
-  // Handle visibility change - reconnect when page becomes visible again
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && channelCode) {
-      // Check if we need to reconnect
-      const timeSinceLastHeartbeat = Date.now() - lastHeartbeat;
-      if (timeSinceLastHeartbeat > HEARTBEAT_TIMEOUT) {
-        console.log('[AD] Page visible after timeout - reconnecting');
-        scheduleReconnect();
+    console.log('[ADViewer] Received row times update');
+    
+    Object.entries(payload.times).forEach(([rowId, times]) => {
+      const row = document.querySelector(`tr[data-id="${rowId}"]`);
+      if (!row) return;
+      
+      const startCell = row.querySelector('td[data-key="start"]');
+      const endCell = row.querySelector('td[data-key="end"]');
+      
+      if (startCell && times.start !== undefined) {
+        startCell.textContent = times.start;
       }
+      if (endCell && times.end !== undefined) {
+        endCell.textContent = times.end;
+      }
+    });
+  }
+  
+  function handleIncomingDuration({ payload }) {
+    if (!payload?.rowId) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    
+    const cell = row.querySelector('td[data-key="duration"]');
+    if (cell) cell.textContent = payload.duration;
+  }
+  
+  function handleIncomingSharpie({ payload }) {
+    if (!payload?.rowId) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    
+    const btn = row.querySelector('button.sharpie');
+    
+    if (payload.marked) {
+      markedRows.add(payload.rowId);
+      btn?.classList.add('active');
+      addSharpieLineElement(row);
+    } else {
+      markedRows.delete(payload.rowId);
+      btn?.classList.remove('active');
+      const line = document.getElementById('scheduleScroll')
+        .querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+      if (line) line.remove();
     }
-  });
-
+  }
+  
+  function handleIncomingVisibility({ payload }) {
+    linesHidden = payload.hidden;
+    document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+    
+    const btn = document.getElementById('masterSharpie');
+    if (btn) btn.classList.toggle('lines-hidden', linesHidden);
+    const progressBtn = document.getElementById('progressBtn');
+    if (progressBtn) progressBtn.classList.toggle('lines-hidden', linesHidden);
+    localStorage.setItem('ad-sharpie-hidden', linesHidden);
+  }
+  
+  function handleIncomingColumnResize({ payload }) {
+    if (!payload?.key || !payload?.width) return;
+    
+    const col = document.querySelector(`col[data-key="${payload.key}"]`);
+    if (col) col.style.width = payload.width + 'px';
+    
+    const th = document.querySelector(`th[data-key="${payload.key}"]`);
+    if (th) th.style.width = payload.width + 'px';
+  }
+  
+  function handleIncomingRowResize({ payload }) {
+    if (!payload?.rowId || !payload?.height) return;
+    
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (row) {
+      row.style.height = payload.height + 'px';
+      updateAllSharpieLines();
+    }
+  }
+  
+  function handleFullSync({ payload }) {
+    if (!payload) return;
+    
+    // Reload schedule if provided
+    if (payload.html) {
+      injectSchedule(payload.html);
+    }
+    
+    // Apply row order
+    if (payload.order) {
+      handleIncomingReorder({ payload });
+    }
+    
+    // Apply sharpie marks
+    if (payload.sharpieRows) {
+      payload.sharpieRows.forEach(rowId => {
+        handleIncomingSharpie({ payload: { rowId, marked: true } });
+      });
+    }
+    
+    // Apply visibility
+    if (payload.linesHidden !== undefined) {
+      handleIncomingVisibility({ payload: { hidden: payload.linesHidden } });
+    }
+  }
+  
+  // === UTILITIES ===
+  function updateFooter(status) {
+    const footer = document.getElementById('footer');
+    footer.textContent = `${status} • ${new Date().toLocaleTimeString()}`;
+  }
+  
+  // === START ===
   document.addEventListener('DOMContentLoaded', init);
 })();
 </script>
