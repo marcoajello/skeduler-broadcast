@@ -247,9 +247,15 @@
       display: none;
     }
 
+    /* Clip completed lines to the table boundary */
+    #schedule-container table {
+      overflow: hidden;
+    }
+
     /* Show baked-in completed-line spans when sharpie is visible */
     body.show-progress .completed-line {
       display: block;
+      width: 100vw;
     }
     /* Hide them when sharpie is toggled off */
     body.sharpie-hidden .completed-line {
