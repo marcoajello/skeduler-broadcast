@@ -558,8 +558,8 @@
   'use strict';
   
   // === CONFIG ===
-  const SUPABASE_URL = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
-  const SUPABASE_KEY = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
   
   // === STATE ===
   let supabase = null;
@@ -596,18 +596,44 @@
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      const { data, error } = await supabase.storage
-        .from('broadcast-schedules')
-        .download(`${channelCode}.html`);
-      
-      if (error) throw error;
-      
-      const html = await data.text();
+      // Look up broadcast by code (same as broadcast viewer)
+      const { data: broadcast, error: lookupError } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .eq('code', channelCode.toUpperCase())
+        .single();
+
+      if (lookupError || !broadcast) {
+        throw new Error('Broadcast not found');
+      }
+
+      // Update channel name
+      document.getElementById('channelName').textContent = broadcast.title || `Channel: ${channelCode}`;
+
+      // Build storage path (same logic as broadcast viewer)
+      let htmlPath;
+      if (broadcast.channel_number) {
+        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+      } else {
+        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('schedule-files')
+        .getPublicUrl(htmlPath);
+
+      const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+      console.log('[AD] Fetching:', publicUrl);
+
+      const response = await fetch(publicUrl);
+      if (!response.ok) throw new Error('Could not load schedule');
+
+      const html = await response.text();
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
       console.error('Load error:', err);
-      document.getElementById('scheduleScroll').innerHTML = 
+      document.getElementById('scheduleScroll').innerHTML =
         `<div style="padding:40px;text-align:center;color:var(--muted);">
           No schedule found for channel ${channelCode}
         </div>`;
