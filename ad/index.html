@@ -50,7 +50,7 @@
       flex: 1;
       min-width: 0;
     }
- 
+
     .header-center {
       display: flex;
       align-items: center;
@@ -193,7 +193,7 @@
       display: flex;
       align-items: center;
     }
- 
+
     .header-logo img {
       height: 22px;
       width: auto;
@@ -515,7 +515,7 @@
         <img src="logo-pro.png" alt="SKEDULER PRO" />
       </div>
     </div>
- 
+
     <div class="header-right">
       <button class="qr-btn" id="qrBtn" title="Show QR Code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -552,7 +552,7 @@
     <img id="qrImage" alt="QR Code" />
     <div class="qr-url" id="qrUrl"></div>
   </div>
- 
+
 <script>
 (function() {
   'use strict';
@@ -602,14 +602,14 @@
         .select('*')
         .eq('code', channelCode.toUpperCase())
         .single();
- 
+
       if (lookupError || !broadcast) {
         throw new Error('Broadcast not found');
       }
- 
+
       // Update channel name
       document.getElementById('channelName').textContent = broadcast.title || `Channel: ${channelCode}`;
- 
+
       // Build storage path (same logic as broadcast viewer)
       let htmlPath;
       if (broadcast.channel_number) {
@@ -617,17 +617,17 @@
       } else {
         htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
       }
- 
+
       const { data: urlData } = supabase.storage
         .from('schedule-files')
         .getPublicUrl(htmlPath);
- 
+
       const publicUrl = urlData.publicUrl + '?t=' + Date.now();
       console.log('[AD] Fetching:', publicUrl);
- 
+
       const response = await fetch(publicUrl);
       if (!response.ok) throw new Error('Could not load schedule');
- 
+
       const html = await response.text();
       injectSchedule(html);
       updateFooter('Loaded');
@@ -644,7 +644,7 @@
   function initDayTabs(container) {
     const tabs = container.querySelectorAll('.bday-tab');
     if (!tabs.length) return;
- 
+
     tabs.forEach(function(tab) {
       tab.addEventListener('click', function() {
         var dayId = tab.getAttribute('data-day-id');
@@ -659,7 +659,7 @@
         tabs.forEach(function(t) { t.classList.remove('active'); });
         tab.classList.add('active');
         document.dispatchEvent(new CustomEvent('broadcast-day-changed', { detail: { dayId: dayId } }));
- 
+
         // Re-setup for visible section
         if (target) {
           var table = target.querySelector('table');
@@ -668,20 +668,20 @@
             setupRowInteractionsForTable(table);
           }
         }
- 
+
         // Reposition sharpie lines
         setTimeout(function() { updateAllSharpieLines(); }, 50);
       });
     });
   }
- 
+
   function injectSchedule(html) {
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
- 
+
     // Wire up day tabs (scripts injected via innerHTML don't execute)
     initDayTabs(container);
- 
+
     // If multi-day tabs are present, set up each day section and listen for tab changes
     const hasDayTabs = container.querySelector('.broadcast-day-tabs');
     if (hasDayTabs) {
@@ -694,7 +694,7 @@
           setupMasterSharpieForTable(table);
         }
       });
- 
+
       // Listen for tab changes to re-bind interactions on the newly visible section
       document.addEventListener('broadcast-day-changed', function(e) {
         // Cancel any in-progress drag to prevent cross-day row moves
@@ -702,7 +702,7 @@
           draggingRow.classList.remove('dragging');
           draggingRow = null;
         }
- 
+
         const dayId = e.detail?.dayId;
         if (!dayId) return;
         const section = container.querySelector(`.broadcast-day-section[data-day-id="${dayId}"]`);
@@ -720,7 +720,7 @@
       setupRowInteractions();
       setupMasterSharpie();
     }
- 
+
     // Setup QR code toggle
     setupQRCode();
   }
@@ -728,7 +728,7 @@
   // === SETUP COLUMNS ===
   function setupColumnsForTable(table) {
     if (!table) return;
- 
+
     // Add drag column header
     const headerRow = table.querySelector('thead tr');
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
@@ -736,7 +736,7 @@
       th.setAttribute('data-key', 'drag');
       headerRow.insertBefore(th, headerRow.firstChild);
     }
- 
+
     // Add action column header with master sharpie
     if (headerRow && !headerRow.querySelector('th[data-key="actions"]')) {
       const th = document.createElement('th');
@@ -744,7 +744,7 @@
       th.innerHTML = `<div><button class="master-sharpie-toggle master-sharpie-btn" title="Toggle all sharpie lines">${getSharpieIconSVG()}</button></div>`;
       headerRow.appendChild(th);
     }
- 
+
     // Add colgroup entries
     const colgroup = table.querySelector('colgroup');
     if (colgroup) {
@@ -761,7 +761,7 @@
         colgroup.appendChild(col);
       }
     }
- 
+
     // Add cells to each row
     const rows = table.querySelectorAll('tbody tr[data-id]');
     rows.forEach(row => {
@@ -772,7 +772,7 @@
         td.innerHTML = '<span class="drag-dots"></span>';
         row.insertBefore(td, row.firstChild);
       }
- 
+
       // Action cell with sharpie button
       if (!row.querySelector('td[data-key="actions"]')) {
         const td = document.createElement('td');
@@ -782,7 +782,7 @@
       }
     });
   }
- 
+
   function setupColumns() {
     const table = document.querySelector('#scheduleScroll table');
     setupColumnsForTable(table);
@@ -830,19 +830,19 @@
     if (!table) return;
     const tbody = table.querySelector('tbody');
     if (!tbody) return;
- 
+
     const rows = tbody.querySelectorAll('tr[data-id]');
- 
+
     rows.forEach(row => {
       const isSubChild = row.classList.contains('subchild');
- 
+
       if (isSubChild) {
         // Sub-children should not be independently draggable
         row.draggable = false;
       } else {
         // Make draggable
         row.draggable = true;
- 
+
         // Drag start
         row.addEventListener('dragstart', (e) => {
           draggingRow = row;
@@ -850,49 +850,49 @@
           e.dataTransfer.effectAllowed = 'move';
           e.dataTransfer.setData('text/plain', row.dataset.id);
         });
- 
+
         // Drag end
         row.addEventListener('dragend', () => {
           if (draggingRow) {
             draggingRow.classList.remove('dragging');
           }
           draggingRow = null;
- 
+
           // Broadcast new order
           broadcastRowOrder();
         });
       }
- 
+
       // Duration click (both parent rows and sub-children)
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
- 
+
       // Sharpie button click (both parent rows and sub-children)
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
     });
- 
+
     // Tbody dragover - exact DOM implementation
     if (!tbody._dragoverSetup) {
       tbody._dragoverSetup = true;
       tbody.addEventListener('dragover', (e) => {
         e.preventDefault();
         if (!draggingRow) return;
- 
+
         const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
         const afterEl = calcAfter(candidates, e.clientY);
- 
+
         if (afterEl === null) {
           tbody.appendChild(draggingRow);
         } else {
           tbody.insertBefore(draggingRow, afterEl);
         }
- 
+
         // Keep sub-children attached to their parent SUB row
         if (draggingRow.dataset.type === 'SUB') {
           const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
@@ -905,7 +905,7 @@
       });
     }
   }
- 
+
   function setupRowInteractions() {
     const table = document.querySelector('#scheduleScroll table');
     setupRowInteractionsForTable(table);
@@ -935,7 +935,7 @@
     // Find the master sharpie button within this table's header (if table exists)
     const btn = table ? (table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie')) : null;
     const progressBtn = document.getElementById('progressBtn');
- 
+
     // Restore sharpie visibility state
     if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
       linesHidden = true;
@@ -943,7 +943,7 @@
       if (btn) btn.classList.add('lines-hidden');
       if (progressBtn) progressBtn.classList.add('lines-hidden');
     }
- 
+
     function toggleSharpieVisibility() {
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
@@ -955,7 +955,7 @@
       localStorage.setItem('ad-sharpie-hidden', linesHidden);
       broadcastEvent('sharpie-visibility', { hidden: linesHidden });
     }
- 
+
     if (btn && !btn._sharpieSetup) {
       btn._sharpieSetup = true;
       btn.addEventListener('click', toggleSharpieVisibility);
@@ -965,7 +965,7 @@
       progressBtn.addEventListener('click', toggleSharpieVisibility);
     }
   }
- 
+
   function setupMasterSharpie() {
     const table = document.querySelector('#scheduleScroll table');
     setupMasterSharpieForTable(table);
@@ -1034,43 +1034,43 @@
   function addSharpieLineElement(row) {
     const scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
- 
+
     // Find the table containing this row (handles multi-day sections)
     const table = row.closest('table');
     if (!table) return;
- 
+
     // Skip if row is in a hidden day section
     const section = row.closest('.broadcast-day-section');
     if (section && section.style.display === 'none') return;
- 
+
     // Remove existing
     const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
     if (existing) existing.remove();
- 
+
     // Create line
     const line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
- 
+
     // Position using getBoundingClientRect for accurate placement
     // (offsetTop is relative to offsetParent which may not be scrollContainer,
     //  e.g. when day-tabs or day-section wrappers sit between them)
     const containerRect = scrollContainer.getBoundingClientRect();
     const rowRect = row.getBoundingClientRect();
     const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
- 
+
     const padding = 42; // 36px column + 6px padding
     line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
     line.style.left = padding + 'px';
     line.style.right = padding + 'px';
- 
+
     scrollContainer.appendChild(line);
   }
- 
+
   function updateAllSharpieLines() {
     const scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
- 
+
     // Remove all existing lines and re-add for visible rows
     scrollContainer.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
     markedRows.forEach(rowId => {
@@ -1164,7 +1164,7 @@
     const activeTab = document.querySelector('.bday-tab.active');
     return activeTab ? activeTab.getAttribute('data-day-id') : null;
   }
- 
+
   // Get the active day's tbody (or fallback to main tbody)
   function getActiveTbody() {
     const dayId = getActiveBroadcastDayId();
@@ -1174,33 +1174,33 @@
     }
     return document.querySelector('#scheduleScroll tbody');
   }
- 
+
   function broadcastEvent(event, payload) {
     if (channel) {
       const dayId = getActiveBroadcastDayId();
       channel.send({ type: 'broadcast', event, payload: { ...payload, dayId: dayId, source: 'ad' } });
     }
   }
- 
+
   function broadcastRowOrder() {
     const tbody = getActiveTbody();
     if (!tbody) return;
- 
+
     const order = Array.from(tbody.querySelectorAll('tr[data-id]'))
       .map(row => row.dataset.id);
- 
+
     broadcastEvent('row-reorder', { order, source: 'ad' });
   }
   
   // === INCOMING EVENT HANDLERS ===
   function handleIncomingReorder({ payload }) {
     if (!payload?.order) return;
- 
+
     // Find the tbody containing the first row in the order (handles multi-day)
     const firstRow = document.querySelector(`#scheduleScroll tr[data-id="${payload.order[0]}"]`);
     const tbody = firstRow ? firstRow.closest('tbody') : getActiveTbody();
     if (!tbody) return;
- 
+
     payload.order.forEach(id => {
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
       if (row) {
@@ -1212,7 +1212,7 @@
         }
       }
     });
- 
+
     updateAllSharpieLines();
   }
   
