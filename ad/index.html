@@ -734,6 +734,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
+      th.style.width = '36px';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
 
@@ -745,21 +746,31 @@
       headerRow.appendChild(th);
     }
 
-    // Add colgroup entries
-    const colgroup = table.querySelector('colgroup');
-    if (colgroup) {
-      if (!colgroup.querySelector('col[data-key="drag"]')) {
+    // Add colgroup entries — create colgroup if missing (broadcast HTML may not include one)
+    let colgroup = table.querySelector('colgroup');
+    if (!colgroup) {
+      colgroup = document.createElement('colgroup');
+      table.insertBefore(colgroup, table.firstChild);
+      // Add col entries for each existing th so table-layout:fixed keeps their widths
+      const ths = table.querySelectorAll('thead th');
+      ths.forEach(th => {
         const col = document.createElement('col');
-        col.setAttribute('data-key', 'drag');
-        col.style.width = '36px';
-        colgroup.insertBefore(col, colgroup.firstChild);
-      }
-      if (!colgroup.querySelector('col[data-key="actions"]')) {
-        const col = document.createElement('col');
-        col.setAttribute('data-key', 'actions');
-        col.style.width = '36px';
+        if (th.getAttribute('data-key')) col.setAttribute('data-key', th.getAttribute('data-key'));
+        if (th.style.width) col.style.width = th.style.width;
         colgroup.appendChild(col);
-      }
+      });
+    }
+    if (!colgroup.querySelector('col[data-key="drag"]')) {
+      const col = document.createElement('col');
+      col.setAttribute('data-key', 'drag');
+      col.style.width = '36px';
+      colgroup.insertBefore(col, colgroup.firstChild);
+    }
+    if (!colgroup.querySelector('col[data-key="actions"]')) {
+      const col = document.createElement('col');
+      col.setAttribute('data-key', 'actions');
+      col.style.width = '36px';
+      colgroup.appendChild(col);
     }
 
     // Add cells to each row
@@ -942,11 +953,16 @@
       document.body.classList.add('sharpie-lines-hidden');
       if (btn) btn.classList.add('lines-hidden');
       if (progressBtn) progressBtn.classList.add('lines-hidden');
+    } else {
+      // Show static completed-line divs (baked in at push time) by default
+      document.body.classList.add('show-progress');
     }
 
     function toggleSharpieVisibility() {
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+      // Also toggle static completed-line divs (baked in at push time)
+      document.body.classList.toggle('show-progress', !linesHidden);
       // Update all master sharpie buttons across all day tables
       document.querySelectorAll('.master-sharpie-btn, #masterSharpie').forEach(b => {
         b.classList.toggle('lines-hidden', linesHidden);
@@ -1271,6 +1287,7 @@
   function handleIncomingVisibility({ payload }) {
     linesHidden = payload.hidden;
     document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+    document.body.classList.toggle('show-progress', !linesHidden);
     
     const btn = document.getElementById('masterSharpie');
     if (btn) btn.classList.toggle('lines-hidden', linesHidden);
