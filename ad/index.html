@@ -595,8 +595,9 @@
   'use strict';
   
   // === CONFIG ===
-  const SUPABASE_URL = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
-  const SUPABASE_KEY = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
+  // Use main Supabase project — the AD viewer project is deprecated
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL || window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY || window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
   
   // === STATE ===
   let supabase = null;
@@ -633,29 +634,18 @@
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      // Look up the broadcast record to find the actual file path in schedule-files bucket
-      const { data: broadcast, error: lookupErr } = await supabase
+      // Look up the broadcast record to get the file path
+      const { data: rec, error: lookupErr } = await supabase
         .from('broadcasts')
         .select('user_id, channel_number, file_name')
-        .eq('code', channelCode.toUpperCase())
+        .ilike('code', channelCode)
+        .limit(1)
         .single();
 
-      if (lookupErr || !broadcast) {
-        // Fallback: also try lowercase
-        const { data: b2, error: e2 } = await supabase
-          .from('broadcasts')
-          .select('user_id, channel_number, file_name')
-          .eq('code', channelCode)
-          .single();
-        if (e2 || !b2) throw new Error('No broadcast record for channel ' + channelCode);
-        Object.assign(broadcast || {}, b2);
-        var rec = b2;
-      } else {
-        var rec = broadcast;
-      }
+      if (lookupErr || !rec) throw new Error('No broadcast record for ' + channelCode);
 
-      const htmlPath = `${rec.user_id}/ch${rec.channel_number}_${rec.file_name}.html`;
-      console.log('[ADViewer] Downloading from schedule-files/' + htmlPath);
+      const htmlPath = rec.user_id + '/ch' + rec.channel_number + '_' + rec.file_name + '.html';
+      console.log('[ADViewer] Downloading schedule-files/' + htmlPath);
 
       const { data, error } = await supabase.storage
         .from('schedule-files')
