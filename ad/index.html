@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SKEDULER AD</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../config.js"></script>
+  <script src="config.js"></script>
   <style>
     /* ===== EXACT DOM VARIABLES ===== */
     :root {
@@ -47,15 +47,6 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .header-center {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 auto;
     }
     
     .status-btn {
@@ -96,8 +87,6 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      flex: 1;
-      justify-content: flex-end;
     }
     
     /* Header sharpie toggle button - red circle style */
@@ -234,7 +223,7 @@
       padding: 6px 8px;
       text-align: left;
       vertical-align: middle;
-      /* font-size intentionally omitted - baked HTML provides exact sizes from DOM */
+      font-size: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -277,11 +266,28 @@
       vertical-align: middle;
       cursor: grab;
       user-select: none;
+      -webkit-user-select: none;
       padding: 0;
+      touch-action: none; /* prevent scroll when touching drag handle */
     }
-    
+
     table.schedule tbody td[data-key="drag"]:active {
       cursor: grabbing;
+    }
+
+    /* Bigger touch target on tablets/phones */
+    @media (pointer: coarse) {
+      table.schedule thead th[data-key="drag"],
+      table.schedule tbody td[data-key="drag"] {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+      }
+      .drag-dots {
+        width: 16px;
+        height: 16px;
+        padding: 8px;
+      }
     }
     
     /* 3x3 drag handle dots - exact DOM pattern */
@@ -510,12 +516,6 @@
       <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
-    <div class="header-center">
-      <div class="header-logo">
-        <img src="logo-pro.png" alt="SKEDULER PRO" />
-      </div>
-    </div>
-
     <div class="header-right">
       <button class="qr-btn" id="qrBtn" title="Show QR Code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -526,6 +526,9 @@
       <button class="header-progress-btn" id="progressBtn" title="Toggle Progress">
         <svg width="16" height="16" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
+      <div class="header-logo">
+        <img src="logo-pro.png" alt="SKEDULER PRO" />
+      </div>
     </div>
   </div>
   
@@ -558,8 +561,8 @@
   'use strict';
   
   // === CONFIG ===
-  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
-  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
   
   // === STATE ===
   let supabase = null;
@@ -596,44 +599,18 @@
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      // Look up broadcast by code (same as broadcast viewer)
-      const { data: broadcast, error: lookupError } = await supabase
-        .from('broadcasts')
-        .select('*')
-        .eq('code', channelCode.toUpperCase())
-        .single();
-
-      if (lookupError || !broadcast) {
-        throw new Error('Broadcast not found');
-      }
-
-      // Update channel name
-      document.getElementById('channelName').textContent = broadcast.title || `Channel: ${channelCode}`;
-
-      // Build storage path (same logic as broadcast viewer)
-      let htmlPath;
-      if (broadcast.channel_number) {
-        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
-      } else {
-        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('schedule-files')
-        .getPublicUrl(htmlPath);
-
-      const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-      console.log('[AD] Fetching:', publicUrl);
-
-      const response = await fetch(publicUrl);
-      if (!response.ok) throw new Error('Could not load schedule');
-
-      const html = await response.text();
+      const { data, error } = await supabase.storage
+        .from('broadcast-schedules')
+        .download(`${channelCode}.html`);
+      
+      if (error) throw error;
+      
+      const html = await data.text();
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
       console.error('Load error:', err);
-      document.getElementById('scheduleScroll').innerHTML =
+      document.getElementById('scheduleScroll').innerHTML = 
         `<div style="padding:40px;text-align:center;color:var(--muted);">
           No schedule found for channel ${channelCode}
         </div>`;
@@ -734,7 +711,6 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
-      th.style.width = '36px';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
 
@@ -746,31 +722,21 @@
       headerRow.appendChild(th);
     }
 
-    // Add colgroup entries — create colgroup if missing (broadcast HTML may not include one)
-    let colgroup = table.querySelector('colgroup');
-    if (!colgroup) {
-      colgroup = document.createElement('colgroup');
-      table.insertBefore(colgroup, table.firstChild);
-      // Add col entries for each existing th so table-layout:fixed keeps their widths
-      const ths = table.querySelectorAll('thead th');
-      ths.forEach(th => {
+    // Add colgroup entries
+    const colgroup = table.querySelector('colgroup');
+    if (colgroup) {
+      if (!colgroup.querySelector('col[data-key="drag"]')) {
         const col = document.createElement('col');
-        if (th.getAttribute('data-key')) col.setAttribute('data-key', th.getAttribute('data-key'));
-        if (th.style.width) col.style.width = th.style.width;
+        col.setAttribute('data-key', 'drag');
+        col.style.width = '36px';
+        colgroup.insertBefore(col, colgroup.firstChild);
+      }
+      if (!colgroup.querySelector('col[data-key="actions"]')) {
+        const col = document.createElement('col');
+        col.setAttribute('data-key', 'actions');
+        col.style.width = '36px';
         colgroup.appendChild(col);
-      });
-    }
-    if (!colgroup.querySelector('col[data-key="drag"]')) {
-      const col = document.createElement('col');
-      col.setAttribute('data-key', 'drag');
-      col.style.width = '36px';
-      colgroup.insertBefore(col, colgroup.firstChild);
-    }
-    if (!colgroup.querySelector('col[data-key="actions"]')) {
-      const col = document.createElement('col');
-      col.setAttribute('data-key', 'actions');
-      col.style.width = '36px';
-      colgroup.appendChild(col);
+      }
     }
 
     // Add cells to each row
@@ -845,76 +811,118 @@
     const rows = tbody.querySelectorAll('tr[data-id]');
 
     rows.forEach(row => {
-      const isSubChild = row.classList.contains('subchild');
-
-      if (isSubChild) {
-        // Sub-children should not be independently draggable
-        row.draggable = false;
-      } else {
-        // Make draggable
-        row.draggable = true;
-
-        // Drag start
-        row.addEventListener('dragstart', (e) => {
-          draggingRow = row;
-          row.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', row.dataset.id);
-        });
-
-        // Drag end
-        row.addEventListener('dragend', () => {
-          if (draggingRow) {
-            draggingRow.classList.remove('dragging');
-          }
-          draggingRow = null;
-
-          // Broadcast new order
-          broadcastRowOrder();
-        });
-      }
-
-      // Duration click (both parent rows and sub-children)
+      // Duration click
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
 
-      // Sharpie button click (both parent rows and sub-children)
+      // Sharpie button click
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
     });
 
-    // Tbody dragover - exact DOM implementation
-    if (!tbody._dragoverSetup) {
-      tbody._dragoverSetup = true;
-      tbody.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (!draggingRow) return;
+    // Mousedown-based drag on drag-handle cells (reliable, matches main app)
+    if (!tbody._dragSetup) {
+      tbody._dragSetup = true;
+      setupMouseDrag(tbody);
+    }
+  }
+
+  // ─── Pointer-based row drag (mouse + touch, replaces unreliable HTML5 native drag) ───
+  function setupMouseDrag(tbody) {
+
+    function getZoom() {
+      const sc = document.querySelector('.schedule-scroll');
+      return sc ? parseFloat(sc.style.zoom || '1') : 1;
+    }
+
+    // Unified handler for both mouse and touch
+    function beginDrag(startX, startY, tr, isTouch) {
+      let started = false;
+
+      function clientXY(e) {
+        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function onMove(moveE) {
+        const { x, y } = clientXY(moveE);
+        if (!started) {
+          if (Math.abs(x - startX) < 4 && Math.abs(y - startY) < 4) return;
+          started = true;
+          draggingRow = tr;
+          tr.classList.add('dragging');
+          // On touch, prevent scrolling once drag starts
+          if (isTouch) moveE.preventDefault();
+        } else if (isTouch) {
+          moveE.preventDefault(); // keep preventing scroll during drag
+        }
 
         const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
-        const afterEl = calcAfter(candidates, e.clientY);
+        const afterEl = calcAfter(candidates, y);
 
         if (afterEl === null) {
           tbody.appendChild(draggingRow);
         } else {
           tbody.insertBefore(draggingRow, afterEl);
         }
+      }
 
-        // Keep sub-children attached to their parent SUB row
-        if (draggingRow.dataset.type === 'SUB') {
-          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
-          let insertAfter = draggingRow;
-          subchildren.forEach(child => {
-            insertAfter.after(child);
-            insertAfter = child;
-          });
+      function onUp() {
+        if (isTouch) {
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onUp);
+          document.removeEventListener('touchcancel', onUp);
+        } else {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
         }
-      });
+
+        if (draggingRow) {
+          draggingRow.classList.remove('dragging');
+          draggingRow = null;
+          broadcastRowOrder();
+          setTimeout(function() { updateAllSharpieLines(); }, 50);
+        }
+      }
+
+      if (isTouch) {
+        // passive: false so we can preventDefault to stop scroll during drag
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onUp);
+        document.addEventListener('touchcancel', onUp);
+      } else {
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      }
     }
+
+    // Mouse
+    tbody.addEventListener('mousedown', function(e) {
+      const dragTd = e.target.closest('td[data-key="drag"]');
+      if (!dragTd) return;
+      const tr = dragTd.closest('tr[data-id]');
+      if (!tr) return;
+      e.preventDefault();
+      beginDrag(e.clientX, e.clientY, tr, false);
+    });
+
+    // Touch
+    tbody.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return; // single finger only
+      const touch = e.touches[0];
+      const dragTd = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('td[data-key="drag"]');
+      if (!dragTd) return;
+      const tr = dragTd.closest('tr[data-id]');
+      if (!tr) return;
+      // Don't preventDefault here — let the browser decide if it's a scroll.
+      // We'll preventDefault in touchmove once we've confirmed it's a drag.
+      beginDrag(touch.clientX, touch.clientY, tr, true);
+    }, { passive: true });
   }
 
   function setupRowInteractions() {
@@ -943,8 +951,9 @@
   
   // === MASTER SHARPIE ===
   function setupMasterSharpieForTable(table) {
-    // Find the master sharpie button within this table's header (if table exists)
-    const btn = table ? (table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie')) : null;
+    if (!table) return;
+    // Find the master sharpie button within this table's header
+    const btn = table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie');
     const progressBtn = document.getElementById('progressBtn');
 
     // Restore sharpie visibility state
@@ -953,16 +962,11 @@
       document.body.classList.add('sharpie-lines-hidden');
       if (btn) btn.classList.add('lines-hidden');
       if (progressBtn) progressBtn.classList.add('lines-hidden');
-    } else {
-      // Show static completed-line divs (baked in at push time) by default
-      document.body.classList.add('show-progress');
     }
 
     function toggleSharpieVisibility() {
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
-      // Also toggle static completed-line divs (baked in at push time)
-      document.body.classList.toggle('show-progress', !linesHidden);
       // Update all master sharpie buttons across all day tables
       document.querySelectorAll('.master-sharpie-btn, #masterSharpie').forEach(b => {
         b.classList.toggle('lines-hidden', linesHidden);
@@ -1068,15 +1072,9 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
 
-    // Position using getBoundingClientRect for accurate placement
-    // (offsetTop is relative to offsetParent which may not be scrollContainer,
-    //  e.g. when day-tabs or day-section wrappers sit between them)
-    const containerRect = scrollContainer.getBoundingClientRect();
-    const rowRect = row.getBoundingClientRect();
-    const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
-
+    // Position (skip drag column, end before action column)
     const padding = 42; // 36px column + 6px padding
-    line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
+    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
     line.style.left = padding + 'px';
     line.style.right = padding + 'px';
 
@@ -1219,14 +1217,7 @@
 
     payload.order.forEach(id => {
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (row) {
-        tbody.appendChild(row);
-        // If this is a SUB row, also move its subchildren so they stay attached
-        if (row.dataset.type === 'SUB') {
-          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + id + '"]');
-          subchildren.forEach(child => tbody.appendChild(child));
-        }
-      }
+      if (row) tbody.appendChild(row);
     });
 
     updateAllSharpieLines();
@@ -1287,7 +1278,6 @@
   function handleIncomingVisibility({ payload }) {
     linesHidden = payload.hidden;
     document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
-    document.body.classList.toggle('show-progress', !linesHidden);
     
     const btn = document.getElementById('masterSharpie');
     if (btn) btn.classList.toggle('lines-hidden', linesHidden);
