@@ -1205,15 +1205,27 @@
     }
   }
   
+  // Walk up the offsetParent chain to get cumulative offset relative to an ancestor.
+  // This stays in CSS coordinate space — immune to browser zoom and CSS transforms.
+  function getOffsetTo(el, ancestor) {
+    var top = 0, left = 0, cur = el;
+    while (cur && cur !== ancestor) {
+      top += cur.offsetTop || 0;
+      left += cur.offsetLeft || 0;
+      cur = cur.offsetParent;
+    }
+    return { top: top, left: left };
+  }
+
   function addSharpieLineElement(row) {
-    const scrollContainer = document.getElementById('scheduleScroll');
+    var scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    const table = row.closest('table');
+    var table = row.closest('table');
     if (!table) return;
 
     // Skip if row is in a hidden day section
-    const section = row.closest('.broadcast-day-section');
+    var section = row.closest('.broadcast-day-section');
     if (section && section.style.display === 'none') return;
 
     // Ensure scroll container is positioned for absolute children
@@ -1221,8 +1233,8 @@
       scrollContainer.style.position = 'relative';
     }
 
-    // Remove existing
-    const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
+    // Remove existing (and clean up listeners)
+    var existing = scrollContainer.querySelector('.sharpie-line-element[data-row-id="' + row.dataset.id + '"]');
     if (existing) {
       if (existing._scrollHandler) window.removeEventListener('scroll', existing._scrollHandler, true);
       if (existing._resizeHandler) window.removeEventListener('resize', existing._resizeHandler);
@@ -1230,7 +1242,7 @@
       existing.remove();
     }
 
-    const line = document.createElement('div');
+    var line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
     line.style.cssText = 'position:absolute;height:4px;background:#f44336;pointer-events:none;z-index:500;';
@@ -1243,37 +1255,28 @@
       if (!document.body.contains(row)) {
         window.removeEventListener('scroll', updatePosition, true);
         window.removeEventListener('resize', updatePosition);
-        if (line._resizeObserver) { line._resizeObserver.disconnect(); }
+        if (line._resizeObserver) line._resizeObserver.disconnect();
         line.remove();
         return;
       }
-      // Use getBoundingClientRect for accurate positioning regardless of
-      // nesting (day section wrappers), zoom, or CSS transforms
-      var containerRect = scrollContainer.getBoundingClientRect();
-      var rowRect = row.getBoundingClientRect();
-      var tableRect = table.getBoundingClientRect();
 
-      // Account for scroll position within the container
-      var scrollTop = scrollContainer.scrollTop;
-      var scrollLeft = scrollContainer.scrollLeft;
+      // Cumulative offset from row to scrollContainer — works through any
+      // number of wrapper divs (day sections, etc.) and is zoom-agnostic
+      var rowOffset = getOffsetTo(row, scrollContainer);
+      var tableOffset = getOffsetTo(table, scrollContainer);
+      var rowHeight = row.offsetHeight;
+      var tableWidth = table.offsetWidth;
 
-      // Account for browser zoom / CSS zoom on the scroll container
-      var zoom = parseFloat(scrollContainer.style.zoom || '1');
-      var top = (rowRect.top - containerRect.top) / zoom + scrollTop;
-      var rowH = rowRect.height / zoom;
-      var tableL = (tableRect.left - containerRect.left) / zoom + scrollLeft;
-      var tableW = tableRect.width / zoom;
-
-      // Skip drag column (first col) and action column (last col)
+      // Skip drag column and action column
       var dragCell = row.querySelector('td[data-key="drag"]');
       var actionCell = row.querySelector('td[data-key="actions"]');
-      var dragW = dragCell ? dragCell.getBoundingClientRect().width / zoom : 0;
-      var actionW = actionCell ? actionCell.getBoundingClientRect().width / zoom : 0;
+      var dragW = dragCell ? dragCell.offsetWidth : 0;
+      var actionW = actionCell ? actionCell.offsetWidth : 0;
       var pad = 6;
 
-      line.style.top = (top + rowH / 2 - 2) + 'px';
-      line.style.left = (tableL + dragW + pad) + 'px';
-      line.style.width = (tableW - dragW - actionW - pad * 2) + 'px';
+      line.style.top = (rowOffset.top + rowHeight / 2 - 2) + 'px';
+      line.style.left = (tableOffset.left + dragW + pad) + 'px';
+      line.style.width = (tableWidth - dragW - actionW - pad * 2) + 'px';
     }
 
     updatePosition();
@@ -1282,7 +1285,6 @@
     line._scrollHandler = updatePosition;
     line._resizeHandler = updatePosition;
 
-    // Watch for layout shifts (row resize, table resize, container resize)
     if (typeof ResizeObserver !== 'undefined') {
       var observer = new ResizeObserver(updatePosition);
       observer.observe(row);
@@ -1291,7 +1293,6 @@
       line._resizeObserver = observer;
     }
 
-    // Reposition after short delays for layout settling
     setTimeout(updatePosition, 50);
     setTimeout(updatePosition, 150);
   }
@@ -1300,7 +1301,6 @@
     var scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    // Remove all existing lines (and clean up listeners)
     scrollContainer.querySelectorAll('.sharpie-line-element').forEach(function(el) {
       if (el._scrollHandler) window.removeEventListener('scroll', el._scrollHandler, true);
       if (el._resizeHandler) window.removeEventListener('resize', el._resizeHandler);
