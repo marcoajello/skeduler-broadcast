@@ -1209,7 +1209,6 @@
     const scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    // Find the table containing this row (handles multi-day sections)
     const table = row.closest('table');
     if (!table) return;
 
@@ -1217,32 +1216,99 @@
     const section = row.closest('.broadcast-day-section');
     if (section && section.style.display === 'none') return;
 
+    // Ensure scroll container is positioned for absolute children
+    if (getComputedStyle(scrollContainer).position === 'static') {
+      scrollContainer.style.position = 'relative';
+    }
+
     // Remove existing
     const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
-    if (existing) existing.remove();
+    if (existing) {
+      if (existing._scrollHandler) window.removeEventListener('scroll', existing._scrollHandler, true);
+      if (existing._resizeHandler) window.removeEventListener('resize', existing._resizeHandler);
+      if (existing._resizeObserver) existing._resizeObserver.disconnect();
+      existing.remove();
+    }
 
-    // Create line
     const line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
+    line.style.cssText = 'position:absolute;height:4px;background:#f44336;pointer-events:none;z-index:500;';
 
-    // Position (skip drag column, end before action column)
-    const padding = 42; // 36px column + 6px padding
-    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = padding + 'px';
-    line.style.right = padding + 'px';
+    if (document.body.classList.contains('sharpie-lines-hidden')) line.style.display = 'none';
 
     scrollContainer.appendChild(line);
+
+    function updatePosition() {
+      if (!document.body.contains(row)) {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+        if (line._resizeObserver) { line._resizeObserver.disconnect(); }
+        line.remove();
+        return;
+      }
+      // Use getBoundingClientRect for accurate positioning regardless of
+      // nesting (day section wrappers), zoom, or CSS transforms
+      var containerRect = scrollContainer.getBoundingClientRect();
+      var rowRect = row.getBoundingClientRect();
+      var tableRect = table.getBoundingClientRect();
+
+      // Account for scroll position within the container
+      var scrollTop = scrollContainer.scrollTop;
+      var scrollLeft = scrollContainer.scrollLeft;
+
+      // Account for browser zoom / CSS zoom on the scroll container
+      var zoom = parseFloat(scrollContainer.style.zoom || '1');
+      var top = (rowRect.top - containerRect.top) / zoom + scrollTop;
+      var rowH = rowRect.height / zoom;
+      var tableL = (tableRect.left - containerRect.left) / zoom + scrollLeft;
+      var tableW = tableRect.width / zoom;
+
+      // Skip drag column (first col) and action column (last col)
+      var dragCell = row.querySelector('td[data-key="drag"]');
+      var actionCell = row.querySelector('td[data-key="actions"]');
+      var dragW = dragCell ? dragCell.getBoundingClientRect().width / zoom : 0;
+      var actionW = actionCell ? actionCell.getBoundingClientRect().width / zoom : 0;
+      var pad = 6;
+
+      line.style.top = (top + rowH / 2 - 2) + 'px';
+      line.style.left = (tableL + dragW + pad) + 'px';
+      line.style.width = (tableW - dragW - actionW - pad * 2) + 'px';
+    }
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    line._scrollHandler = updatePosition;
+    line._resizeHandler = updatePosition;
+
+    // Watch for layout shifts (row resize, table resize, container resize)
+    if (typeof ResizeObserver !== 'undefined') {
+      var observer = new ResizeObserver(updatePosition);
+      observer.observe(row);
+      observer.observe(table);
+      observer.observe(scrollContainer);
+      line._resizeObserver = observer;
+    }
+
+    // Reposition after short delays for layout settling
+    setTimeout(updatePosition, 50);
+    setTimeout(updatePosition, 150);
   }
 
   function updateAllSharpieLines() {
-    const scrollContainer = document.getElementById('scheduleScroll');
+    var scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    // Remove all existing lines and re-add for visible rows
-    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
-    markedRows.forEach(rowId => {
-      const row = scrollContainer.querySelector(`tr[data-id="${rowId}"]`);
+    // Remove all existing lines (and clean up listeners)
+    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(function(el) {
+      if (el._scrollHandler) window.removeEventListener('scroll', el._scrollHandler, true);
+      if (el._resizeHandler) window.removeEventListener('resize', el._resizeHandler);
+      if (el._resizeObserver) el._resizeObserver.disconnect();
+      el.remove();
+    });
+    markedRows.forEach(function(rowId) {
+      var row = scrollContainer.querySelector('tr[data-id="' + rowId + '"]');
       if (row) addSharpieLineElement(row);
     });
   }
