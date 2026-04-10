@@ -505,9 +505,43 @@
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
+
+    /* Row context menu (long-press / right-click) */
+    .row-ctx-menu {
+      position: fixed;
+      z-index: 9999;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 0;
+      min-width: 140px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: none;
+    }
+    .row-ctx-menu.visible { display: block; }
+    .row-ctx-menu button {
+      display: block;
+      width: 100%;
+      padding: 8px 14px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .row-ctx-menu button:hover { background: rgba(255,255,255,0.08); }
+    .row-ctx-menu button.destructive { color: #ef4444; }
+    .row-ctx-menu button.destructive:hover { background: rgba(239,68,68,0.12); }
   </style>
 </head>
 <body>
+  <!-- Row context menu (long-press / right-click) -->
+  <div class="row-ctx-menu" id="rowCtxMenu">
+    <button id="ctxDuplicate">Duplicate Row</button>
+    <button id="ctxDelete" class="destructive">Delete Row</button>
+  </div>
+
   <div class="header">
     <div class="header-left">
       <button class="status-btn" id="statusBtn" title="Connection status">
@@ -823,6 +857,12 @@
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
+
+      // Long-press context menu (works on touch and mouse)
+      if (!row._ctxSetup) {
+        row._ctxSetup = true;
+        setupRowContextMenu(row);
+      }
     });
 
     // Mousedown-based drag on drag-handle cells (reliable, matches main app)
@@ -831,6 +871,106 @@
       setupMouseDrag(tbody);
     }
   }
+
+  // ─── Row context menu (long-press / right-click) ───
+  let ctxTargetRow = null;
+
+  function showRowContextMenu(x, y, row) {
+    ctxTargetRow = row;
+    const menu = document.getElementById('rowCtxMenu');
+    menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 80) + 'px';
+    menu.classList.add('visible');
+  }
+
+  function hideRowContextMenu() {
+    document.getElementById('rowCtxMenu')?.classList.remove('visible');
+    ctxTargetRow = null;
+  }
+
+  function setupRowContextMenu(row) {
+    let holdTimer = null;
+
+    // Right-click
+    row.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      showRowContextMenu(e.clientX, e.clientY, row);
+    });
+
+    // Long-press (touch)
+    row.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      // Don't long-press on drag handle (that's for dragging)
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (el?.closest('td[data-key="drag"]')) return;
+      holdTimer = setTimeout(function() {
+        holdTimer = null;
+        showRowContextMenu(touch.clientX, touch.clientY, row);
+      }, 600);
+    }, { passive: true });
+
+    row.addEventListener('touchmove', function() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }, { passive: true });
+
+    row.addEventListener('touchend', function() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }, { passive: true });
+  }
+
+  // Context menu button handlers
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('ctxDuplicate')?.addEventListener('click', function() {
+      if (!ctxTargetRow) return;
+      const rowId = ctxTargetRow.dataset.id;
+      // Clone the row in the DOM
+      const clone = ctxTargetRow.cloneNode(true);
+      const newId = rowId + '_dup_' + Date.now();
+      clone.dataset.id = newId;
+      clone._ctxSetup = false;
+      ctxTargetRow.parentNode.insertBefore(clone, ctxTargetRow.nextSibling);
+      // Re-setup interactions on cloned row
+      const durCell = clone.querySelector('td[data-key="duration"]');
+      if (durCell) {
+        durCell.style.cursor = 'pointer';
+        durCell.addEventListener('click', function() { openDurationEditor(clone, durCell); });
+      }
+      const sharpieBtn = clone.querySelector('button.sharpie');
+      if (sharpieBtn) {
+        sharpieBtn.addEventListener('click', function() { toggleRowSharpie(clone); });
+      }
+      setupRowContextMenu(clone);
+      // Broadcast duplicate to producer
+      broadcastEvent('row-duplicate', { rowId: rowId });
+      broadcastRowOrder();
+      hideRowContextMenu();
+    });
+
+    document.getElementById('ctxDelete')?.addEventListener('click', function() {
+      if (!ctxTargetRow) return;
+      const rowId = ctxTargetRow.dataset.id;
+      // Remove sharpie line
+      const line = document.getElementById('scheduleScroll')
+        ?.querySelector('.sharpie-line-element[data-row-id="' + rowId + '"]');
+      if (line) line.remove();
+      markedRows.delete(rowId);
+      ctxTargetRow.remove();
+      // Broadcast delete to producer
+      broadcastEvent('row-delete', { rowId: rowId });
+      broadcastRowOrder();
+      updateAllSharpieLines();
+      hideRowContextMenu();
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.row-ctx-menu')) hideRowContextMenu();
+    });
+    document.addEventListener('touchstart', function(e) {
+      if (!e.target.closest('.row-ctx-menu')) hideRowContextMenu();
+    }, { passive: true });
+  });
 
   // ─── Pointer-based row drag (mouse + touch, replaces unreliable HTML5 native drag) ───
   function setupMouseDrag(tbody) {
@@ -1158,6 +1298,8 @@
       .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
       .on('broadcast', { event: 'row-times' }, handleIncomingRowTimes)
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
+      .on('broadcast', { event: 'reload-schedule' }, handleReloadSchedule)
+      .on('broadcast', { event: 'row-delete' }, handleIncomingRowDelete)
       .subscribe((status) => {
         const dot = document.getElementById('statusDot');
         if (status === 'SUBSCRIBED') {
@@ -1332,6 +1474,28 @@
     }
   }
   
+  // Reload schedule from bucket (triggered by producer after changes)
+  function handleReloadSchedule({ payload }) {
+    if (payload?.source === 'ad') return; // don't reload our own changes
+    console.log('[ADViewer] Reloading schedule from bucket');
+    loadScheduleFromBucket();
+  }
+
+  // Handle row delete from producer
+  function handleIncomingRowDelete({ payload }) {
+    if (!payload?.rowId) return;
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    // Remove sharpie line if present
+    const line = document.getElementById('scheduleScroll')
+      ?.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+    if (line) line.remove();
+    markedRows.delete(payload.rowId);
+    row.remove();
+    updateAllSharpieLines();
+    console.log('[ADViewer] Row deleted:', payload.rowId);
+  }
+
   // === UTILITIES ===
   function updateFooter(status) {
     const footer = document.getElementById('footer');
@@ -1344,3 +1508,4 @@
 </script>
 </body>
 </html>
+
