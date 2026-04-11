@@ -780,25 +780,28 @@
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
 
-    // Restore sharpie state from the injected HTML.
-    // The broadcast HTML is a full document with <body class="show-progress">,
-    // but innerHTML strips the <body> tag. We need to detect completed rows
-    // and apply show-progress to the real page body.
+    // === SHARPIE STATE: single source of truth ===
+    // The broadcast HTML contains TWO sharpie artifacts:
+    //   1. tr.pdf-completed class on marked rows
+    //   2. .completed-line divs (baked-in, shown via body.show-progress CSS)
+    // These conflict with the AD viewer's own dynamic .sharpie-line-element system.
+    // Solution: read marked state from the HTML, then REMOVE all baked-in lines
+    // and let the dynamic system handle everything.
+
+    // 1. Rebuild markedRows from the broadcast HTML (single source of truth)
     markedRows.clear();
     container.querySelectorAll('tr.pdf-completed').forEach(row => {
       const rowId = row.dataset?.id;
       if (rowId) markedRows.add(rowId);
-      // Activate the sharpie button
-      const btn = row.querySelector('button.sharpie');
-      if (btn) btn.classList.add('active');
     });
-    if (markedRows.size > 0) {
-      document.body.classList.add('show-progress');
-    } else {
-      document.body.classList.remove('show-progress');
-    }
 
-    // Restore sharpie visibility (hidden/shown)
+    // 2. Remove ALL baked-in completed-line divs — the dynamic system replaces them
+    container.querySelectorAll('.completed-line').forEach(el => el.remove());
+
+    // 3. Remove show-progress from body — we don't use the CSS-based line system
+    document.body.classList.remove('show-progress');
+
+    // 4. Restore sharpie visibility preference
     if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
       document.body.classList.add('sharpie-lines-hidden');
     }
@@ -848,27 +851,21 @@
     // Setup QR code toggle
     setupQRCode();
 
-    // Re-apply sharpie button state AFTER setupColumns created fresh buttons.
-    // The broadcast HTML has no action column, so setupColumnsForTable adds new
-    // sharpie buttons that lack the .active class. Reapply from markedRows.
-    markedRows.forEach(rowId => {
-      const row = container.querySelector(`tr[data-id="${rowId}"]`);
-      if (row) {
-        const btn = row.querySelector('button.sharpie');
-        if (btn) btn.classList.add('active');
-      }
-    });
-
-    // Recreate dynamic sharpie line elements for all marked rows.
-    // Use rAF so the browser has laid out the new HTML before we
-    // call getBoundingClientRect to position lines.
-    if (markedRows.size > 0) {
+    // 5. Apply sharpie button + line state AFTER setupColumns created fresh buttons.
+    // Use double-rAF so the browser has laid out the new HTML before
+    // getBoundingClientRect is called to position lines.
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          updateAllSharpieLines();
+        markedRows.forEach(rowId => {
+          const row = container.querySelector(`tr[data-id="${rowId}"]`);
+          if (row) {
+            const btn = row.querySelector('button.sharpie');
+            if (btn) btn.classList.add('active');
+          }
         });
+        updateAllSharpieLines();
       });
-    }
+    });
   }
   
   // === SETUP COLUMNS ===
@@ -1133,16 +1130,11 @@
       document.body.classList.add('sharpie-lines-hidden');
       if (btn) btn.classList.add('lines-hidden');
       if (progressBtn) progressBtn.classList.add('lines-hidden');
-    } else {
-      // Show static completed-line divs (baked in at push time) by default
-      document.body.classList.add('show-progress');
     }
 
     function toggleSharpieVisibility() {
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
-      // Also toggle static completed-line divs (baked in at push time)
-      document.body.classList.toggle('show-progress', !linesHidden);
       // Update all master sharpie buttons across all day tables
       document.querySelectorAll('.master-sharpie-btn, #masterSharpie').forEach(b => {
         b.classList.toggle('lines-hidden', linesHidden);
@@ -1676,8 +1668,7 @@
   function handleIncomingVisibility({ payload }) {
     linesHidden = payload.hidden;
     document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
-    document.body.classList.toggle('show-progress', !linesHidden);
-    
+
     const btn = document.getElementById('masterSharpie');
     if (btn) btn.classList.toggle('lines-hidden', linesHidden);
     const progressBtn = document.getElementById('progressBtn');
