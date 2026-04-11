@@ -47,6 +47,15 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
     }
     
     .status-btn {
@@ -87,6 +96,8 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      flex: 1;
+      justify-content: flex-end;
     }
     
     /* Header sharpie toggle button - red circle style */
@@ -223,7 +234,7 @@
       padding: 6px 8px;
       text-align: left;
       vertical-align: middle;
-      font-size: 12px;
+      /* font-size intentionally omitted - baked HTML provides exact sizes from DOM */
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -266,28 +277,11 @@
       vertical-align: middle;
       cursor: grab;
       user-select: none;
-      -webkit-user-select: none;
       padding: 0;
-      touch-action: none; /* prevent scroll when touching drag handle */
     }
-
+    
     table.schedule tbody td[data-key="drag"]:active {
       cursor: grabbing;
-    }
-
-    /* Bigger touch target on tablets/phones */
-    @media (pointer: coarse) {
-      table.schedule thead th[data-key="drag"],
-      table.schedule tbody td[data-key="drag"] {
-        width: 44px;
-        min-width: 44px;
-        max-width: 44px;
-      }
-      .drag-dots {
-        width: 16px;
-        height: 16px;
-        padding: 8px;
-      }
     }
     
     /* 3x3 drag handle dots - exact DOM pattern */
@@ -505,43 +499,9 @@
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
-
-    /* Row context menu (long-press / right-click) */
-    .row-ctx-menu {
-      position: fixed;
-      z-index: 9999;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 4px 0;
-      min-width: 140px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      display: none;
-    }
-    .row-ctx-menu.visible { display: block; }
-    .row-ctx-menu button {
-      display: block;
-      width: 100%;
-      padding: 8px 14px;
-      background: none;
-      border: none;
-      color: var(--text);
-      font-size: 13px;
-      text-align: left;
-      cursor: pointer;
-    }
-    .row-ctx-menu button:hover { background: rgba(255,255,255,0.08); }
-    .row-ctx-menu button.destructive { color: #ef4444; }
-    .row-ctx-menu button.destructive:hover { background: rgba(239,68,68,0.12); }
   </style>
 </head>
 <body>
-  <!-- Row context menu (long-press / right-click) -->
-  <div class="row-ctx-menu" id="rowCtxMenu">
-    <button id="ctxDuplicate">Duplicate Row</button>
-    <button id="ctxDelete" class="destructive">Delete Row</button>
-  </div>
-
   <div class="header">
     <div class="header-left">
       <button class="status-btn" id="statusBtn" title="Connection status">
@@ -550,6 +510,12 @@
       <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
+    <div class="header-center">
+      <div class="header-logo">
+        <img src="logo-pro.png" alt="SKEDULER PRO" />
+      </div>
+    </div>
+
     <div class="header-right">
       <button class="qr-btn" id="qrBtn" title="Show QR Code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -560,9 +526,6 @@
       <button class="header-progress-btn" id="progressBtn" title="Toggle Progress">
         <svg width="16" height="16" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
-      <div class="header-logo">
-        <img src="logo-pro.png" alt="SKEDULER PRO" />
-      </div>
     </div>
   </div>
   
@@ -595,74 +558,187 @@
   'use strict';
   
   // === CONFIG ===
-  // Use main Supabase project — the AD viewer project is deprecated
-  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL || window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
-  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY || window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
   
   // === STATE ===
   let supabase = null;
   let channel = null;
+  let dbChannel = null;  // Postgres Changes subscription
   let channelCode = null;
   let draggingRow = null;
   let markedRows = new Set();
   let linesHidden = false;
-  
+  let reconnectTimer = null;
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_DELAY = 30000;
+
+  // === DURABLE SYNC STATE ===
+  let deviceId = localStorage.getItem('adViewerDeviceId');
+  if (!deviceId) {
+    deviceId = 'adv-' + crypto.randomUUID().slice(0, 8);
+    localStorage.setItem('adViewerDeviceId', deviceId);
+  }
+  let lastProcessedSeq = 0;
+  const processedCmds = new Set();
+  let applyingRemote = false;  // Prevents echo when applying incoming commands
+
+  // === LOCAL CACHE ===
+  function cacheKey() { return 'ad-cache-' + (channelCode || '').toUpperCase(); }
+  function cacheSchedule(html) {
+    try { localStorage.setItem(cacheKey(), html); localStorage.setItem(cacheKey() + '-ts', Date.now()); } catch (_) {}
+  }
+  function getCachedSchedule() {
+    try { return localStorage.getItem(cacheKey()); } catch (_) { return null; }
+  }
+  function getCacheAge() {
+    try { const ts = localStorage.getItem(cacheKey() + '-ts'); return ts ? Date.now() - Number(ts) : Infinity; } catch (_) { return Infinity; }
+  }
+
   // === INIT ===
   async function init() {
     // Get channel code from URL
     const params = new URLSearchParams(window.location.search);
     channelCode = params.get('c');
-    
+
     if (!channelCode) {
       document.getElementById('channelName').textContent = 'No channel code';
       document.getElementById('footer').textContent = 'Add ?c=CODE to URL';
       return;
     }
-    
+
     document.getElementById('channelName').textContent = `Channel: ${channelCode}`;
-    
+
+    // Show cached schedule immediately (instant load while we fetch fresh)
+    const cached = getCachedSchedule();
+    if (cached) {
+      injectSchedule(cached);
+      const ageMin = Math.round(getCacheAge() / 60000);
+      updateFooter(ageMin < 1 ? 'Cached (just now)' : `Cached (${ageMin}m ago)`);
+    }
+
     // Init Supabase
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // Load initial schedule from bucket
+
+    // Load fresh schedule from bucket (updates cache)
     await loadScheduleFromBucket();
-    
+
     // Subscribe to realtime
     subscribeToChannel();
+
+    // Listen for online/offline and wake-from-sleep
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  }
+
+  // === RESILIENCE ===
+  function handleOnline() {
+    console.log('[AD] Back online — reconnecting');
+    updateFooter('Reconnecting...');
+    if (!channel || channel.state !== 'joined') {
+      reconnect();
+    } else {
+      catchUpMissedCommands();
+    }
+  }
+  function handleOffline() {
+    console.log('[AD] Offline — using cached schedule');
+    const dot = document.getElementById('statusDot');
+    dot.classList.remove('connected');
+    updateFooter('Offline (cached)');
+  }
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      // Page became visible again (wake from sleep / tab switch)
+      console.log('[AD] Page visible — checking connection');
+      if (!channel || channel.state !== 'joined') {
+        reconnect();
+      } else {
+        // Still connected but may have missed events — catch up
+        catchUpMissedCommands();
+      }
+    }
+  }
+  function reconnect() {
+    clearTimeout(reconnectTimer);
+    // Tear down old channels
+    if (channel) {
+      try { supabase.removeChannel(channel); } catch (_) {}
+      channel = null;
+    }
+    if (dbChannel) {
+      try { supabase.removeChannel(dbChannel); } catch (_) {}
+      dbChannel = null;
+    }
+    // Reload schedule + resubscribe (catch-up happens inside subscribeToChannel)
+    loadScheduleFromBucket().then(() => {
+      subscribeToChannel();
+      reconnectAttempts = 0;
+    }).catch(() => {
+      // Exponential backoff retry
+      reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+      console.log(`[AD] Reconnect failed, retrying in ${delay}ms`);
+      updateFooter(`Reconnecting in ${Math.round(delay/1000)}s...`);
+      reconnectTimer = setTimeout(reconnect, delay);
+    });
   }
   
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      // Look up the broadcast record to get the file path
-      const { data: rec, error: lookupErr } = await supabase
+      // Look up broadcast by code (same as broadcast viewer)
+      const { data: broadcast, error: lookupError } = await supabase
         .from('broadcasts')
-        .select('user_id, channel_number, file_name')
-        .ilike('code', channelCode)
-        .limit(1)
+        .select('*')
+        .eq('code', channelCode.toUpperCase())
         .single();
 
-      if (lookupErr || !rec) throw new Error('No broadcast record for ' + channelCode);
+      if (lookupError || !broadcast) {
+        throw new Error('Broadcast not found');
+      }
 
-      const htmlPath = rec.user_id + '/ch' + rec.channel_number + '_' + rec.file_name + '.html';
-      console.log('[ADViewer] Downloading schedule-files/' + htmlPath);
+      // Update channel name
+      document.getElementById('channelName').textContent = broadcast.title || `Channel: ${channelCode}`;
 
-      const { data, error } = await supabase.storage
+      // Build storage path (same logic as broadcast viewer)
+      let htmlPath;
+      if (broadcast.channel_number) {
+        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
+      } else {
+        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
+      }
+
+      const { data: urlData } = supabase.storage
         .from('schedule-files')
-        .download(htmlPath);
+        .getPublicUrl(htmlPath);
 
-      if (error) throw error;
+      const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+      console.log('[AD] Fetching:', publicUrl);
 
-      const html = await data.text();
+      const response = await fetch(publicUrl);
+      if (!response.ok) throw new Error('Could not load schedule');
+
+      const html = await response.text();
+      cacheSchedule(html);
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
       console.error('Load error:', err);
-      document.getElementById('scheduleScroll').innerHTML =
-        `<div style="padding:40px;text-align:center;color:var(--muted);">
-          No schedule found for channel ${channelCode}
-        </div>`;
-      updateFooter('No schedule');
+      // Fall back to cached version if available
+      const cached = getCachedSchedule();
+      if (cached && !document.querySelector('#scheduleScroll table')) {
+        injectSchedule(cached);
+        const ageMin = Math.round(getCacheAge() / 60000);
+        updateFooter(`Offline — showing cached (${ageMin}m ago)`);
+      } else if (!document.querySelector('#scheduleScroll table')) {
+        document.getElementById('scheduleScroll').innerHTML =
+          `<div style="padding:40px;text-align:center;color:var(--muted);">
+            No schedule found for channel ${channelCode}
+          </div>`;
+        updateFooter('No schedule');
+      }
     }
   }
   
@@ -759,6 +835,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
+      th.style.width = '36px';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
 
@@ -770,21 +847,31 @@
       headerRow.appendChild(th);
     }
 
-    // Add colgroup entries
-    const colgroup = table.querySelector('colgroup');
-    if (colgroup) {
-      if (!colgroup.querySelector('col[data-key="drag"]')) {
+    // Add colgroup entries — create colgroup if missing (broadcast HTML may not include one)
+    let colgroup = table.querySelector('colgroup');
+    if (!colgroup) {
+      colgroup = document.createElement('colgroup');
+      table.insertBefore(colgroup, table.firstChild);
+      // Add col entries for each existing th so table-layout:fixed keeps their widths
+      const ths = table.querySelectorAll('thead th');
+      ths.forEach(th => {
         const col = document.createElement('col');
-        col.setAttribute('data-key', 'drag');
-        col.style.width = '36px';
-        colgroup.insertBefore(col, colgroup.firstChild);
-      }
-      if (!colgroup.querySelector('col[data-key="actions"]')) {
-        const col = document.createElement('col');
-        col.setAttribute('data-key', 'actions');
-        col.style.width = '36px';
+        if (th.getAttribute('data-key')) col.setAttribute('data-key', th.getAttribute('data-key'));
+        if (th.style.width) col.style.width = th.style.width;
         colgroup.appendChild(col);
-      }
+      });
+    }
+    if (!colgroup.querySelector('col[data-key="drag"]')) {
+      const col = document.createElement('col');
+      col.setAttribute('data-key', 'drag');
+      col.style.width = '36px';
+      colgroup.insertBefore(col, colgroup.firstChild);
+    }
+    if (!colgroup.querySelector('col[data-key="actions"]')) {
+      const col = document.createElement('col');
+      col.setAttribute('data-key', 'actions');
+      col.style.width = '36px';
+      colgroup.appendChild(col);
     }
 
     // Add cells to each row
@@ -859,224 +946,110 @@
     const rows = tbody.querySelectorAll('tr[data-id]');
 
     rows.forEach(row => {
-      // Duration click
+      const isSubChild = row.classList.contains('subchild');
+
+      if (isSubChild) {
+        // Sub-children should not be independently draggable
+        row.draggable = false;
+      } else {
+        // Make draggable
+        row.draggable = true;
+
+        // Drag start (mouse/desktop)
+        row.addEventListener('dragstart', (e) => {
+          draggingRow = row;
+          row.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', row.dataset.id);
+        });
+
+        // Drag end (mouse/desktop)
+        row.addEventListener('dragend', () => {
+          if (draggingRow) {
+            draggingRow.classList.remove('dragging');
+          }
+          draggingRow = null;
+          broadcastRowOrder();
+        });
+
+        // Touch drag (iPad / mobile)
+        const dragHandle = row.querySelector('.drag-dots') || row.querySelector('td[data-key="drag"]');
+        if (dragHandle) {
+          dragHandle.addEventListener('touchstart', (e) => {
+            draggingRow = row;
+            row.classList.add('dragging');
+            e.preventDefault(); // prevent scroll while dragging
+          }, { passive: false });
+        }
+      }
+
+      // Duration click (both parent rows and sub-children)
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
 
-      // Sharpie button click
+      // Sharpie button click (both parent rows and sub-children)
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
-
-      // Long-press context menu (works on touch and mouse)
-      if (!row._ctxSetup) {
-        row._ctxSetup = true;
-        setupRowContextMenu(row);
-      }
     });
 
-    // Mousedown-based drag on drag-handle cells (reliable, matches main app)
-    if (!tbody._dragSetup) {
-      tbody._dragSetup = true;
-      setupMouseDrag(tbody);
-    }
-  }
-
-  // ─── Row context menu (long-press / right-click) ───
-  let ctxTargetRow = null;
-
-  function showRowContextMenu(x, y, row) {
-    ctxTargetRow = row;
-    const menu = document.getElementById('rowCtxMenu');
-    menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
-    menu.style.top = Math.min(y, window.innerHeight - 80) + 'px';
-    menu.classList.add('visible');
-  }
-
-  function hideRowContextMenu() {
-    document.getElementById('rowCtxMenu')?.classList.remove('visible');
-    ctxTargetRow = null;
-  }
-
-  function setupRowContextMenu(row) {
-    let holdTimer = null;
-
-    // Right-click
-    row.addEventListener('contextmenu', function(e) {
-      e.preventDefault();
-      showRowContextMenu(e.clientX, e.clientY, row);
-    });
-
-    // Long-press (touch)
-    row.addEventListener('touchstart', function(e) {
-      if (e.touches.length !== 1) return;
-      const touch = e.touches[0];
-      // Don't long-press on drag handle (that's for dragging)
-      const el = document.elementFromPoint(touch.clientX, touch.clientY);
-      if (el?.closest('td[data-key="drag"]')) return;
-      holdTimer = setTimeout(function() {
-        holdTimer = null;
-        showRowContextMenu(touch.clientX, touch.clientY, row);
-      }, 600);
-    }, { passive: true });
-
-    row.addEventListener('touchmove', function() {
-      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-    }, { passive: true });
-
-    row.addEventListener('touchend', function() {
-      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-    }, { passive: true });
-  }
-
-  // Context menu button handlers
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('ctxDuplicate')?.addEventListener('click', function() {
-      if (!ctxTargetRow) return;
-      const rowId = ctxTargetRow.dataset.id;
-      // Clone the row in the DOM
-      const clone = ctxTargetRow.cloneNode(true);
-      const newId = rowId + '_dup_' + Date.now();
-      clone.dataset.id = newId;
-      clone._ctxSetup = false;
-      ctxTargetRow.parentNode.insertBefore(clone, ctxTargetRow.nextSibling);
-      // Re-setup interactions on cloned row
-      const durCell = clone.querySelector('td[data-key="duration"]');
-      if (durCell) {
-        durCell.style.cursor = 'pointer';
-        durCell.addEventListener('click', function() { openDurationEditor(clone, durCell); });
-      }
-      const sharpieBtn = clone.querySelector('button.sharpie');
-      if (sharpieBtn) {
-        sharpieBtn.addEventListener('click', function() { toggleRowSharpie(clone); });
-      }
-      setupRowContextMenu(clone);
-      // Broadcast duplicate to producer
-      broadcastEvent('row-duplicate', { rowId: rowId });
-      broadcastRowOrder();
-      hideRowContextMenu();
-    });
-
-    document.getElementById('ctxDelete')?.addEventListener('click', function() {
-      if (!ctxTargetRow) return;
-      const rowId = ctxTargetRow.dataset.id;
-      // Remove sharpie line
-      const line = document.getElementById('scheduleScroll')
-        ?.querySelector('.sharpie-line-element[data-row-id="' + rowId + '"]');
-      if (line) line.remove();
-      markedRows.delete(rowId);
-      ctxTargetRow.remove();
-      // Broadcast delete to producer
-      broadcastEvent('row-delete', { rowId: rowId });
-      broadcastRowOrder();
-      updateAllSharpieLines();
-      hideRowContextMenu();
-    });
-
-    // Close menu on outside click
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('.row-ctx-menu')) hideRowContextMenu();
-    });
-    document.addEventListener('touchstart', function(e) {
-      if (!e.target.closest('.row-ctx-menu')) hideRowContextMenu();
-    }, { passive: true });
-  });
-
-  // ─── Pointer-based row drag (mouse + touch, replaces unreliable HTML5 native drag) ───
-  function setupMouseDrag(tbody) {
-
-    function getZoom() {
-      const sc = document.querySelector('.schedule-scroll');
-      return sc ? parseFloat(sc.style.zoom || '1') : 1;
-    }
-
-    // Unified handler for both mouse and touch
-    function beginDrag(startX, startY, tr, isTouch) {
-      let started = false;
-
-      function clientXY(e) {
-        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-        return { x: e.clientX, y: e.clientY };
-      }
-
-      function onMove(moveE) {
-        const { x, y } = clientXY(moveE);
-        if (!started) {
-          if (Math.abs(x - startX) < 4 && Math.abs(y - startY) < 4) return;
-          started = true;
-          draggingRow = tr;
-          tr.classList.add('dragging');
-          // On touch, prevent scrolling once drag starts
-          if (isTouch) moveE.preventDefault();
-        } else if (isTouch) {
-          moveE.preventDefault(); // keep preventing scroll during drag
-        }
+    // Tbody dragover - exact DOM implementation
+    if (!tbody._dragoverSetup) {
+      tbody._dragoverSetup = true;
+      tbody.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggingRow) return;
 
         const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
-        const afterEl = calcAfter(candidates, y);
+        const afterEl = calcAfter(candidates, e.clientY);
 
         if (afterEl === null) {
           tbody.appendChild(draggingRow);
         } else {
           tbody.insertBefore(draggingRow, afterEl);
         }
-      }
 
-      function onUp() {
-        if (isTouch) {
-          document.removeEventListener('touchmove', onMove);
-          document.removeEventListener('touchend', onUp);
-          document.removeEventListener('touchcancel', onUp);
+        // Keep sub-children attached to their parent SUB row
+        if (draggingRow.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
+          let insertAfter = draggingRow;
+          subchildren.forEach(child => {
+            insertAfter.after(child);
+            insertAfter = child;
+          });
+        }
+      });
+
+      // Touch move and touch end for iPad drag
+      tbody.addEventListener('touchmove', (e) => {
+        if (!draggingRow) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
+        const afterEl = calcAfter(candidates, touch.clientY);
+        if (afterEl === null) {
+          tbody.appendChild(draggingRow);
         } else {
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
+          tbody.insertBefore(draggingRow, afterEl);
         }
-
-        if (draggingRow) {
-          draggingRow.classList.remove('dragging');
-          draggingRow = null;
-          broadcastRowOrder();
-          setTimeout(function() { updateAllSharpieLines(); }, 50);
+        if (draggingRow.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
+          let insertAfter = draggingRow;
+          subchildren.forEach(child => { insertAfter.after(child); insertAfter = child; });
         }
-      }
+      }, { passive: false });
 
-      if (isTouch) {
-        // passive: false so we can preventDefault to stop scroll during drag
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend', onUp);
-        document.addEventListener('touchcancel', onUp);
-      } else {
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
-      }
+      tbody.addEventListener('touchend', () => {
+        if (!draggingRow) return;
+        draggingRow.classList.remove('dragging');
+        draggingRow = null;
+        broadcastRowOrder();
+      });
     }
-
-    // Mouse
-    tbody.addEventListener('mousedown', function(e) {
-      const dragTd = e.target.closest('td[data-key="drag"]');
-      if (!dragTd) return;
-      const tr = dragTd.closest('tr[data-id]');
-      if (!tr) return;
-      e.preventDefault();
-      beginDrag(e.clientX, e.clientY, tr, false);
-    });
-
-    // Touch
-    tbody.addEventListener('touchstart', function(e) {
-      if (e.touches.length !== 1) return; // single finger only
-      const touch = e.touches[0];
-      const dragTd = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('td[data-key="drag"]');
-      if (!dragTd) return;
-      const tr = dragTd.closest('tr[data-id]');
-      if (!tr) return;
-      // Don't preventDefault here — let the browser decide if it's a scroll.
-      // We'll preventDefault in touchmove once we've confirmed it's a drag.
-      beginDrag(touch.clientX, touch.clientY, tr, true);
-    }, { passive: true });
   }
 
   function setupRowInteractions() {
@@ -1105,9 +1078,8 @@
   
   // === MASTER SHARPIE ===
   function setupMasterSharpieForTable(table) {
-    if (!table) return;
-    // Find the master sharpie button within this table's header
-    const btn = table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie');
+    // Find the master sharpie button within this table's header (if table exists)
+    const btn = table ? (table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie')) : null;
     const progressBtn = document.getElementById('progressBtn');
 
     // Restore sharpie visibility state
@@ -1116,11 +1088,16 @@
       document.body.classList.add('sharpie-lines-hidden');
       if (btn) btn.classList.add('lines-hidden');
       if (progressBtn) progressBtn.classList.add('lines-hidden');
+    } else {
+      // Show static completed-line divs (baked in at push time) by default
+      document.body.classList.add('show-progress');
     }
 
     function toggleSharpieVisibility() {
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+      // Also toggle static completed-line divs (baked in at push time)
+      document.body.classList.toggle('show-progress', !linesHidden);
       // Update all master sharpie buttons across all day tables
       document.querySelectorAll('.master-sharpie-btn, #masterSharpie').forEach(b => {
         b.classList.toggle('lines-hidden', linesHidden);
@@ -1179,136 +1156,77 @@
   
   // === SHARPIE TOGGLE ===
   function toggleRowSharpie(row) {
+    if (applyingRemote) return;  // Don't trigger during remote command application
     const rowId = row.dataset.id;
     const btn = row.querySelector('button.sharpie');
     const scrollContainer = document.getElementById('scheduleScroll');
-    
+
     if (markedRows.has(rowId)) {
       // Unmark
       markedRows.delete(rowId);
       btn?.classList.remove('active');
-      
+
       // Remove line
       const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
       if (line) line.remove();
-      
+
       broadcastEvent('sharpie-toggle', { rowId, marked: false });
     } else {
       // Mark
       markedRows.add(rowId);
       btn?.classList.add('active');
-      
+
       // Add line
       addSharpieLineElement(row);
-      
+
       broadcastEvent('sharpie-toggle', { rowId, marked: true });
     }
   }
   
-  // Walk up the offsetParent chain to get cumulative offset relative to an ancestor.
-  // This stays in CSS coordinate space — immune to browser zoom and CSS transforms.
-  function getOffsetTo(el, ancestor) {
-    var top = 0, left = 0, cur = el;
-    while (cur && cur !== ancestor) {
-      top += cur.offsetTop || 0;
-      left += cur.offsetLeft || 0;
-      cur = cur.offsetParent;
-    }
-    return { top: top, left: left };
-  }
-
   function addSharpieLineElement(row) {
-    var scrollContainer = document.getElementById('scheduleScroll');
+    const scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    var table = row.closest('table');
+    // Find the table containing this row (handles multi-day sections)
+    const table = row.closest('table');
     if (!table) return;
 
     // Skip if row is in a hidden day section
-    var section = row.closest('.broadcast-day-section');
+    const section = row.closest('.broadcast-day-section');
     if (section && section.style.display === 'none') return;
 
-    // Ensure scroll container is positioned for absolute children
-    if (getComputedStyle(scrollContainer).position === 'static') {
-      scrollContainer.style.position = 'relative';
-    }
+    // Remove existing
+    const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
+    if (existing) existing.remove();
 
-    // Remove existing (and clean up listeners)
-    var existing = scrollContainer.querySelector('.sharpie-line-element[data-row-id="' + row.dataset.id + '"]');
-    if (existing) {
-      if (existing._scrollHandler) window.removeEventListener('scroll', existing._scrollHandler, true);
-      if (existing._resizeHandler) window.removeEventListener('resize', existing._resizeHandler);
-      if (existing._resizeObserver) existing._resizeObserver.disconnect();
-      existing.remove();
-    }
-
-    var line = document.createElement('div');
+    // Create line
+    const line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
-    line.style.cssText = 'position:absolute;height:4px;background:#f44336;pointer-events:none;z-index:500;';
 
-    if (document.body.classList.contains('sharpie-lines-hidden')) line.style.display = 'none';
+    // Position using getBoundingClientRect for accurate placement
+    // (offsetTop is relative to offsetParent which may not be scrollContainer,
+    //  e.g. when day-tabs or day-section wrappers sit between them)
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
+
+    const padding = 42; // 36px column + 6px padding
+    line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
+    line.style.left = padding + 'px';
+    line.style.right = padding + 'px';
 
     scrollContainer.appendChild(line);
-
-    function updatePosition() {
-      if (!document.body.contains(row)) {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
-        if (line._resizeObserver) line._resizeObserver.disconnect();
-        line.remove();
-        return;
-      }
-
-      // Cumulative offset from row to scrollContainer — works through any
-      // number of wrapper divs (day sections, etc.) and is zoom-agnostic
-      var rowOffset = getOffsetTo(row, scrollContainer);
-      var tableOffset = getOffsetTo(table, scrollContainer);
-      var rowHeight = row.offsetHeight;
-      var tableWidth = table.offsetWidth;
-
-      // Skip drag column and action column
-      var dragCell = row.querySelector('td[data-key="drag"]');
-      var actionCell = row.querySelector('td[data-key="actions"]');
-      var dragW = dragCell ? dragCell.offsetWidth : 0;
-      var actionW = actionCell ? actionCell.offsetWidth : 0;
-      var pad = 6;
-
-      line.style.top = (rowOffset.top + rowHeight / 2 - 2) + 'px';
-      line.style.left = (tableOffset.left + dragW + pad) + 'px';
-      line.style.width = (tableWidth - dragW - actionW - pad * 2) + 'px';
-    }
-
-    updatePosition();
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-    line._scrollHandler = updatePosition;
-    line._resizeHandler = updatePosition;
-
-    if (typeof ResizeObserver !== 'undefined') {
-      var observer = new ResizeObserver(updatePosition);
-      observer.observe(row);
-      observer.observe(table);
-      observer.observe(scrollContainer);
-      line._resizeObserver = observer;
-    }
-
-    setTimeout(updatePosition, 50);
-    setTimeout(updatePosition, 150);
   }
 
   function updateAllSharpieLines() {
-    var scrollContainer = document.getElementById('scheduleScroll');
+    const scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(function(el) {
-      if (el._scrollHandler) window.removeEventListener('scroll', el._scrollHandler, true);
-      if (el._resizeHandler) window.removeEventListener('resize', el._resizeHandler);
-      if (el._resizeObserver) el._resizeObserver.disconnect();
-      el.remove();
-    });
-    markedRows.forEach(function(rowId) {
-      var row = scrollContainer.querySelector('tr[data-id="' + rowId + '"]');
+    // Remove all existing lines and re-add for visible rows
+    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
+    markedRows.forEach(rowId => {
+      const row = scrollContainer.querySelector(`tr[data-id="${rowId}"]`);
       if (row) addSharpieLineElement(row);
     });
   }
@@ -1365,34 +1283,195 @@
   
   // === REALTIME SYNC ===
   function subscribeToChannel() {
+    const code = channelCode.toUpperCase();
+
+    // Restore last processed sequence
+    lastProcessedSeq = parseInt(localStorage.getItem('adSyncLastSeq_' + code) || '0', 10);
+
     channel = supabase.channel(`ad-sync-${channelCode}`, {
       config: { broadcast: { self: false } }
     });
-    
+
     channel
-      .on('broadcast', { event: 'row-reorder' }, handleIncomingReorder)
-      .on('broadcast', { event: 'duration-change' }, handleIncomingDuration)
-      .on('broadcast', { event: 'sharpie-toggle' }, handleIncomingSharpie)
-      .on('broadcast', { event: 'sharpie-visibility' }, handleIncomingVisibility)
+      // v2 command format (from updated laptop)
+      .on('broadcast', { event: 'sync-command' }, handleIncomingSyncCommand)
+      // Legacy event listeners (from laptop builds that haven't updated yet)
+      .on('broadcast', { event: 'row-reorder' }, (msg) => handleLegacyIncoming('row-reorder', msg))
+      .on('broadcast', { event: 'duration-change' }, (msg) => handleLegacyIncoming('duration-change', msg))
+      .on('broadcast', { event: 'sharpie-toggle' }, (msg) => handleLegacyIncoming('sharpie-toggle', msg))
+      .on('broadcast', { event: 'sharpie-visibility' }, (msg) => handleLegacyIncoming('sharpie-visibility', msg))
+      // Non-command events (always legacy format)
       .on('broadcast', { event: 'column-resize' }, handleIncomingColumnResize)
       .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
       .on('broadcast', { event: 'row-times' }, handleIncomingRowTimes)
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
-      .on('broadcast', { event: 'reload-schedule' }, handleReloadSchedule)
-      .on('broadcast', { event: 'row-delete' }, handleIncomingRowDelete)
+      .on('broadcast', { event: 'reload-schedule' }, () => {
+        console.log('[AD] Reload-schedule event — fetching fresh HTML');
+        loadScheduleFromBucket();
+      })
       .subscribe((status) => {
         const dot = document.getElementById('statusDot');
         if (status === 'SUBSCRIBED') {
           dot.classList.add('connected');
+          reconnectAttempts = 0;
           updateFooter('Connected');
-          
-          // Request full sync from DOM
-          broadcastEvent('request-sync', {});
+
+          // Catch up on commands missed while offline, then request full sync
+          catchUpMissedCommands().then(() => {
+            broadcastEvent('request-sync', {});
+          });
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          dot.classList.remove('connected');
+          updateFooter('Disconnected — reconnecting...');
+          clearTimeout(reconnectTimer);
+          reconnectAttempts++;
+          const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+          reconnectTimer = setTimeout(reconnect, delay);
         } else {
           dot.classList.remove('connected');
-          updateFooter('Disconnected');
+          updateFooter('Connecting...');
         }
       });
+
+    // Postgres Changes subscription (durable delivery from laptop)
+    dbChannel = supabase.channel('sync-db-ad-' + code)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'sync_commands',
+        filter: `channel_code=eq.${code}`
+      }, (change) => handleDbInsert(change.new))
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.log('[AD] Postgres Changes subscription active');
+      });
+  }
+
+  // === v2 COMMAND HANDLING ===
+
+  /** Handle a v2 sync-command from broadcast (instant path) */
+  function handleIncomingSyncCommand(msg) {
+    if (!msg?.payload) return;
+    const { cmdId, action, payload, deviceId: senderDevice } = msg.payload;
+    if (senderDevice === deviceId) return;           // Our own command
+    if (processedCmds.has(cmdId)) return;            // Already processed
+    processedCmds.add(cmdId);
+    trimProcessedSet();
+    applyIncomingCommand(action, payload);
+  }
+
+  /** Handle a command arriving via Postgres Changes (durable path) */
+  function handleDbInsert(row) {
+    if (!row) return;
+    if (row.device_id === deviceId) {
+      lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+      return;
+    }
+    if (processedCmds.has(row.cmd_id)) {
+      lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+      return;
+    }
+    processedCmds.add(row.cmd_id);
+    lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+    try { localStorage.setItem('adSyncLastSeq_' + channelCode.toUpperCase(), String(lastProcessedSeq)); } catch (_) {}
+    trimProcessedSet();
+    applyIncomingCommand(row.action, row.payload);
+  }
+
+  /** Handle legacy broadcast events (from laptop builds without v2) */
+  function handleLegacyIncoming(action, msg) {
+    const data = msg?.payload || msg;
+    if (!data) return;
+    if (data.source === 'ad') return;  // Our own legacy echo — ignore
+    // Only accept from producer
+    if (data.source !== 'producer') return;
+    applyIncomingCommand(action, data);
+  }
+
+  /** Catch up on commands missed while offline */
+  async function catchUpMissedCommands() {
+    if (!supabase || !channelCode) return;
+    const code = channelCode.toUpperCase();
+    try {
+      const { data, error } = await supabase
+        .from('sync_commands')
+        .select('*')
+        .eq('channel_code', code)
+        .gt('id', lastProcessedSeq)
+        .order('id', { ascending: true })
+        .limit(500);
+
+      if (error) {
+        console.warn('[AD] Catch-up query failed:', error.message);
+        return;
+      }
+      if (data && data.length > 0) {
+        console.log('[AD] Catching up:', data.length, 'missed commands');
+        data.forEach(row => {
+          lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+          if (row.device_id === deviceId) return;
+          if (processedCmds.has(row.cmd_id)) return;
+          processedCmds.add(row.cmd_id);
+          applyIncomingCommand(row.action, row.payload);
+        });
+        try { localStorage.setItem('adSyncLastSeq_' + code, String(lastProcessedSeq)); } catch (_) {}
+      }
+    } catch (e) {
+      console.warn('[AD] Catch-up error:', e);
+    }
+  }
+
+  /** Apply any incoming command to the DOM (unified handler for all paths) */
+  function applyIncomingCommand(action, payload) {
+    if (!payload) return;
+    applyingRemote = true;
+    try {
+      switch (action) {
+        case 'row-reorder':
+          handleIncomingReorder({ payload });
+          break;
+        case 'duration-change':
+          handleIncomingDuration({ payload });
+          break;
+        case 'sharpie-toggle':
+          handleIncomingSharpie({ payload });
+          break;
+        case 'sharpie-visibility':
+          handleIncomingVisibility({ payload });
+          break;
+        case 'row-delete': {
+          const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+          if (row) {
+            // Remove sharpie line if exists
+            const line = document.getElementById('scheduleScroll')
+              ?.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+            if (line) line.remove();
+            markedRows.delete(payload.rowId);
+            row.remove();
+          }
+          break;
+        }
+        case 'row-duplicate': {
+          const srcRow = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+          if (srcRow) {
+            const clone = srcRow.cloneNode(true);
+            clone.dataset.id = 'dup-' + Date.now();
+            srcRow.parentNode.insertBefore(clone, srcRow.nextSibling);
+            // Re-setup interactions for the new row
+            const table = clone.closest('table');
+            if (table) setupRowInteractionsForTable(table);
+          }
+          break;
+        }
+        case 'cell-format':
+        case 'row-format':
+          // Format changes are reflected on next HTML reload
+          break;
+        default:
+          console.log('[AD] Unknown command:', action);
+      }
+    } finally {
+      applyingRemote = false;
+    }
   }
   
   // Get the currently active day ID (for multi-day broadcasts)
@@ -1411,14 +1490,51 @@
     return document.querySelector('#scheduleScroll tbody');
   }
 
+  /**
+   * Send a command via BOTH broadcast (instant) AND database (durable).
+   * The legacy broadcast format is also sent for backward compat with older
+   * laptop builds that haven't been updated yet.
+   */
   function broadcastEvent(event, payload) {
-    if (channel) {
-      const dayId = getActiveBroadcastDayId();
-      channel.send({ type: 'broadcast', event, payload: { ...payload, dayId: dayId, source: 'ad' } });
+    if (!channel) return;
+    const dayId = getActiveBroadcastDayId();
+    const fullPayload = { ...payload, dayId: dayId, source: 'ad' };
+
+    // Legacy broadcast (for backward compat with old laptop adChannelSync)
+    channel.send({ type: 'broadcast', event, payload: fullPayload });
+
+    // v2 durable command: broadcast + persist to sync_commands table
+    const cmdId = crypto.randomUUID();
+    processedCmds.add(cmdId);
+    trimProcessedSet();
+
+    // v2 broadcast (new format — laptop's _handleBroadcastCommand picks this up)
+    channel.send({
+      type: 'broadcast',
+      event: 'sync-command',
+      payload: { cmdId, action: event, payload: fullPayload, deviceId: deviceId }
+    });
+
+    // Persist to database (durable — survives laptop sleep)
+    if (supabase && channelCode) {
+      supabase.from('sync_commands').insert({
+        cmd_id: cmdId,
+        channel_code: channelCode.toUpperCase(),
+        action: event,
+        payload: fullPayload,
+        device_id: deviceId
+      }).select('id').single().then(({ data, error }) => {
+        if (error) console.warn('[AD] Failed to persist command:', error.message);
+        if (data?.id) {
+          lastProcessedSeq = Math.max(lastProcessedSeq, data.id);
+          try { localStorage.setItem('adSyncLastSeq_' + channelCode.toUpperCase(), String(lastProcessedSeq)); } catch (_) {}
+        }
+      });
     }
   }
 
   function broadcastRowOrder() {
+    if (applyingRemote) return;  // Don't re-broadcast when applying remote commands
     const tbody = getActiveTbody();
     if (!tbody) return;
 
@@ -1426,6 +1542,14 @@
       .map(row => row.dataset.id);
 
     broadcastEvent('row-reorder', { order, source: 'ad' });
+  }
+
+  function trimProcessedSet() {
+    if (processedCmds.size > 1000) {
+      const arr = Array.from(processedCmds);
+      processedCmds.clear();
+      arr.slice(-500).forEach(id => processedCmds.add(id));
+    }
   }
   
   // === INCOMING EVENT HANDLERS ===
@@ -1439,7 +1563,14 @@
 
     payload.order.forEach(id => {
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (row) tbody.appendChild(row);
+      if (row) {
+        tbody.appendChild(row);
+        // If this is a SUB row, also move its subchildren so they stay attached
+        if (row.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + id + '"]');
+          subchildren.forEach(child => tbody.appendChild(child));
+        }
+      }
     });
 
     updateAllSharpieLines();
@@ -1500,6 +1631,7 @@
   function handleIncomingVisibility({ payload }) {
     linesHidden = payload.hidden;
     document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+    document.body.classList.toggle('show-progress', !linesHidden);
     
     const btn = document.getElementById('masterSharpie');
     if (btn) btn.classList.toggle('lines-hidden', linesHidden);
@@ -1530,9 +1662,10 @@
   
   function handleFullSync({ payload }) {
     if (!payload) return;
-    
+
     // Reload schedule if provided
     if (payload.html) {
+      cacheSchedule(payload.html);
       injectSchedule(payload.html);
     }
     
@@ -1554,28 +1687,6 @@
     }
   }
   
-  // Reload schedule from bucket (triggered by producer after changes)
-  function handleReloadSchedule({ payload }) {
-    if (payload?.source === 'ad') return; // don't reload our own changes
-    console.log('[ADViewer] Reloading schedule from bucket');
-    loadScheduleFromBucket();
-  }
-
-  // Handle row delete from producer
-  function handleIncomingRowDelete({ payload }) {
-    if (!payload?.rowId) return;
-    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
-    if (!row) return;
-    // Remove sharpie line if present
-    const line = document.getElementById('scheduleScroll')
-      ?.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
-    if (line) line.remove();
-    markedRows.delete(payload.rowId);
-    row.remove();
-    updateAllSharpieLines();
-    console.log('[ADViewer] Row deleted:', payload.rowId);
-  }
-
   // === UTILITIES ===
   function updateFooter(status) {
     const footer = document.getElementById('footer');
