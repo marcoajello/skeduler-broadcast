@@ -859,9 +859,15 @@
       }
     });
 
-    // Recreate dynamic sharpie line elements for all marked rows
+    // Recreate dynamic sharpie line elements for all marked rows.
+    // Use rAF so the browser has laid out the new HTML before we
+    // call getBoundingClientRect to position lines.
     if (markedRows.size > 0) {
-      updateAllSharpieLines();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          updateAllSharpieLines();
+        });
+      });
     }
   }
   
