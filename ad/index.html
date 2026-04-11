@@ -848,6 +848,17 @@
     // Setup QR code toggle
     setupQRCode();
 
+    // Re-apply sharpie button state AFTER setupColumns created fresh buttons.
+    // The broadcast HTML has no action column, so setupColumnsForTable adds new
+    // sharpie buttons that lack the .active class. Reapply from markedRows.
+    markedRows.forEach(rowId => {
+      const row = container.querySelector(`tr[data-id="${rowId}"]`);
+      if (row) {
+        const btn = row.querySelector('button.sharpie');
+        if (btn) btn.classList.add('active');
+      }
+    });
+
     // Recreate dynamic sharpie line elements for all marked rows
     if (markedRows.size > 0) {
       updateAllSharpieLines();
