@@ -47,15 +47,6 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .header-center {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex: 0 0 auto;
     }
     
     .status-btn {
@@ -96,8 +87,6 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      flex: 1;
-      justify-content: flex-end;
     }
     
     /* Header sharpie toggle button - red circle style */
@@ -234,7 +223,7 @@
       padding: 6px 8px;
       text-align: left;
       vertical-align: middle;
-      /* font-size intentionally omitted - baked HTML provides exact sizes from DOM */
+      font-size: 12px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -277,11 +266,28 @@
       vertical-align: middle;
       cursor: grab;
       user-select: none;
+      -webkit-user-select: none;
       padding: 0;
+      touch-action: none; /* prevent scroll when touching drag handle */
     }
-    
+
     table.schedule tbody td[data-key="drag"]:active {
       cursor: grabbing;
+    }
+
+    /* Bigger touch target on tablets/phones */
+    @media (pointer: coarse) {
+      table.schedule thead th[data-key="drag"],
+      table.schedule tbody td[data-key="drag"] {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+      }
+      .drag-dots {
+        width: 16px;
+        height: 16px;
+        padding: 8px;
+      }
     }
     
     /* 3x3 drag handle dots - exact DOM pattern */
@@ -499,9 +505,43 @@
       background: var(--panel);
       border-top: 1px solid var(--border);
     }
+
+    /* Row context menu (long-press / right-click) */
+    .row-ctx-menu {
+      position: fixed;
+      z-index: 9999;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 0;
+      min-width: 140px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: none;
+    }
+    .row-ctx-menu.visible { display: block; }
+    .row-ctx-menu button {
+      display: block;
+      width: 100%;
+      padding: 8px 14px;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+    .row-ctx-menu button:hover { background: rgba(255,255,255,0.08); }
+    .row-ctx-menu button.destructive { color: #ef4444; }
+    .row-ctx-menu button.destructive:hover { background: rgba(239,68,68,0.12); }
   </style>
 </head>
 <body>
+  <!-- Row context menu (long-press / right-click) -->
+  <div class="row-ctx-menu" id="rowCtxMenu">
+    <button id="ctxDuplicate">Duplicate Row</button>
+    <button id="ctxDelete" class="destructive">Delete Row</button>
+  </div>
+
   <div class="header">
     <div class="header-left">
       <button class="status-btn" id="statusBtn" title="Connection status">
@@ -510,12 +550,6 @@
       <div class="channel-name" id="channelName">Loading...</div>
     </div>
     
-    <div class="header-center">
-      <div class="header-logo">
-        <img src="logo-pro.png" alt="SKEDULER PRO" />
-      </div>
-    </div>
-
     <div class="header-right">
       <button class="qr-btn" id="qrBtn" title="Show QR Code">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -526,6 +560,9 @@
       <button class="header-progress-btn" id="progressBtn" title="Toggle Progress">
         <svg width="16" height="16" viewBox="195 40 100 130"><g transform="rotate(45 245 96)"><path fill="#dd2222" d="m230,66l0,-35q0,-15 12,-21q3,-2 6,0q12,6 12,21l0,35l-30,0z"/><path fill="#e0e0e0" d="m231.5,66l0,75q0,15 6.5,25l14,0q6.5,-10 6.5,-25l0,-75l-27,0z"/><path fill="#bb1111" d="m238,166q-2,10 7,25q9,-15 7,-25l-14,0z"/></g></svg>
       </button>
+      <div class="header-logo">
+        <img src="logo-pro.png" alt="SKEDULER PRO" />
+      </div>
     </div>
   </div>
   
@@ -558,8 +595,9 @@
   'use strict';
   
   // === CONFIG ===
-  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL;
-  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY;
+  // Use main Supabase project — the AD viewer project is deprecated
+  const SUPABASE_URL = window.SKEDULER_CONFIG?.SUPABASE_URL || window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_URL;
+  const SUPABASE_KEY = window.SKEDULER_CONFIG?.SUPABASE_ANON_KEY || window.SKEDULER_CONFIG?.AD_VIEWER_SUPABASE_ANON_KEY;
   
   // === STATE ===
   let supabase = null;
@@ -596,39 +634,26 @@
   // === LOAD SCHEDULE ===
   async function loadScheduleFromBucket() {
     try {
-      // Look up broadcast by code (same as broadcast viewer)
-      const { data: broadcast, error: lookupError } = await supabase
+      // Look up the broadcast record to get the file path
+      const { data: rec, error: lookupErr } = await supabase
         .from('broadcasts')
-        .select('*')
-        .eq('code', channelCode.toUpperCase())
+        .select('user_id, channel_number, file_name')
+        .ilike('code', channelCode)
+        .limit(1)
         .single();
 
-      if (lookupError || !broadcast) {
-        throw new Error('Broadcast not found');
-      }
+      if (lookupErr || !rec) throw new Error('No broadcast record for ' + channelCode);
 
-      // Update channel name
-      document.getElementById('channelName').textContent = broadcast.title || `Channel: ${channelCode}`;
+      const htmlPath = rec.user_id + '/ch' + rec.channel_number + '_' + rec.file_name + '.html';
+      console.log('[ADViewer] Downloading schedule-files/' + htmlPath);
 
-      // Build storage path (same logic as broadcast viewer)
-      let htmlPath;
-      if (broadcast.channel_number) {
-        htmlPath = broadcast.user_id + '/ch' + broadcast.channel_number + '_' + broadcast.file_name + '.html';
-      } else {
-        htmlPath = broadcast.user_id + '/' + broadcast.file_name + '.html';
-      }
-
-      const { data: urlData } = supabase.storage
+      const { data, error } = await supabase.storage
         .from('schedule-files')
-        .getPublicUrl(htmlPath);
+        .download(htmlPath);
 
-      const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-      console.log('[AD] Fetching:', publicUrl);
+      if (error) throw error;
 
-      const response = await fetch(publicUrl);
-      if (!response.ok) throw new Error('Could not load schedule');
-
-      const html = await response.text();
+      const html = await data.text();
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
@@ -834,76 +859,224 @@
     const rows = tbody.querySelectorAll('tr[data-id]');
 
     rows.forEach(row => {
-      const isSubChild = row.classList.contains('subchild');
-
-      if (isSubChild) {
-        // Sub-children should not be independently draggable
-        row.draggable = false;
-      } else {
-        // Make draggable
-        row.draggable = true;
-
-        // Drag start
-        row.addEventListener('dragstart', (e) => {
-          draggingRow = row;
-          row.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', row.dataset.id);
-        });
-
-        // Drag end
-        row.addEventListener('dragend', () => {
-          if (draggingRow) {
-            draggingRow.classList.remove('dragging');
-          }
-          draggingRow = null;
-
-          // Broadcast new order
-          broadcastRowOrder();
-        });
-      }
-
-      // Duration click (both parent rows and sub-children)
+      // Duration click
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
 
-      // Sharpie button click (both parent rows and sub-children)
+      // Sharpie button click
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
+
+      // Long-press context menu (works on touch and mouse)
+      if (!row._ctxSetup) {
+        row._ctxSetup = true;
+        setupRowContextMenu(row);
+      }
     });
 
-    // Tbody dragover - exact DOM implementation
-    if (!tbody._dragoverSetup) {
-      tbody._dragoverSetup = true;
-      tbody.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (!draggingRow) return;
+    // Mousedown-based drag on drag-handle cells (reliable, matches main app)
+    if (!tbody._dragSetup) {
+      tbody._dragSetup = true;
+      setupMouseDrag(tbody);
+    }
+  }
+
+  // ─── Row context menu (long-press / right-click) ───
+  let ctxTargetRow = null;
+
+  function showRowContextMenu(x, y, row) {
+    ctxTargetRow = row;
+    const menu = document.getElementById('rowCtxMenu');
+    menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 80) + 'px';
+    menu.classList.add('visible');
+  }
+
+  function hideRowContextMenu() {
+    document.getElementById('rowCtxMenu')?.classList.remove('visible');
+    ctxTargetRow = null;
+  }
+
+  function setupRowContextMenu(row) {
+    let holdTimer = null;
+
+    // Right-click
+    row.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      showRowContextMenu(e.clientX, e.clientY, row);
+    });
+
+    // Long-press (touch)
+    row.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      // Don't long-press on drag handle (that's for dragging)
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (el?.closest('td[data-key="drag"]')) return;
+      holdTimer = setTimeout(function() {
+        holdTimer = null;
+        showRowContextMenu(touch.clientX, touch.clientY, row);
+      }, 600);
+    }, { passive: true });
+
+    row.addEventListener('touchmove', function() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }, { passive: true });
+
+    row.addEventListener('touchend', function() {
+      if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+    }, { passive: true });
+  }
+
+  // Context menu button handlers
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('ctxDuplicate')?.addEventListener('click', function() {
+      if (!ctxTargetRow) return;
+      const rowId = ctxTargetRow.dataset.id;
+      // Clone the row in the DOM
+      const clone = ctxTargetRow.cloneNode(true);
+      const newId = rowId + '_dup_' + Date.now();
+      clone.dataset.id = newId;
+      clone._ctxSetup = false;
+      ctxTargetRow.parentNode.insertBefore(clone, ctxTargetRow.nextSibling);
+      // Re-setup interactions on cloned row
+      const durCell = clone.querySelector('td[data-key="duration"]');
+      if (durCell) {
+        durCell.style.cursor = 'pointer';
+        durCell.addEventListener('click', function() { openDurationEditor(clone, durCell); });
+      }
+      const sharpieBtn = clone.querySelector('button.sharpie');
+      if (sharpieBtn) {
+        sharpieBtn.addEventListener('click', function() { toggleRowSharpie(clone); });
+      }
+      setupRowContextMenu(clone);
+      // Broadcast duplicate to producer
+      broadcastEvent('row-duplicate', { rowId: rowId });
+      broadcastRowOrder();
+      hideRowContextMenu();
+    });
+
+    document.getElementById('ctxDelete')?.addEventListener('click', function() {
+      if (!ctxTargetRow) return;
+      const rowId = ctxTargetRow.dataset.id;
+      // Remove sharpie line
+      const line = document.getElementById('scheduleScroll')
+        ?.querySelector('.sharpie-line-element[data-row-id="' + rowId + '"]');
+      if (line) line.remove();
+      markedRows.delete(rowId);
+      ctxTargetRow.remove();
+      // Broadcast delete to producer
+      broadcastEvent('row-delete', { rowId: rowId });
+      broadcastRowOrder();
+      updateAllSharpieLines();
+      hideRowContextMenu();
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.row-ctx-menu')) hideRowContextMenu();
+    });
+    document.addEventListener('touchstart', function(e) {
+      if (!e.target.closest('.row-ctx-menu')) hideRowContextMenu();
+    }, { passive: true });
+  });
+
+  // ─── Pointer-based row drag (mouse + touch, replaces unreliable HTML5 native drag) ───
+  function setupMouseDrag(tbody) {
+
+    function getZoom() {
+      const sc = document.querySelector('.schedule-scroll');
+      return sc ? parseFloat(sc.style.zoom || '1') : 1;
+    }
+
+    // Unified handler for both mouse and touch
+    function beginDrag(startX, startY, tr, isTouch) {
+      let started = false;
+
+      function clientXY(e) {
+        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function onMove(moveE) {
+        const { x, y } = clientXY(moveE);
+        if (!started) {
+          if (Math.abs(x - startX) < 4 && Math.abs(y - startY) < 4) return;
+          started = true;
+          draggingRow = tr;
+          tr.classList.add('dragging');
+          // On touch, prevent scrolling once drag starts
+          if (isTouch) moveE.preventDefault();
+        } else if (isTouch) {
+          moveE.preventDefault(); // keep preventing scroll during drag
+        }
 
         const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
-        const afterEl = calcAfter(candidates, e.clientY);
+        const afterEl = calcAfter(candidates, y);
 
         if (afterEl === null) {
           tbody.appendChild(draggingRow);
         } else {
           tbody.insertBefore(draggingRow, afterEl);
         }
+      }
 
-        // Keep sub-children attached to their parent SUB row
-        if (draggingRow.dataset.type === 'SUB') {
-          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
-          let insertAfter = draggingRow;
-          subchildren.forEach(child => {
-            insertAfter.after(child);
-            insertAfter = child;
-          });
+      function onUp() {
+        if (isTouch) {
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onUp);
+          document.removeEventListener('touchcancel', onUp);
+        } else {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
         }
-      });
+
+        if (draggingRow) {
+          draggingRow.classList.remove('dragging');
+          draggingRow = null;
+          broadcastRowOrder();
+          setTimeout(function() { updateAllSharpieLines(); }, 50);
+        }
+      }
+
+      if (isTouch) {
+        // passive: false so we can preventDefault to stop scroll during drag
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onUp);
+        document.addEventListener('touchcancel', onUp);
+      } else {
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      }
     }
+
+    // Mouse
+    tbody.addEventListener('mousedown', function(e) {
+      const dragTd = e.target.closest('td[data-key="drag"]');
+      if (!dragTd) return;
+      const tr = dragTd.closest('tr[data-id]');
+      if (!tr) return;
+      e.preventDefault();
+      beginDrag(e.clientX, e.clientY, tr, false);
+    });
+
+    // Touch
+    tbody.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return; // single finger only
+      const touch = e.touches[0];
+      const dragTd = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('td[data-key="drag"]');
+      if (!dragTd) return;
+      const tr = dragTd.closest('tr[data-id]');
+      if (!tr) return;
+      // Don't preventDefault here — let the browser decide if it's a scroll.
+      // We'll preventDefault in touchmove once we've confirmed it's a drag.
+      beginDrag(touch.clientX, touch.clientY, tr, true);
+    }, { passive: true });
   }
 
   function setupRowInteractions() {
@@ -932,8 +1105,9 @@
   
   // === MASTER SHARPIE ===
   function setupMasterSharpieForTable(table) {
-    // Find the master sharpie button within this table's header (if table exists)
-    const btn = table ? (table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie')) : null;
+    if (!table) return;
+    // Find the master sharpie button within this table's header
+    const btn = table.querySelector('.master-sharpie-btn') || document.getElementById('masterSharpie');
     const progressBtn = document.getElementById('progressBtn');
 
     // Restore sharpie visibility state
@@ -1031,44 +1205,110 @@
     }
   }
   
+  // Walk up the offsetParent chain to get cumulative offset relative to an ancestor.
+  // This stays in CSS coordinate space — immune to browser zoom and CSS transforms.
+  function getOffsetTo(el, ancestor) {
+    var top = 0, left = 0, cur = el;
+    while (cur && cur !== ancestor) {
+      top += cur.offsetTop || 0;
+      left += cur.offsetLeft || 0;
+      cur = cur.offsetParent;
+    }
+    return { top: top, left: left };
+  }
+
   function addSharpieLineElement(row) {
-    const scrollContainer = document.getElementById('scheduleScroll');
+    var scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    // Find the table containing this row (handles multi-day sections)
-    const table = row.closest('table');
+    var table = row.closest('table');
     if (!table) return;
 
     // Skip if row is in a hidden day section
-    const section = row.closest('.broadcast-day-section');
+    var section = row.closest('.broadcast-day-section');
     if (section && section.style.display === 'none') return;
 
-    // Remove existing
-    const existing = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${row.dataset.id}"]`);
-    if (existing) existing.remove();
+    // Ensure scroll container is positioned for absolute children
+    if (getComputedStyle(scrollContainer).position === 'static') {
+      scrollContainer.style.position = 'relative';
+    }
 
-    // Create line
-    const line = document.createElement('div');
+    // Remove existing (and clean up listeners)
+    var existing = scrollContainer.querySelector('.sharpie-line-element[data-row-id="' + row.dataset.id + '"]');
+    if (existing) {
+      if (existing._scrollHandler) window.removeEventListener('scroll', existing._scrollHandler, true);
+      if (existing._resizeHandler) window.removeEventListener('resize', existing._resizeHandler);
+      if (existing._resizeObserver) existing._resizeObserver.disconnect();
+      existing.remove();
+    }
+
+    var line = document.createElement('div');
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
+    line.style.cssText = 'position:absolute;height:4px;background:#f44336;pointer-events:none;z-index:500;';
 
-    // Position (skip drag column, end before action column)
-    const padding = 42; // 36px column + 6px padding
-    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
-    line.style.left = padding + 'px';
-    line.style.right = padding + 'px';
+    if (document.body.classList.contains('sharpie-lines-hidden')) line.style.display = 'none';
 
     scrollContainer.appendChild(line);
+
+    function updatePosition() {
+      if (!document.body.contains(row)) {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+        if (line._resizeObserver) line._resizeObserver.disconnect();
+        line.remove();
+        return;
+      }
+
+      // Cumulative offset from row to scrollContainer — works through any
+      // number of wrapper divs (day sections, etc.) and is zoom-agnostic
+      var rowOffset = getOffsetTo(row, scrollContainer);
+      var tableOffset = getOffsetTo(table, scrollContainer);
+      var rowHeight = row.offsetHeight;
+      var tableWidth = table.offsetWidth;
+
+      // Skip drag column and action column
+      var dragCell = row.querySelector('td[data-key="drag"]');
+      var actionCell = row.querySelector('td[data-key="actions"]');
+      var dragW = dragCell ? dragCell.offsetWidth : 0;
+      var actionW = actionCell ? actionCell.offsetWidth : 0;
+      var pad = 6;
+
+      line.style.top = (rowOffset.top + rowHeight / 2 - 2) + 'px';
+      line.style.left = (tableOffset.left + dragW + pad) + 'px';
+      line.style.width = (tableWidth - dragW - actionW - pad * 2) + 'px';
+    }
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    line._scrollHandler = updatePosition;
+    line._resizeHandler = updatePosition;
+
+    if (typeof ResizeObserver !== 'undefined') {
+      var observer = new ResizeObserver(updatePosition);
+      observer.observe(row);
+      observer.observe(table);
+      observer.observe(scrollContainer);
+      line._resizeObserver = observer;
+    }
+
+    setTimeout(updatePosition, 50);
+    setTimeout(updatePosition, 150);
   }
 
   function updateAllSharpieLines() {
-    const scrollContainer = document.getElementById('scheduleScroll');
+    var scrollContainer = document.getElementById('scheduleScroll');
     if (!scrollContainer) return;
 
-    // Remove all existing lines and re-add for visible rows
-    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(el => el.remove());
-    markedRows.forEach(rowId => {
-      const row = scrollContainer.querySelector(`tr[data-id="${rowId}"]`);
+    scrollContainer.querySelectorAll('.sharpie-line-element').forEach(function(el) {
+      if (el._scrollHandler) window.removeEventListener('scroll', el._scrollHandler, true);
+      if (el._resizeHandler) window.removeEventListener('resize', el._resizeHandler);
+      if (el._resizeObserver) el._resizeObserver.disconnect();
+      el.remove();
+    });
+    markedRows.forEach(function(rowId) {
+      var row = scrollContainer.querySelector('tr[data-id="' + rowId + '"]');
       if (row) addSharpieLineElement(row);
     });
   }
@@ -1138,6 +1378,8 @@
       .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
       .on('broadcast', { event: 'row-times' }, handleIncomingRowTimes)
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
+      .on('broadcast', { event: 'reload-schedule' }, handleReloadSchedule)
+      .on('broadcast', { event: 'row-delete' }, handleIncomingRowDelete)
       .subscribe((status) => {
         const dot = document.getElementById('statusDot');
         if (status === 'SUBSCRIBED') {
@@ -1197,14 +1439,7 @@
 
     payload.order.forEach(id => {
       const row = tbody.querySelector(`tr[data-id="${id}"]`);
-      if (row) {
-        tbody.appendChild(row);
-        // If this is a SUB row, also move its subchildren so they stay attached
-        if (row.dataset.type === 'SUB') {
-          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + id + '"]');
-          subchildren.forEach(child => tbody.appendChild(child));
-        }
-      }
+      if (row) tbody.appendChild(row);
     });
 
     updateAllSharpieLines();
@@ -1319,6 +1554,28 @@
     }
   }
   
+  // Reload schedule from bucket (triggered by producer after changes)
+  function handleReloadSchedule({ payload }) {
+    if (payload?.source === 'ad') return; // don't reload our own changes
+    console.log('[ADViewer] Reloading schedule from bucket');
+    loadScheduleFromBucket();
+  }
+
+  // Handle row delete from producer
+  function handleIncomingRowDelete({ payload }) {
+    if (!payload?.rowId) return;
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    // Remove sharpie line if present
+    const line = document.getElementById('scheduleScroll')
+      ?.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+    if (line) line.remove();
+    markedRows.delete(payload.rowId);
+    row.remove();
+    updateAllSharpieLines();
+    console.log('[ADViewer] Row deleted:', payload.rowId);
+  }
+
   // === UTILITIES ===
   function updateFooter(status) {
     const footer = document.getElementById('footer');
