@@ -564,33 +564,125 @@
   // === STATE ===
   let supabase = null;
   let channel = null;
+  let dbChannel = null;  // Postgres Changes subscription
   let channelCode = null;
   let draggingRow = null;
   let markedRows = new Set();
   let linesHidden = false;
-  
+  let reconnectTimer = null;
+  let reconnectAttempts = 0;
+  const MAX_RECONNECT_DELAY = 30000;
+
+  // === DURABLE SYNC STATE ===
+  let deviceId = localStorage.getItem('adViewerDeviceId');
+  if (!deviceId) {
+    deviceId = 'adv-' + crypto.randomUUID().slice(0, 8);
+    localStorage.setItem('adViewerDeviceId', deviceId);
+  }
+  let lastProcessedSeq = 0;
+  const processedCmds = new Set();
+  let applyingRemote = false;  // Prevents echo when applying incoming commands
+
+  // === LOCAL CACHE ===
+  function cacheKey() { return 'ad-cache-' + (channelCode || '').toUpperCase(); }
+  function cacheSchedule(html) {
+    try { localStorage.setItem(cacheKey(), html); localStorage.setItem(cacheKey() + '-ts', Date.now()); } catch (_) {}
+  }
+  function getCachedSchedule() {
+    try { return localStorage.getItem(cacheKey()); } catch (_) { return null; }
+  }
+  function getCacheAge() {
+    try { const ts = localStorage.getItem(cacheKey() + '-ts'); return ts ? Date.now() - Number(ts) : Infinity; } catch (_) { return Infinity; }
+  }
+
   // === INIT ===
   async function init() {
     // Get channel code from URL
     const params = new URLSearchParams(window.location.search);
     channelCode = params.get('c');
-    
+
     if (!channelCode) {
       document.getElementById('channelName').textContent = 'No channel code';
       document.getElementById('footer').textContent = 'Add ?c=CODE to URL';
       return;
     }
-    
+
     document.getElementById('channelName').textContent = `Channel: ${channelCode}`;
-    
+
+    // Show cached schedule immediately (instant load while we fetch fresh)
+    const cached = getCachedSchedule();
+    if (cached) {
+      injectSchedule(cached);
+      const ageMin = Math.round(getCacheAge() / 60000);
+      updateFooter(ageMin < 1 ? 'Cached (just now)' : `Cached (${ageMin}m ago)`);
+    }
+
     // Init Supabase
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
-    // Load initial schedule from bucket
+
+    // Load fresh schedule from bucket (updates cache)
     await loadScheduleFromBucket();
-    
+
     // Subscribe to realtime
     subscribeToChannel();
+
+    // Listen for online/offline and wake-from-sleep
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  }
+
+  // === RESILIENCE ===
+  function handleOnline() {
+    console.log('[AD] Back online — reconnecting');
+    updateFooter('Reconnecting...');
+    if (!channel || channel.state !== 'joined') {
+      reconnect();
+    } else {
+      catchUpMissedCommands();
+    }
+  }
+  function handleOffline() {
+    console.log('[AD] Offline — using cached schedule');
+    const dot = document.getElementById('statusDot');
+    dot.classList.remove('connected');
+    updateFooter('Offline (cached)');
+  }
+  function handleVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      // Page became visible again (wake from sleep / tab switch)
+      console.log('[AD] Page visible — checking connection');
+      if (!channel || channel.state !== 'joined') {
+        reconnect();
+      } else {
+        // Still connected but may have missed events — catch up
+        catchUpMissedCommands();
+      }
+    }
+  }
+  function reconnect() {
+    clearTimeout(reconnectTimer);
+    // Tear down old channels
+    if (channel) {
+      try { supabase.removeChannel(channel); } catch (_) {}
+      channel = null;
+    }
+    if (dbChannel) {
+      try { supabase.removeChannel(dbChannel); } catch (_) {}
+      dbChannel = null;
+    }
+    // Reload schedule + resubscribe (catch-up happens inside subscribeToChannel)
+    loadScheduleFromBucket().then(() => {
+      subscribeToChannel();
+      reconnectAttempts = 0;
+    }).catch(() => {
+      // Exponential backoff retry
+      reconnectAttempts++;
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+      console.log(`[AD] Reconnect failed, retrying in ${delay}ms`);
+      updateFooter(`Reconnecting in ${Math.round(delay/1000)}s...`);
+      reconnectTimer = setTimeout(reconnect, delay);
+    });
   }
   
   // === LOAD SCHEDULE ===
@@ -629,15 +721,24 @@
       if (!response.ok) throw new Error('Could not load schedule');
 
       const html = await response.text();
+      cacheSchedule(html);
       injectSchedule(html);
       updateFooter('Loaded');
     } catch (err) {
       console.error('Load error:', err);
-      document.getElementById('scheduleScroll').innerHTML =
-        `<div style="padding:40px;text-align:center;color:var(--muted);">
-          No schedule found for channel ${channelCode}
-        </div>`;
-      updateFooter('No schedule');
+      // Fall back to cached version if available
+      const cached = getCachedSchedule();
+      if (cached && !document.querySelector('#scheduleScroll table')) {
+        injectSchedule(cached);
+        const ageMin = Math.round(getCacheAge() / 60000);
+        updateFooter(`Offline — showing cached (${ageMin}m ago)`);
+      } else if (!document.querySelector('#scheduleScroll table')) {
+        document.getElementById('scheduleScroll').innerHTML =
+          `<div style="padding:40px;text-align:center;color:var(--muted);">
+            No schedule found for channel ${channelCode}
+          </div>`;
+        updateFooter('No schedule');
+      }
     }
   }
   
@@ -678,6 +779,29 @@
   function injectSchedule(html) {
     const container = document.getElementById('scheduleScroll');
     container.innerHTML = html;
+
+    // Restore sharpie state from the injected HTML.
+    // The broadcast HTML is a full document with <body class="show-progress">,
+    // but innerHTML strips the <body> tag. We need to detect completed rows
+    // and apply show-progress to the real page body.
+    markedRows.clear();
+    container.querySelectorAll('tr.pdf-completed').forEach(row => {
+      const rowId = row.dataset?.id;
+      if (rowId) markedRows.add(rowId);
+      // Activate the sharpie button
+      const btn = row.querySelector('button.sharpie');
+      if (btn) btn.classList.add('active');
+    });
+    if (markedRows.size > 0) {
+      document.body.classList.add('show-progress');
+    } else {
+      document.body.classList.remove('show-progress');
+    }
+
+    // Restore sharpie visibility (hidden/shown)
+    if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
+      document.body.classList.add('sharpie-lines-hidden');
+    }
 
     // Wire up day tabs (scripts injected via innerHTML don't execute)
     initDayTabs(container);
@@ -723,6 +847,11 @@
 
     // Setup QR code toggle
     setupQRCode();
+
+    // Recreate dynamic sharpie line elements for all marked rows
+    if (markedRows.size > 0) {
+      updateAllSharpieLines();
+    }
   }
   
   // === SETUP COLUMNS ===
@@ -734,6 +863,7 @@
     if (headerRow && !headerRow.querySelector('th[data-key="drag"]')) {
       const th = document.createElement('th');
       th.setAttribute('data-key', 'drag');
+      th.style.width = '36px';
       headerRow.insertBefore(th, headerRow.firstChild);
     }
 
@@ -745,21 +875,31 @@
       headerRow.appendChild(th);
     }
 
-    // Add colgroup entries
-    const colgroup = table.querySelector('colgroup');
-    if (colgroup) {
-      if (!colgroup.querySelector('col[data-key="drag"]')) {
+    // Add colgroup entries — create colgroup if missing (broadcast HTML may not include one)
+    let colgroup = table.querySelector('colgroup');
+    if (!colgroup) {
+      colgroup = document.createElement('colgroup');
+      table.insertBefore(colgroup, table.firstChild);
+      // Add col entries for each existing th so table-layout:fixed keeps their widths
+      const ths = table.querySelectorAll('thead th');
+      ths.forEach(th => {
         const col = document.createElement('col');
-        col.setAttribute('data-key', 'drag');
-        col.style.width = '36px';
-        colgroup.insertBefore(col, colgroup.firstChild);
-      }
-      if (!colgroup.querySelector('col[data-key="actions"]')) {
-        const col = document.createElement('col');
-        col.setAttribute('data-key', 'actions');
-        col.style.width = '36px';
+        if (th.getAttribute('data-key')) col.setAttribute('data-key', th.getAttribute('data-key'));
+        if (th.style.width) col.style.width = th.style.width;
         colgroup.appendChild(col);
-      }
+      });
+    }
+    if (!colgroup.querySelector('col[data-key="drag"]')) {
+      const col = document.createElement('col');
+      col.setAttribute('data-key', 'drag');
+      col.style.width = '36px';
+      colgroup.insertBefore(col, colgroup.firstChild);
+    }
+    if (!colgroup.querySelector('col[data-key="actions"]')) {
+      const col = document.createElement('col');
+      col.setAttribute('data-key', 'actions');
+      col.style.width = '36px';
+      colgroup.appendChild(col);
     }
 
     // Add cells to each row
@@ -843,7 +983,7 @@
         // Make draggable
         row.draggable = true;
 
-        // Drag start
+        // Drag start (mouse/desktop)
         row.addEventListener('dragstart', (e) => {
           draggingRow = row;
           row.classList.add('dragging');
@@ -851,16 +991,24 @@
           e.dataTransfer.setData('text/plain', row.dataset.id);
         });
 
-        // Drag end
+        // Drag end (mouse/desktop)
         row.addEventListener('dragend', () => {
           if (draggingRow) {
             draggingRow.classList.remove('dragging');
           }
           draggingRow = null;
-
-          // Broadcast new order
           broadcastRowOrder();
         });
+
+        // Touch drag (iPad / mobile)
+        const dragHandle = row.querySelector('.drag-dots') || row.querySelector('td[data-key="drag"]');
+        if (dragHandle) {
+          dragHandle.addEventListener('touchstart', (e) => {
+            draggingRow = row;
+            row.classList.add('dragging');
+            e.preventDefault(); // prevent scroll while dragging
+          }, { passive: false });
+        }
       }
 
       // Duration click (both parent rows and sub-children)
@@ -903,6 +1051,32 @@
           });
         }
       });
+
+      // Touch move and touch end for iPad drag
+      tbody.addEventListener('touchmove', (e) => {
+        if (!draggingRow) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
+        const afterEl = calcAfter(candidates, touch.clientY);
+        if (afterEl === null) {
+          tbody.appendChild(draggingRow);
+        } else {
+          tbody.insertBefore(draggingRow, afterEl);
+        }
+        if (draggingRow.dataset.type === 'SUB') {
+          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
+          let insertAfter = draggingRow;
+          subchildren.forEach(child => { insertAfter.after(child); insertAfter = child; });
+        }
+      }, { passive: false });
+
+      tbody.addEventListener('touchend', () => {
+        if (!draggingRow) return;
+        draggingRow.classList.remove('dragging');
+        draggingRow = null;
+        broadcastRowOrder();
+      });
     }
   }
 
@@ -942,11 +1116,16 @@
       document.body.classList.add('sharpie-lines-hidden');
       if (btn) btn.classList.add('lines-hidden');
       if (progressBtn) progressBtn.classList.add('lines-hidden');
+    } else {
+      // Show static completed-line divs (baked in at push time) by default
+      document.body.classList.add('show-progress');
     }
 
     function toggleSharpieVisibility() {
       linesHidden = !linesHidden;
       document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+      // Also toggle static completed-line divs (baked in at push time)
+      document.body.classList.toggle('show-progress', !linesHidden);
       // Update all master sharpie buttons across all day tables
       document.querySelectorAll('.master-sharpie-btn, #masterSharpie').forEach(b => {
         b.classList.toggle('lines-hidden', linesHidden);
@@ -1005,28 +1184,29 @@
   
   // === SHARPIE TOGGLE ===
   function toggleRowSharpie(row) {
+    if (applyingRemote) return;  // Don't trigger during remote command application
     const rowId = row.dataset.id;
     const btn = row.querySelector('button.sharpie');
     const scrollContainer = document.getElementById('scheduleScroll');
-    
+
     if (markedRows.has(rowId)) {
       // Unmark
       markedRows.delete(rowId);
       btn?.classList.remove('active');
-      
+
       // Remove line
       const line = scrollContainer.querySelector(`.sharpie-line-element[data-row-id="${rowId}"]`);
       if (line) line.remove();
-      
+
       broadcastEvent('sharpie-toggle', { rowId, marked: false });
     } else {
       // Mark
       markedRows.add(rowId);
       btn?.classList.add('active');
-      
+
       // Add line
       addSharpieLineElement(row);
-      
+
       broadcastEvent('sharpie-toggle', { rowId, marked: true });
     }
   }
@@ -1052,9 +1232,15 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
 
-    // Position (skip drag column, end before action column)
+    // Position using getBoundingClientRect for accurate placement
+    // (offsetTop is relative to offsetParent which may not be scrollContainer,
+    //  e.g. when day-tabs or day-section wrappers sit between them)
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
+
     const padding = 42; // 36px column + 6px padding
-    line.style.top = (row.offsetTop + row.offsetHeight / 2 - 2) + 'px';
+    line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
     line.style.left = padding + 'px';
     line.style.right = padding + 'px';
 
@@ -1125,32 +1311,195 @@
   
   // === REALTIME SYNC ===
   function subscribeToChannel() {
+    const code = channelCode.toUpperCase();
+
+    // Restore last processed sequence
+    lastProcessedSeq = parseInt(localStorage.getItem('adSyncLastSeq_' + code) || '0', 10);
+
     channel = supabase.channel(`ad-sync-${channelCode}`, {
       config: { broadcast: { self: false } }
     });
-    
+
     channel
-      .on('broadcast', { event: 'row-reorder' }, handleIncomingReorder)
-      .on('broadcast', { event: 'duration-change' }, handleIncomingDuration)
-      .on('broadcast', { event: 'sharpie-toggle' }, handleIncomingSharpie)
-      .on('broadcast', { event: 'sharpie-visibility' }, handleIncomingVisibility)
+      // v2 command format (from updated laptop)
+      .on('broadcast', { event: 'sync-command' }, handleIncomingSyncCommand)
+      // Legacy event listeners (from laptop builds that haven't updated yet)
+      .on('broadcast', { event: 'row-reorder' }, (msg) => handleLegacyIncoming('row-reorder', msg))
+      .on('broadcast', { event: 'duration-change' }, (msg) => handleLegacyIncoming('duration-change', msg))
+      .on('broadcast', { event: 'sharpie-toggle' }, (msg) => handleLegacyIncoming('sharpie-toggle', msg))
+      .on('broadcast', { event: 'sharpie-visibility' }, (msg) => handleLegacyIncoming('sharpie-visibility', msg))
+      // Non-command events (always legacy format)
       .on('broadcast', { event: 'column-resize' }, handleIncomingColumnResize)
       .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
       .on('broadcast', { event: 'row-times' }, handleIncomingRowTimes)
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
+      .on('broadcast', { event: 'reload-schedule' }, () => {
+        console.log('[AD] Reload-schedule event — fetching fresh HTML');
+        loadScheduleFromBucket();
+      })
       .subscribe((status) => {
         const dot = document.getElementById('statusDot');
         if (status === 'SUBSCRIBED') {
           dot.classList.add('connected');
+          reconnectAttempts = 0;
           updateFooter('Connected');
-          
-          // Request full sync from DOM
-          broadcastEvent('request-sync', {});
+
+          // Catch up on commands missed while offline, then request full sync
+          catchUpMissedCommands().then(() => {
+            broadcastEvent('request-sync', {});
+          });
+        } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          dot.classList.remove('connected');
+          updateFooter('Disconnected — reconnecting...');
+          clearTimeout(reconnectTimer);
+          reconnectAttempts++;
+          const delay = Math.min(2000 * Math.pow(2, reconnectAttempts - 1), MAX_RECONNECT_DELAY);
+          reconnectTimer = setTimeout(reconnect, delay);
         } else {
           dot.classList.remove('connected');
-          updateFooter('Disconnected');
+          updateFooter('Connecting...');
         }
       });
+
+    // Postgres Changes subscription (durable delivery from laptop)
+    dbChannel = supabase.channel('sync-db-ad-' + code)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'sync_commands',
+        filter: `channel_code=eq.${code}`
+      }, (change) => handleDbInsert(change.new))
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') console.log('[AD] Postgres Changes subscription active');
+      });
+  }
+
+  // === v2 COMMAND HANDLING ===
+
+  /** Handle a v2 sync-command from broadcast (instant path) */
+  function handleIncomingSyncCommand(msg) {
+    if (!msg?.payload) return;
+    const { cmdId, action, payload, deviceId: senderDevice } = msg.payload;
+    if (senderDevice === deviceId) return;           // Our own command
+    if (processedCmds.has(cmdId)) return;            // Already processed
+    processedCmds.add(cmdId);
+    trimProcessedSet();
+    applyIncomingCommand(action, payload);
+  }
+
+  /** Handle a command arriving via Postgres Changes (durable path) */
+  function handleDbInsert(row) {
+    if (!row) return;
+    if (row.device_id === deviceId) {
+      lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+      return;
+    }
+    if (processedCmds.has(row.cmd_id)) {
+      lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+      return;
+    }
+    processedCmds.add(row.cmd_id);
+    lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+    try { localStorage.setItem('adSyncLastSeq_' + channelCode.toUpperCase(), String(lastProcessedSeq)); } catch (_) {}
+    trimProcessedSet();
+    applyIncomingCommand(row.action, row.payload);
+  }
+
+  /** Handle legacy broadcast events (from laptop builds without v2) */
+  function handleLegacyIncoming(action, msg) {
+    const data = msg?.payload || msg;
+    if (!data) return;
+    if (data.source === 'ad') return;  // Our own legacy echo — ignore
+    // Only accept from producer
+    if (data.source !== 'producer') return;
+    applyIncomingCommand(action, data);
+  }
+
+  /** Catch up on commands missed while offline */
+  async function catchUpMissedCommands() {
+    if (!supabase || !channelCode) return;
+    const code = channelCode.toUpperCase();
+    try {
+      const { data, error } = await supabase
+        .from('sync_commands')
+        .select('*')
+        .eq('channel_code', code)
+        .gt('id', lastProcessedSeq)
+        .order('id', { ascending: true })
+        .limit(500);
+
+      if (error) {
+        console.warn('[AD] Catch-up query failed:', error.message);
+        return;
+      }
+      if (data && data.length > 0) {
+        console.log('[AD] Catching up:', data.length, 'missed commands');
+        data.forEach(row => {
+          lastProcessedSeq = Math.max(lastProcessedSeq, row.id);
+          if (row.device_id === deviceId) return;
+          if (processedCmds.has(row.cmd_id)) return;
+          processedCmds.add(row.cmd_id);
+          applyIncomingCommand(row.action, row.payload);
+        });
+        try { localStorage.setItem('adSyncLastSeq_' + code, String(lastProcessedSeq)); } catch (_) {}
+      }
+    } catch (e) {
+      console.warn('[AD] Catch-up error:', e);
+    }
+  }
+
+  /** Apply any incoming command to the DOM (unified handler for all paths) */
+  function applyIncomingCommand(action, payload) {
+    if (!payload) return;
+    applyingRemote = true;
+    try {
+      switch (action) {
+        case 'row-reorder':
+          handleIncomingReorder({ payload });
+          break;
+        case 'duration-change':
+          handleIncomingDuration({ payload });
+          break;
+        case 'sharpie-toggle':
+          handleIncomingSharpie({ payload });
+          break;
+        case 'sharpie-visibility':
+          handleIncomingVisibility({ payload });
+          break;
+        case 'row-delete': {
+          const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+          if (row) {
+            // Remove sharpie line if exists
+            const line = document.getElementById('scheduleScroll')
+              ?.querySelector(`.sharpie-line-element[data-row-id="${payload.rowId}"]`);
+            if (line) line.remove();
+            markedRows.delete(payload.rowId);
+            row.remove();
+          }
+          break;
+        }
+        case 'row-duplicate': {
+          const srcRow = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+          if (srcRow) {
+            const clone = srcRow.cloneNode(true);
+            clone.dataset.id = 'dup-' + Date.now();
+            srcRow.parentNode.insertBefore(clone, srcRow.nextSibling);
+            // Re-setup interactions for the new row
+            const table = clone.closest('table');
+            if (table) setupRowInteractionsForTable(table);
+          }
+          break;
+        }
+        case 'cell-format':
+        case 'row-format':
+          // Format changes are reflected on next HTML reload
+          break;
+        default:
+          console.log('[AD] Unknown command:', action);
+      }
+    } finally {
+      applyingRemote = false;
+    }
   }
   
   // Get the currently active day ID (for multi-day broadcasts)
@@ -1169,14 +1518,51 @@
     return document.querySelector('#scheduleScroll tbody');
   }
 
+  /**
+   * Send a command via BOTH broadcast (instant) AND database (durable).
+   * The legacy broadcast format is also sent for backward compat with older
+   * laptop builds that haven't been updated yet.
+   */
   function broadcastEvent(event, payload) {
-    if (channel) {
-      const dayId = getActiveBroadcastDayId();
-      channel.send({ type: 'broadcast', event, payload: { ...payload, dayId: dayId, source: 'ad' } });
+    if (!channel) return;
+    const dayId = getActiveBroadcastDayId();
+    const fullPayload = { ...payload, dayId: dayId, source: 'ad' };
+
+    // Legacy broadcast (for backward compat with old laptop adChannelSync)
+    channel.send({ type: 'broadcast', event, payload: fullPayload });
+
+    // v2 durable command: broadcast + persist to sync_commands table
+    const cmdId = crypto.randomUUID();
+    processedCmds.add(cmdId);
+    trimProcessedSet();
+
+    // v2 broadcast (new format — laptop's _handleBroadcastCommand picks this up)
+    channel.send({
+      type: 'broadcast',
+      event: 'sync-command',
+      payload: { cmdId, action: event, payload: fullPayload, deviceId: deviceId }
+    });
+
+    // Persist to database (durable — survives laptop sleep)
+    if (supabase && channelCode) {
+      supabase.from('sync_commands').insert({
+        cmd_id: cmdId,
+        channel_code: channelCode.toUpperCase(),
+        action: event,
+        payload: fullPayload,
+        device_id: deviceId
+      }).select('id').single().then(({ data, error }) => {
+        if (error) console.warn('[AD] Failed to persist command:', error.message);
+        if (data?.id) {
+          lastProcessedSeq = Math.max(lastProcessedSeq, data.id);
+          try { localStorage.setItem('adSyncLastSeq_' + channelCode.toUpperCase(), String(lastProcessedSeq)); } catch (_) {}
+        }
+      });
     }
   }
 
   function broadcastRowOrder() {
+    if (applyingRemote) return;  // Don't re-broadcast when applying remote commands
     const tbody = getActiveTbody();
     if (!tbody) return;
 
@@ -1184,6 +1570,14 @@
       .map(row => row.dataset.id);
 
     broadcastEvent('row-reorder', { order, source: 'ad' });
+  }
+
+  function trimProcessedSet() {
+    if (processedCmds.size > 1000) {
+      const arr = Array.from(processedCmds);
+      processedCmds.clear();
+      arr.slice(-500).forEach(id => processedCmds.add(id));
+    }
   }
   
   // === INCOMING EVENT HANDLERS ===
@@ -1265,6 +1659,7 @@
   function handleIncomingVisibility({ payload }) {
     linesHidden = payload.hidden;
     document.body.classList.toggle('sharpie-lines-hidden', linesHidden);
+    document.body.classList.toggle('show-progress', !linesHidden);
     
     const btn = document.getElementById('masterSharpie');
     if (btn) btn.classList.toggle('lines-hidden', linesHidden);
@@ -1295,9 +1690,10 @@
   
   function handleFullSync({ payload }) {
     if (!payload) return;
-    
+
     // Reload schedule if provided
     if (payload.html) {
+      cacheSchedule(payload.html);
       injectSchedule(payload.html);
     }
     
