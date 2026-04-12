@@ -930,12 +930,16 @@
 
   // Shared post-inject setup. fullSetup=true on first load, false on morphdom updates.
   function _postInjectSetup(container, fullSetup) {
-    // Rebuild markedRows from broadcast HTML (tr.pdf-completed is the source of truth)
-    markedRows.clear();
-    container.querySelectorAll('tr.pdf-completed').forEach(row => {
-      const rowId = row.dataset?.id;
-      if (rowId) markedRows.add(rowId);
-    });
+    if (fullSetup) {
+      // First load only: seed markedRows from broadcast HTML classes.
+      // On subsequent morphdom updates, the command queue (sharpie-toggle events
+      // + full-sync) is the source of truth — don't clear markedRows.
+      markedRows.clear();
+      container.querySelectorAll('tr.pdf-completed').forEach(row => {
+        const rowId = row.dataset?.id;
+        if (rowId) markedRows.add(rowId);
+      });
+    }
 
     // Restore sharpie visibility preference
     if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
