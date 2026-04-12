@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SKEDULER AD</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/morphdom@2.7.4/dist/morphdom-umd.min.js"></script>
   <script src="../config.js"></script>
   <style>
     /* ===== EXACT DOM VARIABLES ===== */
@@ -776,84 +777,277 @@
     });
   }
 
+  // Track whether this is the very first inject (innerHTML) vs subsequent (morphdom)
+  let firstInjectDone = false;
+
   function injectSchedule(html) {
     const container = document.getElementById('scheduleScroll');
-    container.innerHTML = html;
 
-    // === SHARPIE STATE: single source of truth ===
-    // The broadcast HTML contains TWO sharpie artifacts:
-    //   1. tr.pdf-completed class on marked rows
-    //   2. .completed-line divs (baked-in, shown via body.show-progress CSS)
-    // These conflict with the AD viewer's own dynamic .sharpie-line-element system.
-    // Solution: read marked state from the HTML, then REMOVE all baked-in lines
-    // and let the dynamic system handle everything.
+    // === MORPHDOM STRATEGY ===
+    // Problem: innerHTML every 2s destroys all client state (event listeners,
+    // button .active classes, dynamic sharpie line elements, scroll position).
+    // Solution: Use morphdom to diff the live DOM against incoming HTML.
+    // morphdom only patches what actually changed, preserving everything else.
 
-    // 1. Rebuild markedRows from the broadcast HTML (single source of truth)
+    // 1. Build a temp wrapper with the incoming HTML so morphdom can diff against it.
+    //    The wrapper must have the same tag + id as the live container.
+    const tempWrapper = document.createElement('div');
+    tempWrapper.id = 'scheduleScroll';
+    tempWrapper.innerHTML = html;
+
+    // 2. Strip baked-in .completed-line divs from INCOMING html before diffing.
+    //    We use the dynamic .sharpie-line-element system exclusively.
+    tempWrapper.querySelectorAll('.completed-line').forEach(el => el.remove());
+
+    // 3. Remove show-progress from body — we never use the CSS-based line system
+    document.body.classList.remove('show-progress');
+
+    if (!firstInjectDone) {
+      // === FIRST LOAD: use innerHTML (morphdom needs an existing DOM to diff against) ===
+      container.innerHTML = tempWrapper.innerHTML;
+      firstInjectDone = true;
+
+      // Full setup on first load
+      _postInjectSetup(container, true);
+    } else {
+      // === SUBSEQUENT LOADS: use morphdom to diff ===
+      // Save scroll position
+      const scrollTop = container.scrollTop;
+      const scrollLeft = container.scrollLeft;
+
+      morphdom(container, tempWrapper, {
+        // --- Key: match elements by data-id for rows, data-key for columns ---
+        getNodeKey: function(node) {
+          if (node.nodeType !== 1) return undefined;
+          // Rows: match by data-id so morphdom updates in place
+          if (node.tagName === 'TR' && node.dataset.id) return 'row-' + node.dataset.id;
+          // Day sections: match by data-day-id
+          if (node.dataset.dayId) return 'day-' + node.dataset.dayId;
+          // Tables within day sections: use parent day id
+          if (node.tagName === 'TABLE') {
+            const section = node.closest?.('[data-day-id]') || node.parentElement?.closest?.('[data-day-id]');
+            if (section) return 'table-' + section.dataset.dayId;
+          }
+          return undefined;
+        },
+
+        onBeforeElUpdated: function(fromEl, toEl) {
+          // Preserve AD-viewer-added columns (drag + actions) — incoming HTML doesn't have them
+          if (fromEl.tagName === 'TR' && fromEl.dataset.id) {
+            // Copy over drag cell if incoming row doesn't have one
+            const fromDrag = fromEl.querySelector('td[data-key="drag"]');
+            const toDrag = toEl.querySelector('td[data-key="drag"]');
+            if (fromDrag && !toDrag) {
+              toEl.insertBefore(fromDrag.cloneNode(true), toEl.firstChild);
+            }
+
+            // Copy over action cell (with sharpie button + its .active state)
+            const fromAction = fromEl.querySelector('td[data-key="actions"]');
+            const toAction = toEl.querySelector('td[data-key="actions"]');
+            if (fromAction && !toAction) {
+              toEl.appendChild(fromAction.cloneNode(true));
+            }
+          }
+
+          // Preserve header drag + action columns
+          if (fromEl.tagName === 'TR' && fromEl.parentElement?.tagName === 'THEAD') {
+            const fromDragTh = fromEl.querySelector('th[data-key="drag"]');
+            const toDragTh = toEl.querySelector('th[data-key="drag"]');
+            if (fromDragTh && !toDragTh) {
+              toEl.insertBefore(fromDragTh.cloneNode(true), toEl.firstChild);
+            }
+            const fromActionTh = fromEl.querySelector('th[data-key="actions"]');
+            const toActionTh = toEl.querySelector('th[data-key="actions"]');
+            if (fromActionTh && !toActionTh) {
+              toEl.appendChild(fromActionTh.cloneNode(true));
+            }
+          }
+
+          // Preserve colgroup drag + action cols
+          if (fromEl.tagName === 'COLGROUP') {
+            const fromDragCol = fromEl.querySelector('col[data-key="drag"]');
+            const toDragCol = toEl.querySelector('col[data-key="drag"]');
+            if (fromDragCol && !toDragCol) {
+              toEl.insertBefore(fromDragCol.cloneNode(true), toEl.firstChild);
+            }
+            const fromActionCol = fromEl.querySelector('col[data-key="actions"]');
+            const toActionCol = toEl.querySelector('col[data-key="actions"]');
+            if (fromActionCol && !toActionCol) {
+              toEl.appendChild(fromActionCol.cloneNode(true));
+            }
+          }
+
+          // Don't let morphdom touch sharpie buttons — preserve .active class & listeners
+          if (fromEl.tagName === 'BUTTON' && fromEl.classList.contains('sharpie')) {
+            return false; // skip update entirely
+          }
+          if (fromEl.tagName === 'BUTTON' && fromEl.classList.contains('master-sharpie-btn')) {
+            return false;
+          }
+
+          // Preserve setup flags on tbody so we don't re-add dragover listeners
+          if (fromEl.tagName === 'TBODY' && fromEl._dragoverSetup) {
+            toEl._dragoverSetup = true;
+          }
+
+          return true; // allow update
+        },
+
+        onBeforeNodeDiscarded: function(node) {
+          if (node.nodeType !== 1) return true;
+
+          // NEVER discard dynamic sharpie line elements — they only exist in live DOM
+          if (node.classList?.contains('sharpie-line-element')) return false;
+
+          // Don't discard AD-viewer-added columns
+          if (node.tagName === 'TD' && (node.dataset.key === 'drag' || node.dataset.key === 'actions')) return false;
+          if (node.tagName === 'TH' && (node.dataset.key === 'drag' || node.dataset.key === 'actions')) return false;
+          if (node.tagName === 'COL' && (node.dataset.key === 'drag' || node.dataset.key === 'actions')) return false;
+
+          return true; // allow discard
+        },
+
+        onNodeAdded: function(node) {
+          // New rows added by morphdom need drag/action columns + event listeners
+          if (node.nodeType === 1 && node.tagName === 'TR' && node.dataset?.id) {
+            // Mark for post-morph setup
+            node._needsSetup = true;
+          }
+          return node;
+        },
+
+        childrenOnly: true  // diff children of container, not the container itself
+      });
+
+      // Restore scroll position
+      container.scrollTop = scrollTop;
+      container.scrollLeft = scrollLeft;
+
+      // Post-morph setup: only for NEW rows that morphdom added
+      _postInjectSetup(container, false);
+    }
+  }
+
+  // Shared post-inject setup. fullSetup=true on first load, false on morphdom updates.
+  function _postInjectSetup(container, fullSetup) {
+    // Rebuild markedRows from broadcast HTML (tr.pdf-completed is the source of truth)
     markedRows.clear();
     container.querySelectorAll('tr.pdf-completed').forEach(row => {
       const rowId = row.dataset?.id;
       if (rowId) markedRows.add(rowId);
     });
 
-    // 2. Remove ALL baked-in completed-line divs — the dynamic system replaces them
-    container.querySelectorAll('.completed-line').forEach(el => el.remove());
-
-    // 3. Remove show-progress from body — we don't use the CSS-based line system
-    document.body.classList.remove('show-progress');
-
-    // 4. Restore sharpie visibility preference
+    // Restore sharpie visibility preference
     if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
       document.body.classList.add('sharpie-lines-hidden');
     }
 
-    // Wire up day tabs (scripts injected via innerHTML don't execute)
-    initDayTabs(container);
+    if (fullSetup) {
+      // First load: wire up everything from scratch
+      initDayTabs(container);
 
-    // If multi-day tabs are present, set up each day section and listen for tab changes
-    const hasDayTabs = container.querySelector('.broadcast-day-tabs');
-    if (hasDayTabs) {
-      // Setup columns and interactions for ALL day sections (even hidden ones)
-      container.querySelectorAll('.broadcast-day-section').forEach(section => {
-        const table = section.querySelector('table');
-        if (table) {
-          setupColumnsForTable(table);
-          setupRowInteractionsForTable(table);
-          setupMasterSharpieForTable(table);
-        }
-      });
-
-      // Listen for tab changes to re-bind interactions on the newly visible section
-      document.addEventListener('broadcast-day-changed', function(e) {
-        // Cancel any in-progress drag to prevent cross-day row moves
-        if (draggingRow) {
-          draggingRow.classList.remove('dragging');
-          draggingRow = null;
-        }
-
-        const dayId = e.detail?.dayId;
-        if (!dayId) return;
-        const section = container.querySelector(`.broadcast-day-section[data-day-id="${dayId}"]`);
-        if (section) {
+      const hasDayTabs = container.querySelector('.broadcast-day-tabs');
+      if (hasDayTabs) {
+        container.querySelectorAll('.broadcast-day-section').forEach(section => {
           const table = section.querySelector('table');
           if (table) {
+            setupColumnsForTable(table);
             setupRowInteractionsForTable(table);
             setupMasterSharpieForTable(table);
           }
+        });
+
+        document.addEventListener('broadcast-day-changed', function(e) {
+          if (draggingRow) {
+            draggingRow.classList.remove('dragging');
+            draggingRow = null;
+          }
+          const dayId = e.detail?.dayId;
+          if (!dayId) return;
+          const section = container.querySelector(`.broadcast-day-section[data-day-id="${dayId}"]`);
+          if (section) {
+            const table = section.querySelector('table');
+            if (table) {
+              setupRowInteractionsForTable(table);
+              setupMasterSharpieForTable(table);
+            }
+          }
+        });
+      } else {
+        setupColumns();
+        setupRowInteractions();
+        setupMasterSharpie();
+      }
+
+      setupQRCode();
+    } else {
+      // Morphdom update: only set up NEW rows (those morphdom added fresh)
+      const newRows = container.querySelectorAll('tr[data-id]');
+      newRows.forEach(row => {
+        if (row._needsSetup) {
+          delete row._needsSetup;
+
+          // Add drag cell if missing
+          if (!row.querySelector('td[data-key="drag"]')) {
+            const td = document.createElement('td');
+            td.setAttribute('data-key', 'drag');
+            td.innerHTML = '<span class="drag-dots"></span>';
+            row.insertBefore(td, row.firstChild);
+          }
+
+          // Add action cell if missing
+          if (!row.querySelector('td[data-key="actions"]')) {
+            const td = document.createElement('td');
+            td.setAttribute('data-key', 'actions');
+            td.innerHTML = `<div><button class="sharpie" title="Mark complete">${getSharpieIconSVG()}</button></div>`;
+            row.appendChild(td);
+          }
+
+          // Set up drag + click listeners on this new row
+          const isSubChild = row.classList.contains('subchild');
+          if (isSubChild) {
+            row.draggable = false;
+          } else {
+            row.draggable = true;
+            row.addEventListener('dragstart', (e) => {
+              draggingRow = row;
+              row.classList.add('dragging');
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', row.dataset.id);
+            });
+            row.addEventListener('dragend', () => {
+              if (draggingRow) draggingRow.classList.remove('dragging');
+              draggingRow = null;
+              broadcastRowOrder();
+            });
+            const dragHandle = row.querySelector('.drag-dots') || row.querySelector('td[data-key="drag"]');
+            if (dragHandle) {
+              dragHandle.addEventListener('touchstart', (e) => {
+                draggingRow = row;
+                row.classList.add('dragging');
+                e.preventDefault();
+              }, { passive: false });
+            }
+          }
+
+          // Duration click
+          const durCell = row.querySelector('td[data-key="duration"]');
+          if (durCell) {
+            durCell.style.cursor = 'pointer';
+            durCell.addEventListener('click', () => openDurationEditor(row, durCell));
+          }
+
+          // Sharpie button click
+          const sharpieBtn = row.querySelector('button.sharpie');
+          if (sharpieBtn) {
+            sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
+          }
         }
       });
-    } else {
-      // Single day - original behavior
-      setupColumns();
-      setupRowInteractions();
-      setupMasterSharpie();
     }
 
-    // Setup QR code toggle
-    setupQRCode();
-
-    // 5. Apply sharpie button + line state AFTER setupColumns created fresh buttons.
-    // Use double-rAF so the browser has laid out the new HTML before
-    // getBoundingClientRect is called to position lines.
+    // Apply sharpie button active state + redraw all lines.
+    // Use double-rAF to ensure browser has completed layout.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         markedRows.forEach(rowId => {
@@ -1532,10 +1726,25 @@
    * The legacy broadcast format is also sent for backward compat with older
    * laptop builds that haven't been updated yet.
    */
+  // Control events that should NOT be persisted to the DB or sent as v2 commands
+  const CONTROL_EVENTS = new Set(['request-sync', 'heartbeat-ping', 'sync-status']);
+
+  // State-changing events that need durable persistence
+  const DURABLE_EVENTS = new Set([
+    'sharpie-toggle', 'row-reorder', 'row-delete', 'row-duplicate',
+    'duration-change', 'sharpie-visibility', 'cell-format', 'row-format'
+  ]);
+
   function broadcastEvent(event, payload) {
     if (!channel) return;
     const dayId = getActiveBroadcastDayId();
     const fullPayload = { ...payload, dayId: dayId, source: 'ad' };
+
+    // Control events: send as legacy broadcast only (no v2, no DB persist)
+    if (CONTROL_EVENTS.has(event)) {
+      channel.send({ type: 'broadcast', event, payload: fullPayload });
+      return;
+    }
 
     // Legacy broadcast (for backward compat with old laptop adChannelSync)
     channel.send({ type: 'broadcast', event, payload: fullPayload });
@@ -1552,8 +1761,8 @@
       payload: { cmdId, action: event, payload: fullPayload, deviceId: deviceId }
     });
 
-    // Persist to database (durable — survives laptop sleep)
-    if (supabase && channelCode) {
+    // Persist to database only for state-changing events (durable — survives laptop sleep)
+    if (DURABLE_EVENTS.has(event) && supabase && channelCode) {
       supabase.from('sync_commands').insert({
         cmd_id: cmdId,
         channel_code: channelCode.toUpperCase(),
