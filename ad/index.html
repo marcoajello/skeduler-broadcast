@@ -939,21 +939,21 @@
 
       // Post-morph setup: only for NEW rows that morphdom added
       _postInjectSetup(container, false);
+
+      // Reposition sharpie lines after morphdom — rows may have moved, been added, or removed.
+      updateAllSharpieLines();
     }
   }
 
   // Shared post-inject setup. fullSetup=true on first load, false on morphdom updates.
   function _postInjectSetup(container, fullSetup) {
-    if (fullSetup) {
-      // First load only: seed markedRows from broadcast HTML classes.
-      // On subsequent morphdom updates, the command queue (sharpie-toggle events
-      // + full-sync) is the source of truth — don't clear markedRows.
-      markedRows.clear();
-      container.querySelectorAll('tr.pdf-completed').forEach(row => {
-        const rowId = row.dataset?.id;
-        if (rowId) markedRows.add(rowId);
-      });
-    }
+    // ALWAYS rebuild markedRows from broadcast HTML (tr.pdf-completed is the source of truth).
+    // Stale markedRows from a previous day caused phantom sharpie lines.
+    markedRows.clear();
+    container.querySelectorAll('tr.pdf-completed').forEach(row => {
+      const rowId = row.dataset?.id;
+      if (rowId) markedRows.add(rowId);
+    });
 
     // Restore sharpie visibility preference
     if (localStorage.getItem('ad-sharpie-hidden') === 'true') {
@@ -2003,6 +2003,9 @@
     if (payload.linesHidden !== undefined) {
       handleIncomingVisibility({ payload: { hidden: payload.linesHidden } });
     }
+
+    // Reposition all sharpie lines — rows may have reordered or changed height
+    updateAllSharpieLines();
   }
 
   // === UTILITIES ===
