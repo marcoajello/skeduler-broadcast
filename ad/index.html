@@ -244,7 +244,8 @@
     /* Separator/dash column — match DOM exactly */
     table.schedule td[data-type="separator"],
     table.schedule th[data-type="separator"] {
-      border: none !important;
+      border-left: none !important;
+      border-right: none !important;
       width: 20px !important;
       min-width: 20px !important;
       max-width: 20px !important;
@@ -255,6 +256,15 @@
       color: inherit;
       overflow: visible !important;
       white-space: nowrap !important;
+    }
+    /* Strip borders adjacent to separator (START right, END left) */
+    table.schedule td[data-key="start"],
+    table.schedule th[data-key="start"] {
+      border-right: none !important;
+    }
+    table.schedule td[data-type="separator"] + td,
+    table.schedule th[data-type="separator"] + th {
+      border-left: none !important;
     }
 
     table.schedule thead th {
