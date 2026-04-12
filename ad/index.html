@@ -1923,19 +1923,29 @@
       handleIncomingReorder({ payload });
     }
     
-    // Apply sharpie marks
+    // Apply sharpie marks — complete state replacement (not additive)
     if (payload.sharpieRows) {
+      const newSet = new Set(payload.sharpieRows);
+      // Unmark rows no longer in the producer's marked set
+      [...markedRows].forEach(rowId => {
+        if (!newSet.has(rowId)) {
+          handleIncomingSharpie({ payload: { rowId, marked: false } });
+        }
+      });
+      // Mark rows the producer has marked
       payload.sharpieRows.forEach(rowId => {
-        handleIncomingSharpie({ payload: { rowId, marked: true } });
+        if (!markedRows.has(rowId)) {
+          handleIncomingSharpie({ payload: { rowId, marked: true } });
+        }
       });
     }
-    
+
     // Apply visibility
     if (payload.linesHidden !== undefined) {
       handleIncomingVisibility({ payload: { hidden: payload.linesHidden } });
     }
   }
-  
+
   // === UTILITIES ===
   function updateFooter(status) {
     const footer = document.getElementById('footer');
