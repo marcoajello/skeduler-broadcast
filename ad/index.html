@@ -241,6 +241,22 @@
       white-space: nowrap;
     }
     
+    /* Separator/dash column — match DOM exactly */
+    table.schedule td[data-type="separator"],
+    table.schedule th[data-type="separator"] {
+      border: none !important;
+      width: 20px !important;
+      min-width: 20px !important;
+      max-width: 20px !important;
+      text-align: center !important;
+      font-size: 16px;
+      padding: 8px 2px !important;
+      background: inherit;
+      color: inherit;
+      overflow: visible !important;
+      white-space: nowrap !important;
+    }
+
     table.schedule thead th {
       position: sticky;
       top: 0;
@@ -1540,6 +1556,8 @@
       .on('broadcast', { event: 'row-resize' }, handleIncomingRowResize)
       .on('broadcast', { event: 'row-times' }, handleIncomingRowTimes)
       .on('broadcast', { event: 'full-sync' }, handleFullSync)
+      .on('broadcast', { event: 'cell-format' }, handleIncomingCellFormat)
+      .on('broadcast', { event: 'row-format' }, handleIncomingRowFormat)
       .on('broadcast', { event: 'reload-schedule' }, () => {
         console.log('[AD] Reload-schedule event — fetching fresh HTML');
         loadScheduleFromBucket();
@@ -1909,6 +1927,49 @@
     }
   }
   
+  function handleIncomingCellFormat({ payload }) {
+    if (!payload?.rowId || !payload?.columnKey) return;
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    const cell = row.querySelector(`td[data-key="${payload.columnKey}"]`);
+    if (!cell) return;
+    const fmt = payload.formatting || {};
+    if (fmt.bgColor) cell.style.backgroundColor = fmt.bgColor;
+    else if (fmt.bgColor === '') cell.style.backgroundColor = '';
+    if (fmt.fgColor) cell.style.color = fmt.fgColor;
+    else if (fmt.fgColor === '') cell.style.color = '';
+    if (fmt.bold !== undefined) cell.style.fontWeight = fmt.bold ? 'bold' : '';
+    if (fmt.italic !== undefined) cell.style.fontStyle = fmt.italic ? 'italic' : '';
+    if (fmt.underline !== undefined) cell.style.textDecoration = fmt.underline ? 'underline' : '';
+    if (fmt.fontSize) cell.style.fontSize = fmt.fontSize;
+    if (fmt.fontFamily) cell.style.fontFamily = fmt.fontFamily;
+    if (fmt.align) cell.style.textAlign = fmt.align;
+    if (fmt.valign) cell.style.verticalAlign = fmt.valign;
+    if (fmt.borderTop) cell.style.borderTop = fmt.borderTop;
+    if (fmt.borderRight) cell.style.borderRight = fmt.borderRight;
+    if (fmt.borderBottom) cell.style.borderBottom = fmt.borderBottom;
+    if (fmt.borderLeft) cell.style.borderLeft = fmt.borderLeft;
+  }
+
+  function handleIncomingRowFormat({ payload }) {
+    if (!payload?.rowId || !payload?.formatting) return;
+    const row = document.querySelector(`tr[data-id="${payload.rowId}"]`);
+    if (!row) return;
+    const fmt = payload.formatting;
+    row.querySelectorAll('td').forEach(cell => {
+      const key = cell.dataset.key;
+      if (!key || key === 'drag' || key === 'actions') return;
+      if (fmt.bgColor) cell.style.backgroundColor = fmt.bgColor;
+      else if (fmt.bgColor === '') cell.style.backgroundColor = '';
+      if (fmt.fgColor) cell.style.color = fmt.fgColor;
+      else if (fmt.fgColor === '') cell.style.color = '';
+      if (fmt.bold !== undefined) cell.style.fontWeight = fmt.bold ? 'bold' : '';
+      if (fmt.italic !== undefined) cell.style.fontStyle = fmt.italic ? 'italic' : '';
+      if (fmt.fontSize) cell.style.fontSize = fmt.fontSize;
+      if (fmt.fontFamily) cell.style.fontFamily = fmt.fontFamily;
+    });
+  }
+
   function handleFullSync({ payload }) {
     if (!payload) return;
 
