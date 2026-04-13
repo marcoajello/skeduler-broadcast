@@ -1024,32 +1024,8 @@
             row.appendChild(td);
           }
 
-          // Set up drag + click listeners on this new row
-          const isSubChild = row.classList.contains('subchild');
-          if (isSubChild) {
-            row.draggable = false;
-          } else {
-            row.draggable = true;
-            row.addEventListener('dragstart', (e) => {
-              draggingRow = row;
-              row.classList.add('dragging');
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('text/plain', row.dataset.id);
-            });
-            row.addEventListener('dragend', () => {
-              if (draggingRow) draggingRow.classList.remove('dragging');
-              draggingRow = null;
-              broadcastRowOrder();
-            });
-            const dragHandle = row.querySelector('.drag-dots') || row.querySelector('td[data-key="drag"]');
-            if (dragHandle) {
-              dragHandle.addEventListener('touchstart', (e) => {
-                draggingRow = row;
-                row.classList.add('dragging');
-                e.preventDefault();
-              }, { passive: false });
-            }
-          }
+          // Set up click listeners on this new row
+          // (drag is handled by setupMouseDrag on the tbody — no per-row wiring needed)
 
           // Duration click
           const durCell = row.querySelector('td[data-key="duration"]');
@@ -1203,66 +1179,53 @@
     const rows = tbody.querySelectorAll('tr[data-id]');
 
     rows.forEach(row => {
-      const isSubChild = row.classList.contains('subchild');
-
-      if (isSubChild) {
-        // Sub-children should not be independently draggable
-        row.draggable = false;
-      } else {
-        // Make draggable
-        row.draggable = true;
-
-        // Drag start (mouse/desktop)
-        row.addEventListener('dragstart', (e) => {
-          draggingRow = row;
-          row.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', row.dataset.id);
-        });
-
-        // Drag end (mouse/desktop)
-        row.addEventListener('dragend', () => {
-          if (draggingRow) {
-            draggingRow.classList.remove('dragging');
-          }
-          draggingRow = null;
-          broadcastRowOrder();
-        });
-
-        // Touch drag (iPad / mobile)
-        const dragHandle = row.querySelector('.drag-dots') || row.querySelector('td[data-key="drag"]');
-        if (dragHandle) {
-          dragHandle.addEventListener('touchstart', (e) => {
-            draggingRow = row;
-            row.classList.add('dragging');
-            e.preventDefault(); // prevent scroll while dragging
-          }, { passive: false });
-        }
-      }
-
-      // Duration click (both parent rows and sub-children)
+      // Duration click
       const durCell = row.querySelector('td[data-key="duration"]');
       if (durCell) {
         durCell.style.cursor = 'pointer';
         durCell.addEventListener('click', () => openDurationEditor(row, durCell));
       }
 
-      // Sharpie button click (both parent rows and sub-children)
+      // Sharpie button click
       const sharpieBtn = row.querySelector('button.sharpie');
       if (sharpieBtn) {
         sharpieBtn.addEventListener('click', () => toggleRowSharpie(row));
       }
     });
 
-    // Tbody dragover - exact DOM implementation
-    if (!tbody._dragoverSetup) {
-      tbody._dragoverSetup = true;
-      tbody.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        if (!draggingRow) return;
+    // Mousedown-based drag on drag-handle cells (reliable, matches main app)
+    if (!tbody._dragSetup) {
+      tbody._dragSetup = true;
+      setupMouseDrag(tbody);
+    }
+  }
+
+  // ─── Mousedown-based drag (replaces unreliable HTML5 draggable) ───
+  function setupMouseDrag(tbody) {
+
+    // Unified handler for both mouse and touch
+    function beginDrag(startX, startY, tr, isTouch) {
+      let started = false;
+
+      function clientXY(e) {
+        if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        return { x: e.clientX, y: e.clientY };
+      }
+
+      function onMove(moveE) {
+        const { x, y } = clientXY(moveE);
+        if (!started) {
+          if (Math.abs(x - startX) < 4 && Math.abs(y - startY) < 4) return;
+          started = true;
+          draggingRow = tr;
+          tr.classList.add('dragging');
+          if (isTouch) moveE.preventDefault();
+        } else if (isTouch) {
+          moveE.preventDefault();
+        }
 
         const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
-        const afterEl = calcAfter(candidates, e.clientY);
+        const afterEl = calcAfter(candidates, y);
 
         if (afterEl === null) {
           tbody.appendChild(draggingRow);
@@ -1274,39 +1237,58 @@
         if (draggingRow.dataset.type === 'SUB') {
           const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
           let insertAfter = draggingRow;
-          subchildren.forEach(child => {
-            insertAfter.after(child);
-            insertAfter = child;
-          });
-        }
-      });
-
-      // Touch move and touch end for iPad drag
-      tbody.addEventListener('touchmove', (e) => {
-        if (!draggingRow) return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const candidates = Array.from(tbody.querySelectorAll('tr[data-id]:not(.dragging)'));
-        const afterEl = calcAfter(candidates, touch.clientY);
-        if (afterEl === null) {
-          tbody.appendChild(draggingRow);
-        } else {
-          tbody.insertBefore(draggingRow, afterEl);
-        }
-        if (draggingRow.dataset.type === 'SUB') {
-          const subchildren = tbody.querySelectorAll('tr.subchild[data-parent="' + draggingRow.dataset.id + '"]');
-          let insertAfter = draggingRow;
           subchildren.forEach(child => { insertAfter.after(child); insertAfter = child; });
         }
-      }, { passive: false });
+      }
 
-      tbody.addEventListener('touchend', () => {
-        if (!draggingRow) return;
-        draggingRow.classList.remove('dragging');
-        draggingRow = null;
-        broadcastRowOrder();
-      });
+      function onUp() {
+        if (isTouch) {
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onUp);
+          document.removeEventListener('touchcancel', onUp);
+        } else {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+
+        if (draggingRow) {
+          draggingRow.classList.remove('dragging');
+          draggingRow = null;
+          broadcastRowOrder();
+          setTimeout(function() { updateAllSharpieLines(); }, 50);
+        }
+      }
+
+      if (isTouch) {
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onUp);
+        document.addEventListener('touchcancel', onUp);
+      } else {
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      }
     }
+
+    // Mouse — only starts from drag handle cell
+    tbody.addEventListener('mousedown', function(e) {
+      const dragTd = e.target.closest('td[data-key="drag"]');
+      if (!dragTd) return;
+      const tr = dragTd.closest('tr[data-id]');
+      if (!tr || tr.classList.contains('subchild')) return;
+      e.preventDefault();
+      beginDrag(e.clientX, e.clientY, tr, false);
+    });
+
+    // Touch — only starts from drag handle cell
+    tbody.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const dragTd = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('td[data-key="drag"]');
+      if (!dragTd) return;
+      const tr = dragTd.closest('tr[data-id]');
+      if (!tr || tr.classList.contains('subchild')) return;
+      beginDrag(touch.clientX, touch.clientY, tr, true);
+    }, { passive: true });
   }
 
   function setupRowInteractions() {
