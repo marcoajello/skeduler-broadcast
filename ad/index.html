@@ -1453,22 +1453,28 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
 
-    // Position: use getBoundingClientRect for accurate placement relative to scrollContainer
+    // Position: derive left/right edges from the first and last DATA cells in the row,
+    // skipping drag and action columns. This avoids all offset/padding math.
     const containerRect = scrollContainer.getBoundingClientRect();
     const rowRect = row.getBoundingClientRect();
-    const tableRect = table.getBoundingClientRect();
     const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
-    const tableLeftInContainer = (tableRect.left - containerRect.left) + scrollContainer.scrollLeft;
 
-    const dragCol = row.querySelector('td[data-key="drag"]');
-    const actionCol = row.querySelector('td[data-key="actions"]');
-    const dragWidth = dragCol ? dragCol.offsetWidth : 0;
-    const actionWidth = actionCol ? actionCol.offsetWidth : 0;
+    const cells = Array.from(row.querySelectorAll('td')).filter(
+      td => td.dataset.key !== 'drag' && td.dataset.key !== 'actions'
+    );
+    const firstCell = cells[0];
+    const lastCell = cells[cells.length - 1];
+    if (!firstCell || !lastCell) return;
+
+    const firstRect = firstCell.getBoundingClientRect();
+    const lastRect = lastCell.getBoundingClientRect();
     const padding = 6;
+    const lineLeft = (firstRect.left - containerRect.left) + scrollContainer.scrollLeft + padding;
+    const lineWidth = (lastRect.right - firstRect.left) - padding * 2;
 
     line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
-    line.style.left = (tableLeftInContainer + dragWidth + padding) + 'px';
-    line.style.width = (tableRect.width - dragWidth - actionWidth - padding * 2) + 'px';
+    line.style.left = lineLeft + 'px';
+    line.style.width = lineWidth + 'px';
 
     scrollContainer.appendChild(line);
   }
