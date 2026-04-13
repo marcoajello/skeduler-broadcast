@@ -1460,10 +1460,18 @@
     const rowRect = row.getBoundingClientRect();
     const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
 
-    const padding = 42; // 36px column + 6px padding
+    // Bounded by the table, skipping drag column and ending before action column
+    const dragCol = row.querySelector('td[data-key="drag"]');
+    const actionCol = row.querySelector('td[data-key="actions"]');
+    const dragWidth = dragCol ? dragCol.offsetWidth : 0;
+    const actionWidth = actionCol ? actionCol.offsetWidth : 0;
+    const padding = 6;
+    const tableLeft = table.offsetLeft;
+    const tableWidth = table.offsetWidth;
+
     line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
-    line.style.left = padding + 'px';
-    line.style.right = padding + 'px';
+    line.style.left = (tableLeft + dragWidth + padding) + 'px';
+    line.style.width = (tableWidth - dragWidth - actionWidth - padding * 2) + 'px';
 
     scrollContainer.appendChild(line);
   }
