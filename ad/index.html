@@ -248,14 +248,19 @@
     
     /* ===== TABLE STYLING - EXACT DOM CLONE ===== */
     table.schedule {
-      border-collapse: collapse;
       table-layout: fixed;
-      background: var(--row);
+      border-collapse: separate;
+      border-spacing: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--row); /* fills rounded corner gaps */
     }
-    
+
     table.schedule th,
     table.schedule td {
       border: 1px solid var(--border);
+      border-top: none; /* avoid double-border with row above */
+      border-left: none; /* avoid double-border with cell to the left */
       padding: 6px 8px;
       text-align: left;
       vertical-align: middle;
@@ -264,7 +269,26 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    
+
+    /* First row needs top border on cells (table border covers the very top) */
+    table.schedule thead tr:first-child th {
+      border-top: none;
+    }
+    /* First cell in each row needs no left border (table border covers left edge) */
+    table.schedule tr > th:first-child,
+    table.schedule tr > td:first-child {
+      border-left: none;
+    }
+    /* Last cell in each row needs no right border (table border covers right edge) */
+    table.schedule tr > th:last-child,
+    table.schedule tr > td:last-child {
+      border-right: none;
+    }
+    /* Last row cells need no bottom border (table border covers bottom edge) */
+    table.schedule tbody tr:last-child > td {
+      border-bottom: none;
+    }
+
     /* Separator/dash column — layout only, borders come from baked HTML */
     table.schedule td[data-type="separator"],
     table.schedule th[data-type="separator"] {
@@ -292,21 +316,19 @@
     /* Rounded corners on header row - match DOM */
     table.schedule thead tr:first-child th:first-child {
       border-top-left-radius: 8px;
-      overflow: hidden;
     }
     table.schedule thead tr:first-child th:last-child {
       border-top-right-radius: 8px;
-      overflow: hidden;
     }
-    
+
     table.schedule tbody tr {
       background: var(--row);
     }
-    
+
     table.schedule tbody tr:nth-child(even) {
       background: var(--rowAlt);
     }
-    
+
     /* ===== DRAG & ACTION COLUMNS - EXACT DOM STYLING ===== */
     table.schedule thead th[data-key="drag"],
     table.schedule thead th[data-key="actions"],
@@ -315,16 +337,6 @@
       background: #141920;
       border: 1px solid #ffffff;
       overflow: hidden;
-    }
-
-    /* Inside borders need 2px to win collapsed-border resolution against adjacent content cells */
-    table.schedule thead th[data-key="drag"],
-    table.schedule tbody td[data-key="drag"] {
-      border-right-width: 2px;
-    }
-    table.schedule thead th[data-key="actions"],
-    table.schedule tbody td[data-key="actions"] {
-      border-left-width: 2px;
     }
 
     /* Drag column */
