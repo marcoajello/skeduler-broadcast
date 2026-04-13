@@ -645,6 +645,9 @@
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Reposition sharpie lines on viewport resize (they use absolute px values)
+    window.addEventListener('resize', () => updateAllSharpieLines());
   }
 
   // === RESILIENCE ===
