@@ -1453,25 +1453,22 @@
     line.className = 'sharpie-line-element';
     line.dataset.rowId = row.dataset.id;
 
-    // Position using getBoundingClientRect for accurate placement
-    // (offsetTop is relative to offsetParent which may not be scrollContainer,
-    //  e.g. when day-tabs or day-section wrappers sit between them)
+    // Position: use getBoundingClientRect for accurate placement relative to scrollContainer
     const containerRect = scrollContainer.getBoundingClientRect();
     const rowRect = row.getBoundingClientRect();
+    const tableRect = table.getBoundingClientRect();
     const topInContainer = (rowRect.top - containerRect.top) + scrollContainer.scrollTop;
+    const tableLeftInContainer = (tableRect.left - containerRect.left) + scrollContainer.scrollLeft;
 
-    // Bounded by the table, skipping drag column and ending before action column
     const dragCol = row.querySelector('td[data-key="drag"]');
     const actionCol = row.querySelector('td[data-key="actions"]');
     const dragWidth = dragCol ? dragCol.offsetWidth : 0;
     const actionWidth = actionCol ? actionCol.offsetWidth : 0;
     const padding = 6;
-    const tableLeft = table.offsetLeft;
-    const tableWidth = table.offsetWidth;
 
     line.style.top = (topInContainer + rowRect.height / 2 - 2) + 'px';
-    line.style.left = (tableLeft + dragWidth + padding) + 'px';
-    line.style.width = (tableWidth - dragWidth - actionWidth - padding * 2) + 'px';
+    line.style.left = (tableLeftInContainer + dragWidth + padding) + 'px';
+    line.style.width = (tableRect.width - dragWidth - actionWidth - padding * 2) + 'px';
 
     scrollContainer.appendChild(line);
   }
