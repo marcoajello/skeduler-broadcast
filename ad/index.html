@@ -313,10 +313,20 @@
     table.schedule tbody td[data-key="drag"],
     table.schedule tbody td[data-key="actions"] {
       background: #141920;
-      border: 1px solid #ffffff !important;
+      border: 1px solid #ffffff;
       overflow: hidden;
     }
-    
+
+    /* Inside borders need 2px to win collapsed-border resolution against adjacent content cells */
+    table.schedule thead th[data-key="drag"],
+    table.schedule tbody td[data-key="drag"] {
+      border-right-width: 2px;
+    }
+    table.schedule thead th[data-key="actions"],
+    table.schedule tbody td[data-key="actions"] {
+      border-left-width: 2px;
+    }
+
     /* Drag column */
     table.schedule thead th[data-key="drag"],
     table.schedule tbody td[data-key="drag"] {
