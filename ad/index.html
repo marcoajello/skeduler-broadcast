@@ -1254,6 +1254,7 @@
         if (draggingRow) {
           draggingRow.classList.remove('dragging');
           draggingRow = null;
+          renumberRows(tbody);
           broadcastRowOrder();
           setTimeout(function() { updateAllSharpieLines(); }, 50);
         }
@@ -1814,6 +1815,42 @@
     }
   }
   
+  // === ROW RENUMBERING ===
+  // After any reorder, recalculate sequential event numbers in the idx column.
+  // Matches the producer's renumber() logic: SEPARATORs get '', subchildren get
+  // parentNum+letter (A, B, C…), everything else increments sequentially.
+  function renumberRows(tbody) {
+    if (!tbody) tbody = getActiveTbody();
+    if (!tbody) return;
+    const rows = tbody.querySelectorAll('tr[data-id]');
+    let counter = 0;
+    let parentNum = null;
+    let subIdx = 0;
+    rows.forEach(row => {
+      const idxCell = row.querySelector('td[data-key="idx"]');
+      if (!idxCell) return;
+      const type = (row.dataset.type || '').toUpperCase();
+      const isSubChild = row.classList.contains('subchild');
+      if (isSubChild) {
+        // Subchild: parentNum + letter
+        const letter = String.fromCharCode(65 + subIdx);
+        idxCell.textContent = parentNum != null ? (parentNum + letter) : '';
+        subIdx++;
+      } else if (type === 'SEPARATOR') {
+        idxCell.textContent = '';
+      } else {
+        counter++;
+        idxCell.textContent = counter;
+        if (type === 'SUB') {
+          parentNum = counter;
+          subIdx = 0;
+        } else {
+          parentNum = null;
+        }
+      }
+    });
+  }
+
   // === INCOMING EVENT HANDLERS ===
   function handleIncomingReorder({ payload }) {
     if (!payload?.order) return;
@@ -1835,6 +1872,7 @@
       }
     });
 
+    renumberRows(tbody);
     updateAllSharpieLines();
   }
   
