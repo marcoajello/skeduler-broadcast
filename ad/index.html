@@ -320,6 +320,13 @@
     table.schedule thead tr:first-child th:last-child {
       border-top-right-radius: 8px;
     }
+    /* Bottom rounded corners */
+    table.schedule tbody tr:last-child td:first-child {
+      border-bottom-left-radius: 8px;
+    }
+    table.schedule tbody tr:last-child td:last-child {
+      border-bottom-right-radius: 8px;
+    }
 
     table.schedule tbody tr {
       background: var(--row);
@@ -2138,15 +2145,33 @@
     }
     
     // Apply sharpie marks — complete state replacement (not additive)
-    if (payload.sharpieRows) {
+    // If allDaySharpies is present, apply marks across ALL days
+    if (payload.allDaySharpies) {
+      // Collect every row ID that should be marked across all days
+      const allMarked = new Set();
+      Object.values(payload.allDaySharpies).forEach(rowIds => {
+        rowIds.forEach(id => allMarked.add(id));
+      });
+      // Unmark rows no longer in any day's marked set
+      [...markedRows].forEach(rowId => {
+        if (!allMarked.has(rowId)) {
+          handleIncomingSharpie({ payload: { rowId, marked: false } });
+        }
+      });
+      // Mark rows the producer has marked (on any day)
+      allMarked.forEach(rowId => {
+        if (!markedRows.has(rowId)) {
+          handleIncomingSharpie({ payload: { rowId, marked: true } });
+        }
+      });
+    } else if (payload.sharpieRows) {
+      // Legacy fallback — single-day sharpie data
       const newSet = new Set(payload.sharpieRows);
-      // Unmark rows no longer in the producer's marked set
       [...markedRows].forEach(rowId => {
         if (!newSet.has(rowId)) {
           handleIncomingSharpie({ payload: { rowId, marked: false } });
         }
       });
-      // Mark rows the producer has marked
       payload.sharpieRows.forEach(rowId => {
         if (!markedRows.has(rowId)) {
           handleIncomingSharpie({ payload: { rowId, marked: true } });
