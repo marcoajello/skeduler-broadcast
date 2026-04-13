@@ -330,18 +330,15 @@
     }
 
     /* ===== DRAG & ACTION COLUMNS - EXACT DOM STYLING ===== */
+    /* Use inset box-shadow for the white outline so it's independent of the table border */
     table.schedule thead th[data-key="drag"],
     table.schedule thead th[data-key="actions"],
     table.schedule tbody td[data-key="drag"],
     table.schedule tbody td[data-key="actions"] {
       background: #141920;
-      border: 1px solid #ffffff;
+      border: none;
+      box-shadow: inset 0 0 0 1px #ffffff;
       overflow: hidden;
-    }
-    /* Header drag/action: 2px top border to match visual weight against table's outer border */
-    table.schedule thead th[data-key="drag"],
-    table.schedule thead th[data-key="actions"] {
-      border-top-width: 2px;
     }
 
     /* Drag column */
