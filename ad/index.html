@@ -338,6 +338,11 @@
       border: 1px solid #ffffff;
       overflow: hidden;
     }
+    /* Header drag/action: 2px top border to match visual weight against table's outer border */
+    table.schedule thead th[data-key="drag"],
+    table.schedule thead th[data-key="actions"] {
+      border-top-width: 2px;
+    }
 
     /* Drag column */
     table.schedule thead th[data-key="drag"],
