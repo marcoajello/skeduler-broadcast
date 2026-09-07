@@ -1893,10 +1893,10 @@
       return;
     }
 
-    // Legacy broadcast (for backward compat with old laptop adChannelSync)
-    channel.send({ type: 'broadcast', event, payload: fullPayload });
-
-    // v2 durable command: broadcast + persist to sync_commands table
+    // v2 durable command only. The legacy per-event broadcast that used to be
+    // sent alongside this was removed 2026-09-07: the laptop deduped the two
+    // copies with a 500ms timer, so on slow wifi a delayed v2 copy applied a
+    // second time (a row-duplicate became two rows). v2 dedups on cmdId.
     const cmdId = crypto.randomUUID();
     processedCmds.add(cmdId);
     trimProcessedSet();
